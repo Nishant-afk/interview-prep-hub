@@ -1,0 +1,40 @@
+---
+/**
+ * Lists the topic pages of a section as cards (used on each section's index page).
+ *   <SectionTopics section="csharp" />
+ */
+import { getCollection } from 'astro:content';
+import { questionsFor } from '../lib/questions';
+
+interface Props {
+  section: string;
+}
+const { section } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const docs = (await getCollection('docs'))
+  .filter((d) => d.id.startsWith(`${section}/`))
+  .sort((a, b) => (a.data.sidebar?.order ?? 999) - (b.data.sidebar?.order ?? 999) || a.id.localeCompare(b.id));
+const qs = questionsFor(section);
+---
+
+<div class="ip-topic-grid not-content">
+  {
+    docs.map((d) => {
+      const topic = d.id.split('/').slice(1).join('/');
+      const n = qs.filter((q) => q.topic === topic).length;
+      return (
+        <a class="ip-topic-card" href={`${base}/${d.id}/`}>
+          <strong>{d.data.title}</strong>
+          {d.data.description && <span class="ip-muted ip-small">{d.data.description}</span>}
+          <span class="ip-topic-meta">
+            {d.data.importance === 'high' && <span class="ip-pill ip-pill-hot">frequently asked</span>}
+            {d.data.difficulty && <span class={`ip-pill ip-diff-${d.data.difficulty}`}>{d.data.difficulty}</span>}
+            {d.data.estimatedMinutes && <span class="ip-muted ip-small">{d.data.estimatedMinutes} min</span>}
+            {n > 0 && <span class="ip-muted ip-small">{n} MCQs</span>}
+          </span>
+        </a>
+      );
+    })
+  }
+</div>
+{docs.length === 0 && <p class="ip-muted">Topics for this section are coming soon.</p>}

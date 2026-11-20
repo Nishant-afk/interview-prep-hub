@@ -1,0 +1,8 @@
+---
+import ProgressWidget from './ProgressWidget';
+import { sectionTopics } from '../lib/site-data';
+
+const sections = await sectionTopics();
+---
+
+<ProgressWidget client:load sections={sections} />

@@ -1,0 +1,185 @@
+{
+  "section": "csharp",
+  "version": 1,
+  "questions": [
+    {
+      "id": "csharp-async-await-001",
+      "topic": "async-await",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "While an `await` on a database query is waiting for the result, what is the request thread doing in ASP.NET Core?",
+      "options": [
+        "It is blocked until the query returns",
+        "It has returned to the thread pool and can serve other requests",
+        "It is spinning in a busy-wait loop to reduce latency",
+        "It is suspended by the OS and reserved for this request"
+      ],
+      "answer": [1],
+      "explanation": "When the awaited task is incomplete, the method returns an incomplete Task and the thread goes back to the pool. A pool thread runs the continuation when the I/O completes. This is why async improves scalability.",
+      "optionNotes": [
+        "That is sync-over-async (`.Result`), which async avoids.",
+        null,
+        "No spinning happens; completion is signalled by the OS.",
+        "Threads are not reserved; the continuation may run on a different thread."
+      ],
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-002",
+      "topic": "async-await",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `ConfigureAwait(false)` do?",
+      "code": "var data = await httpClient.GetStringAsync(url).ConfigureAwait(false);",
+      "codeLang": "csharp",
+      "options": [
+        "Runs the HTTP call on a new background thread",
+        "Makes the call synchronous",
+        "Resumes the continuation without marshalling back to the captured SynchronizationContext",
+        "Suppresses exceptions thrown by the awaited task"
+      ],
+      "answer": [2],
+      "explanation": "By default `await` captures the current SynchronizationContext (UI thread, classic ASP.NET request context) and resumes on it. `ConfigureAwait(false)` skips that, so the continuation can run on any pool thread. It is recommended in library code; in ASP.NET Core there is no SynchronizationContext, so it has no effect.",
+      "optionNotes": [
+        "No thread is created by ConfigureAwait.",
+        "It is still fully asynchronous.",
+        null,
+        "Exceptions still propagate normally."
+      ],
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-003",
+      "topic": "async-await",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A WPF button handler calls `var x = LoadAsync().Result;` and the app freezes forever. `LoadAsync` awaits an HTTP call without `ConfigureAwait(false)`. Why?",
+      "options": [
+        "HttpClient cannot be used from the UI thread",
+        "The UI thread is blocked on `.Result`, but the continuation of `LoadAsync` must run on that same UI thread",
+        "`.Result` throws an AggregateException that is swallowed",
+        "The thread pool is exhausted by the HTTP call"
+      ],
+      "answer": [1],
+      "explanation": "This is the classic sync-over-async deadlock. The continuation after `await` is posted to the captured UI SynchronizationContext, which is blocked waiting for the task, so neither can proceed. Fix: make the handler `async` and `await LoadAsync()`.",
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-004",
+      "topic": "async-await",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Where is an `async void` method acceptable?",
+      "options": [
+        "In repository methods that don't return data",
+        "In controller actions that return no body",
+        "In event handlers such as `button_Click`",
+        "Anywhere the result isn't needed"
+      ],
+      "answer": [2],
+      "explanation": "`async void` can't be awaited, and exceptions thrown from it are raised on the SynchronizationContext, typically crashing the process. It exists for event handlers whose signature must return void. Everything else should return `Task`.",
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-005",
+      "topic": "async-await",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Two independent HTTP calls each take about 300 ms. How long does this method take, roughly?",
+      "code": "var a = await GetPriceAsync();\nvar b = await GetStockAsync();",
+      "codeLang": "csharp",
+      "options": ["~300 ms", "~600 ms", "~150 ms", "It depends on the number of CPU cores"],
+      "answer": [1],
+      "explanation": "Each call starts only after the previous one finishes, so they run sequentially. Start both first and then `await Task.WhenAll(priceTask, stockTask)` to bring it down to roughly 300 ms.",
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-006",
+      "topic": "async-await",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `ValueTask<T>` are true? (Select all that apply)",
+      "options": [
+        "It can avoid a heap allocation when the result is available synchronously",
+        "It is safe to await the same instance multiple times",
+        "It should be awaited exactly once",
+        "It should replace `Task<T>` in all public APIs"
+      ],
+      "answer": [0, 2],
+      "explanation": "`ValueTask<T>` is a struct that can carry a result directly, avoiding an allocation on synchronous completion. It may be backed by a pooled `IValueTaskSource`, so awaiting twice or after completion is undefined. Use it only on hot paths after measuring; `Task<T>` remains the default.",
+      "optionNotes": [
+        null,
+        "Pooled sources may be reused after the first await.",
+        null,
+        "It adds constraints for callers; Task stays the default."
+      ],
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-007",
+      "topic": "async-await",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How does exception behaviour differ between `task.Result` and `await task` when the task faults?",
+      "options": [
+        "Both throw the original exception",
+        "`.Result` throws an AggregateException wrapping it; `await` rethrows the first inner exception directly",
+        "`await` throws AggregateException; `.Result` throws the original",
+        "Neither throws; you must inspect `task.Exception`"
+      ],
+      "answer": [1],
+      "explanation": "Blocking accessors (`.Result`, `.Wait()`) wrap failures in `AggregateException`. `await` unwraps and rethrows the first inner exception while preserving its stack trace, which is far easier to catch and log.",
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-008",
+      "topic": "async-await",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an ASP.NET Core controller, a developer wraps a database call in `await Task.Run(() => repo.GetAll())` \"to make it async\". What is the effect?",
+      "options": [
+        "Better throughput, because the request thread is freed",
+        "No scalability gain: it just moves the blocking work to another pool thread and adds overhead",
+        "It deadlocks because ASP.NET Core has a SynchronizationContext",
+        "The query runs in parallel across multiple cores"
+      ],
+      "answer": [1],
+      "explanation": "The request thread is freed, but another pool thread is now blocked doing the synchronous I/O, so pool usage is the same plus scheduling overhead. The fix is a truly async API such as `ToListAsync()`. `Task.Run` is for offloading CPU work from a UI thread.",
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-009",
+      "topic": "async-await",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main purpose of passing a `CancellationToken` through async calls in a Web API?",
+      "options": [
+        "To make the method run faster",
+        "To let downstream work stop when the client disconnects or a timeout fires",
+        "To prevent deadlocks",
+        "It is required for the method to compile"
+      ],
+      "answer": [1],
+      "explanation": "ASP.NET Core exposes `HttpContext.RequestAborted`. Passing it to EF Core and HttpClient lets expensive work stop when nobody is waiting for the result, which saves database and CPU resources.",
+      "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-async-await-010",
+      "topic": "async-await",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What happens when this code runs?",
+      "code": "var t1 = db.Orders.ToListAsync();\nvar t2 = db.Customers.ToListAsync();\nawait Task.WhenAll(t1, t2); // same DbContext instance",
+      "codeLang": "csharp",
+      "options": [
+        "Both queries run concurrently on one connection",
+        "EF Core throws InvalidOperationException because a second operation started before the first completed",
+        "EF Core automatically queues the second query",
+        "It works but returns stale data"
+      ],
+      "answer": [1],
+      "explanation": "`DbContext` is not thread-safe and does not support concurrent operations. EF Core detects this and throws \"A second operation was started on this context instance before a previous operation completed\". Use separate contexts (for example via `IDbContextFactory`) for parallel queries.",
+      "readMore": "/csharp/async-await/"
+    }
+  ]
+}

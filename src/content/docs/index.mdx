@@ -1,0 +1,51 @@
+---
+title: Interview Prep Hub
+description: .NET + Angular SDE interview preparation for 3–4 years of experience. Concepts, diagrams, code, system design and MCQ tests.
+noProgress: true
+tableOfContents: false
+pagination: false
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import ProgressBlock from '~/components/ProgressBlock.astro';
+
+Everything for a **3–4 year .NET + Angular SDE** interview loop in one place. Each topic has an explanation, diagrams, C# and TypeScript code, interview Q&A, common pitfalls and a quick quiz.
+
+## Your progress
+
+<ProgressBlock />
+
+## Start here
+
+<CardGrid>
+  <LinkCard title="MCQ Test Centre" description="Section tests, 45-minute mock interview test, weak-area drills and history." href="test/" />
+  <LinkCard title="Study plan" description="A 4-week plan, a 1-week crash plan and a day-before checklist." href="study-plan/" />
+  <LinkCard title="Flashcards" description="Spaced-repetition drill built from the question bank." href="revision/flashcards/" />
+  <LinkCard title="Cheat sheets" description="One-page printable summaries per section." href="revision/" />
+</CardGrid>
+
+## Sections
+
+<CardGrid>
+  <Card title="Core stack" icon="seti:c-sharp">
+    [C# & .NET Runtime](csharp/) · [ASP.NET Core Web API](aspnet/) · [EF Core & SQL Server](data/) · [Angular](angular/) · [TypeScript, JS, HTML & CSS](web/)
+  </Card>
+  <Card title="Coding & design rounds" icon="puzzle">
+    [DSA & Coding](dsa/) · [System Design](system-design/) · [Microservices & Messaging](microservices/) · [Design Patterns & Architecture](patterns/)
+  </Card>
+  <Card title="Breadth" icon="open-book">
+    [CS Fundamentals](fundamentals/) · [Security](security/) · [Testing, Docker, K8s & DevOps](testing-devops/)
+  </Card>
+  <Card title="People round" icon="comment">
+    [Behavioral & HR](behavioral/) · [Revision](revision/)
+  </Card>
+</CardGrid>
+
+## How to use this site
+
+1. Read a topic and the **Interview Q&A** at the bottom. Try to answer each question out loud before expanding it.
+2. Take the **quick quiz** at the end of the page, then click **Mark as studied**.
+3. Once a section is done, take its **section test** in the Test Centre. Aim for 80% or more.
+4. Weekly, take a **mock test** and drill **weak areas** until that list is empty.
+
+Progress and test history are stored in your browser. Export them from the Test Centre history tab to move between devices.

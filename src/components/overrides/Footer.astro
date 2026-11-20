@@ -1,0 +1,15 @@
+---
+// Wraps Starlight's default footer and adds a "Mark as studied" toggle on topic pages.
+import Default from '@astrojs/starlight/components/Footer.astro';
+import MarkDone from '../MarkDone';
+import { SECTION_IDS } from '../../lib/sections.mjs';
+
+const route = Astro.locals.starlightRoute;
+const id = route.id.replace(/\/$/, '');
+const [section, ...rest] = id.split('/');
+const isTopic =
+  SECTION_IDS.includes(section) && rest.length > 0 && !route.entry.data.noProgress && route.entry.data.template !== 'splash';
+---
+
+{isTopic && <MarkDone client:idle topicId={id} />}
+<Default><slot /></Default>

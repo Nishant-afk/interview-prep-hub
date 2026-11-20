@@ -1,0 +1,22 @@
+---
+/**
+ * Drop into any MDX topic page:
+ *   import QuizBlock from '~/components/QuizBlock.astro';
+ *   <QuizBlock section="csharp" topic="async-await" />
+ * Loads the matching questions at build time and hydrates the Preact quiz when visible.
+ */
+import Quiz from './Quiz';
+import { questionsFor } from '../lib/questions';
+
+interface Props {
+  section: string;
+  topic?: string;
+  count?: number;
+  title?: string;
+}
+
+const { section, topic, count = 5, title } = Astro.props;
+const questions = questionsFor(section, topic);
+---
+
+<Quiz client:visible questions={questions} section={section} topic={topic} count={count} title={title} />

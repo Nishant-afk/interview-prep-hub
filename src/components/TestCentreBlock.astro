@@ -1,0 +1,9 @@
+---
+import TestCentre from './TestCentre';
+import { sectionInfos, topicTitles } from '../lib/site-data';
+
+const sections = sectionInfos();
+const titles = await topicTitles();
+---
+
+<TestCentre client:load sections={sections} topicTitles={titles} />

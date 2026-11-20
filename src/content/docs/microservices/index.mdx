@@ -1,0 +1,25 @@
+---
+title: "Microservices & Messaging"
+description: "Service boundaries, sync vs async communication, RabbitMQ vs Kafka vs Azure Service Bus, delivery guarantees, outbox, saga, resilience and observability."
+sidebar:
+  label: Overview
+  order: 0
+noProgress: true
+---
+
+import SectionTopics from '~/components/SectionTopics.astro';
+import { LinkButton } from '@astrojs/starlight/components';
+
+Service boundaries, sync vs async communication, RabbitMQ vs Kafka vs Azure Service Bus, delivery guarantees, outbox, saga, resilience and observability.
+
+## How this is asked
+
+If the job description mentions microservices, expect *"how do services communicate?"*, *"how do you keep data consistent without distributed transactions?"* and *"what happens if a message is processed twice?"*.
+
+## Topics
+
+<SectionTopics section="microservices" />
+
+## Test yourself
+
+<LinkButton href="../test/?section=microservices" variant="secondary">Take the Microservices & Messaging section test</LinkButton>
