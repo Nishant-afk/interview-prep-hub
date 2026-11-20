@@ -17,7 +17,8 @@ export function allQuestionsBySection(): Record<string, Question[]> {
       throw new Error(`Invalid question file ${path}: ${parsed.error.message}. Run "npm run validate" for details.`);
     }
     const { section, questions } = parsed.data;
-    out[section] = questions.map((q) => ({ ...q, section }) as Question);
+    // A section may be split across "<section>.json" and "<section>.<part>.json".
+    (out[section] ??= []).push(...questions.map((q) => ({ ...q, section }) as Question));
   }
   cache = out;
   return out;

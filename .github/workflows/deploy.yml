@@ -37,6 +37,9 @@ jobs:
       - name: Validate question bank
         run: npm run validate
 
+      - name: Check content (MDX, Mermaid, links)
+        run: npm run check:content
+
       - name: Unit and component tests
         run: npx vitest --run
 

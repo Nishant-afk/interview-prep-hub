@@ -32,7 +32,8 @@ const files = existsSync(qDir) ? readdirSync(qDir).filter((f) => f.endsWith('.js
 const known = new Set(QUIZ_SECTIONS.map((s) => s.id));
 
 for (const file of files) {
-  const section = basename(file, '.json');
+  // "<section>.json" or "<section>.<part>.json" (large sections may split their bank).
+  const section = basename(file, '.json').split('.')[0];
   const path = join(qDir, file);
   let data;
   try {
