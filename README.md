@@ -2,6 +2,8 @@
 
 Personal interview preparation site for a **3–4 year .NET + Angular SDE**: concepts with diagrams and code, interview Q&A, system design, DSA, and an MCQ test centre with progress tracking.
 
+**Live site:** https://nishant-afk.github.io/interview-prep-hub/ · [start reading: C# value vs reference types](https://nishant-afk.github.io/interview-prep-hub/csharp/value-reference-types/)
+
 Static site built with [Astro](https://astro.build) + [Starlight](https://starlight.astro.build), Preact islands for the quiz, Mermaid for diagrams. Hosted free on GitHub Pages.
 
 ## Run locally
