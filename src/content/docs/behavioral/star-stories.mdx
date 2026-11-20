@@ -1,0 +1,274 @@
+---
+title: STAR Story Bank
+description: "The STAR method, a reusable story template, a story bank table and templates with sample answers for the nine behavioral prompts you will be asked."
+sidebar:
+  order: 3
+  badge: { text: Hot, variant: danger }
+importance: high
+difficulty: medium
+estimatedMinutes: 60
+tags: [behavioral, star, stories, leadership, conflict]
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Why it matters in interviews
+
+*"Tell me about a time when..."* questions assume that **past behaviour predicts future behaviour**. Product companies often run a dedicated behavioral or "bar raiser" round; service companies ask them in managerial and client rounds. At 3-4 years the interviewer is checking whether you can operate as a **reliable SDE-2**:
+
+- Do you take **ownership** or wait to be told?
+- How do you handle **conflict, pressure and failure**?
+- Can you **influence** without authority and **help others** grow?
+- Are you **self-aware**: do you learn from mistakes and accept feedback?
+
+Improvised answers tend to be vague and long. Prepared stories, told in a consistent structure, are specific and short. Prepare **6-8 real stories** and map each to several prompts.
+
+## The STAR method
+
+| Letter | Meaning | Share of the answer | Tip |
+|---|---|---|---|
+| **S** | Situation | ~15% | Just enough context: team, project, when. One or two sentences |
+| **T** | Task | ~10% | Your responsibility or the goal, and why it was hard or important |
+| **A** | Action | ~50% | What **you** did, step by step, with reasoning. Use "I", not "we" |
+| **R** | Result | ~25% | Measurable outcome, plus what you learned or changed afterwards |
+
+Target **2 minutes** per story. Add an **L (Learning)** to the end of failure, feedback and conflict stories: it is often the part the interviewer cares about most.
+
+### Reusable template
+
+```text
+S: "At [Company], on [project/team], [context in one or two sentences, with timing]."
+T: "I was responsible for [goal]. The challenge was [constraint: deadline, ambiguity,
+    conflict, risk], and it mattered because [business impact]."
+A: "First I [action 1 + why]. Then I [action 2 + why]. When [obstacle] came up,
+    I [action 3]. I kept [stakeholder] informed by [how]."
+R: "As a result, [metric / outcome]. [Recognition or follow-on effect, if any]."
+L: "What I took from it is [lesson], and since then I [changed behaviour]."
+```
+
+## Story bank
+
+Write each story once, then tag which prompts it can answer. One strong story often covers three or four prompts.
+
+| # | Story title | Prompts it answers | Key metric | Ready? |
+|---|---|---|---|---|
+| 1 | `[e.g. Order search performance fix]` | ownership, learning, tight deadline | `[p95 2.8 s → 400 ms]` | `[ ]` |
+| 2 | `[e.g. Import worker production incident]` | incident, failure, pressure | `[restored in N min]` | `[ ]` |
+| 3 | `[e.g. Disagreement over caching approach]` | conflict, disagreement, influence | `[outcome]` | `[ ]` |
+| 4 | `[e.g. Onboarding a new joiner]` | mentoring, teamwork | `[first PR in N days]` | `[ ]` |
+| 5 | `[your story]` | `[prompts]` | `[metric]` | `[ ]` |
+| 6 | `[your story]` | `[prompts]` | `[metric]` | `[ ]` |
+| 7 | `[your story]` | `[prompts]` | `[metric]` | `[ ]` |
+| 8 | `[your story]` | `[prompts]` | `[metric]` | `[ ]` |
+
+The samples below all come from one fictional developer at "TradeLink", a B2B order management SaaS (ASP.NET Core, SQL Server, Angular, Azure). **Every sample is a placeholder: replace it with your own real story.** Interviewers probe details, and invented stories fall apart under follow-ups.
+
+## The nine prompts
+
+### 1. Conflict with a teammate
+
+Also asked as: *"Tell me about a time you disagreed with a colleague"*, *"Describe a difficult person you worked with"*. They are testing whether you separate the person from the problem and resolve it with data, not escalation.
+
+```text
+S/T: [Teammate and context], we disagreed about [technical or process issue].
+A:   I [talked one-to-one first], [understood their concern], [proposed a way to decide
+     objectively: spike, benchmark, criteria], [agreed on outcome].
+R:   [Decision + result]. Our working relationship [improved / stayed good] because [why].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"A senior teammate and I disagreed in a PR about caching tenant pricing rules. He wanted in-memory caching per App Service instance; I was worried about stale prices because we ran four instances. The comment thread was getting tense, so I asked for a 15-minute call instead. I learned his real concern was adding Redis cost and complexity for one feature. We agreed on criteria: price changes must reflect within 30 seconds, and the cost should stay small. I wrote a short spike comparing in-memory with a 30-second expiry against Redis with invalidation via Service Bus. The data showed the in-memory option met the requirement, so we went with his approach plus my short expiry. Pricing complaints stayed at zero, and we now settle design disagreements with a short spike instead of long PR threads."
+</details>
+
+### 2. A failure or mistake
+
+Also asked as: *"Tell me about a time you made a mistake"*, *"...a project that did not go well"*. They are testing honesty and learning. Choose a real failure with moderate impact that you fixed and learned from, not a disguised success.
+
+```text
+S/T: [What you were doing], I [mistake or misjudgement].
+A:   When I noticed, I [owned it immediately], [fixed / mitigated], [communicated].
+R:   [Impact contained to X]. L: I changed [process / habit] so it [does not recur].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"I shipped an EF Core migration that added a non-nullable column with a default to the Orders table, about 60 million rows. It passed in QA, which had only a few thousand rows. In production the deployment held a lock for several minutes and order creation timed out for about six minutes. I flagged it in the release channel right away, said it was my migration, and with the lead we waited for it to complete rather than kill it mid-way, which would have meant a longer rollback. Afterwards I wrote the post-incident note, proposed a rule that schema changes on large tables are split into add-nullable, backfill in batches, then add the constraint, and added a pipeline step that runs migrations against a production-sized copy. We have done four large-table changes since without downtime. I learned to test data changes at production scale, not just correctness."
+</details>
+
+### 3. Tight deadline
+
+Also asked as: *"Working under pressure"*, *"Competing priorities"*. They are testing prioritisation, scope negotiation and communication, not heroics.
+
+```text
+S/T: [Deadline + why fixed], [scope that did not fit].
+A:   I [broke down the work], [identified the must-haves], [negotiated scope with PO],
+     [removed blockers / parallelised], [communicated status daily].
+R:   [Delivered what, when]. [Deferred items shipped later]. L: [lesson about planning].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"A large distributor was signing on the condition that they could bulk-upload orders from CSV, and sales had promised it in three weeks. My estimate for the full feature, with validation, error reports and progress tracking, was five. I listed the requirements with the product owner and split them into must-have and later: upload, validation, async processing and an emailed error report were must-haves; the live progress bar and re-upload of failed rows could wait. I built the Service Bus worker first because it was the riskiest piece, and a teammate built the Angular upload screen in parallel against an agreed API contract. I gave a two-line status in stand-up and flagged one risk, file size limits, in week one rather than week three. We shipped the core in 19 days, the customer went live, and the deferred items followed two sprints later. I learned to negotiate scope early with a clear list rather than work weekends."
+</details>
+
+### 4. Ownership beyond your role
+
+Also asked as: *"Going above and beyond"*, *"Something you did that was not your job"*. They are testing initiative and whether you treat the product as yours.
+
+```text
+S/T: I noticed [problem nobody owned] that affected [users / team].
+A:   I [investigated], [built a case with data], [got buy-in], [implemented], [handed over / documented].
+R:   [Outcome + metric]. [How it is used now].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"Our nightly ERP sync failed silently a few times a month, and support only found out when customers complained about missing invoices. It wasn't assigned to anyone because the original developer had left. I went through two months of logs in Application Insights and found most failures were transient timeouts with no retry. I wrote a one-page note with the numbers and proposed a fix, and my lead gave me two days in the next sprint. I added Polly retries with backoff, made the sync idempotent so reruns were safe, and set up an alert to the team channel on final failure. Missing-invoice tickets went from about eight a month to zero, and I wrote a runbook so anyone on call can handle it."
+</details>
+
+### 5. Learning a new technology quickly
+
+Also asked as: *"How do you keep up?"*, *"A time you worked outside your comfort zone"*. They are testing learning approach and judgement about what is good enough.
+
+```text
+S/T: I needed [tech] for [goal] within [time], with [little/no] prior experience.
+A:   I [official docs / course], [built a small spike], [asked an expert], [applied with guardrails: reviews, tests].
+R:   [Delivered], [now the go-to / shared knowledge via...].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"When we decided to move the import pipeline from a SQL table polled by a timer to Azure Service Bus, nobody on the team had used it. I had a week before sprint planning. I read the Microsoft docs on sessions, dead-lettering and lock renewal, then built a small console spike that pushed 10,000 messages and deliberately crashed the consumer to see redelivery behaviour. That spike showed we needed idempotent processing, which changed our design. I asked an architect from another team to review my approach for 30 minutes. The new pipeline went live with retries and a dead-letter alert, and I ran a one-hour session for the team with the spike code."
+</details>
+
+### 6. Receiving critical feedback
+
+Also asked as: *"Tell me about negative feedback you received"*. They are testing coachability. Pick genuine feedback, show you did not get defensive, and show the change.
+
+```text
+S/T: [Who] told me [specific feedback] about [context].
+A:   I [listened, asked for examples], [reflected], [made a concrete plan], [asked for follow-up].
+R:   [Visible change + evidence]. L: [how you seek feedback now].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"In my first year at TradeLink my manager told me in a one-to-one that my PRs were too big to review well. Some were over 1,500 lines and reviewers were rubber-stamping them. My first reaction was that the features were large, but I asked for examples and we looked at two together. He was right: one PR mixed a refactor, a migration and a feature. I started splitting work into stacked PRs of a few hundred lines with a short description and testing notes, and used feature flags so incomplete work could merge safely. Two months later he mentioned in my review that my PRs were the easiest on the team to review, and review turnaround on my work dropped from about two days to same-day."
+</details>
+
+### 7. Mentoring or helping a junior
+
+Also asked as: *"How have you helped your team grow?"*. They are testing leadership potential, a key SDE-2 to senior signal.
+
+```text
+S/T: [Junior / new joiner] was [struggling with / new to] [area].
+A:   I [assessed gaps], [paired / set small goals], [reviewed with explanations, not just fixes], [gradually stepped back].
+R:   [Their progress + metric]. L: [what you learned about teaching].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"A fresher joined my team who knew C# but had never used Angular or EF Core. Rather than send him a list of courses, I picked a small real ticket, a new filter on the order grid that touched both the API and the Angular component, and paired with him for the first two days. I left PR comments as questions, like 'what happens if this list is empty?', instead of just fixing things, and kept a shared doc of the patterns we use. After three weeks he took a medium ticket alone, and by the second month he was reviewing simple PRs. I learned that a real ticket teaches faster than tutorials, and that stepping back on purpose matters as much as helping."
+</details>
+
+### 8. Disagreement with a manager or architect
+
+Also asked as: *"A time you pushed back"*, *"Disagree and commit"*. They are testing whether you can challenge respectfully with data, and commit once a decision is made.
+
+```text
+S/T: [Manager/architect] decided [X]; I believed [Y] because [risk].
+A:   I [raised it privately], [brought data / options with trade-offs], [listened to their constraints].
+R:   [Outcome: changed decision OR committed and helped it succeed]. L: [lesson].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"Our architect proposed splitting the order module into three microservices as part of a quarter's roadmap. I thought it was premature: we were five developers, the module shared one database, and our real pain was slow releases, not scaling. I asked for 20 minutes with him and brought data: our deployment frequency, the main sources of release delays, and a rough estimate of the extra work for distributed transactions and separate pipelines. I suggested a modular monolith with clear boundaries first, which kept the option to split later. He agreed to defer the split for order search but kept invoicing as a separate service, because it had different scaling needs I hadn't considered. I committed fully to that and built the integration events for it. I learned to bring data and alternatives, and to accept that the other person often has context I don't."
+</details>
+
+### 9. Production incident you handled
+
+Also asked as: *"Toughest bug"*, *"A time you worked under pressure in production"*. They are testing calm under pressure, debugging method, communication and prevention.
+
+```text
+S/T: [Alert / customer report]: [symptom, impact, time].
+A:   I [triaged impact], [communicated], [mitigated first: rollback / flag / scale], [found root cause via logs/traces], [fixed].
+R:   [Time to restore], [root cause], [prevention: test, alert, runbook].
+```
+
+<details>
+<summary>Sample answer</summary>
+
+"On a Monday morning, an alert fired: the order API's p95 jumped from 300 ms to over 8 seconds and some requests were failing. I was on call. I posted in the incident channel that I was investigating, then checked Application Insights: the slow calls were all order creation, and SQL dependency time had spiked. Nothing had been deployed since Friday, so I looked at Query Store and found that a plan for the pricing lookup had changed to a scan after the weekend statistics update: a parameter-sniffing case triggered by one huge tenant. To mitigate, I forced the previous good plan through Query Store, and latency recovered within about 25 minutes of the alert. The permanent fix was rewriting the query and adding a targeted index, released two days later. I wrote the post-incident review and we added an alert on plan regressions. The lesson for me was to mitigate first and investigate second, and to keep stakeholders updated every 15 minutes."
+</details>
+
+## Do / Don't
+
+| Do | Don't |
+|---|---|
+| Use real stories with real numbers | Invent stories you cannot defend under follow-ups |
+| Spend half the time on your actions | Spend two minutes on background |
+| Say "I" for your actions | Hide in "we" so your contribution is invisible |
+| Pick failures with a genuine lesson | Use "I work too hard" style fake failures |
+| Show respect for the other person in conflict stories | Blame teammates, managers or clients |
+| End with the result and the learning | Stop at the action and leave the result implied |
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+- **No preparation.** Searching your memory live produces rambling stories. Write them down and rehearse aloud.
+- **One story for everything.** Have at least 6 different stories; interviewers notice repeats across rounds.
+- **Hypothetical answers.** "I would talk to them..." does not answer "tell me about a time". Give a real past example.
+- **Villain stories.** If the other person is an idiot in your story, you look bad, not them.
+- **No result.** Always close the loop, even if the result was mixed. Then add what you learned.
+- **Too old or too trivial.** Prefer stories from the last 2 years with real stakes.
+- **Confidential details.** Anonymise clients and do not share internal numbers you should not.
+</Aside>
+
+## Follow-up questions to expect
+
+<details>
+<summary>"What would you do differently?"</summary>
+
+Asked after almost every story. Always have one honest improvement ready, even for success stories: earlier communication, a test you would add, involving someone sooner.
+</details>
+
+<details>
+<summary>"What did your manager / the other person say?"</summary>
+
+They are checking the story is real and how others perceived you. Quote the reaction briefly and fairly, including if they disagreed.
+</details>
+
+<details>
+<summary>"What if they had not agreed with you?"</summary>
+
+Show you can disagree and commit: you would escalate only if the risk was serious (security, data loss, customer impact), document the concern, and otherwise support the decision fully.
+</details>
+
+<details>
+<summary>"Can you give me another example?"</summary>
+
+This is why you need a story bank. Use a different story from the table, ideally from a different project or company.
+</details>
+
+<details>
+<summary>"How did you measure that?"</summary>
+
+Name the source: Application Insights, Query Store, Jira cycle time, support ticket counts. If it is an estimate, say so: honest approximations beat precise-sounding inventions.
+</details>
+
+## Related
+
+- [Tell me about yourself](../tell-me-about-yourself/)
+- [Project walkthrough](../project-walkthrough/)
+- [Common HR questions](../hr-questions/)
+- [Observability in production](../../testing-devops/observability/)

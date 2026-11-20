@@ -1,0 +1,1006 @@
+{
+  "section": "fundamentals",
+  "version": 1,
+  "questions": [
+    {
+      "id": "fundamentals-oop-concepts-001",
+      "topic": "oop-concepts",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which OOP pillar is best described as \"keep the object's state private and expose methods that only allow valid changes\"?",
+      "options": ["Inheritance", "Polymorphism", "Encapsulation", "Abstraction"],
+      "answer": [2],
+      "explanation": "Encapsulation bundles data with the methods that change it and hides the internals, so invariants are enforced in one place. Abstraction is about which contract to expose, not about protecting state.",
+      "optionNotes": [
+        "Inheritance is about reusing and extending a base type.",
+        "Polymorphism is about one interface with many implementations.",
+        null,
+        "Abstraction designs the simplified contract; encapsulation protects the state behind it."
+      ],
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+    {
+      "id": "fundamentals-oop-concepts-002",
+      "topic": "oop-concepts",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "When is the target of an overloaded method call chosen?",
+      "options": [
+        "At compile time, from the argument types",
+        "At run time, from the actual object type",
+        "When the class is first loaded by the runtime",
+        "Randomly among matching overloads"
+      ],
+      "answer": [0],
+      "explanation": "Overloading is compile-time (static) polymorphism: the compiler picks the overload from the static types of the arguments. Overriding is the run-time kind, resolved by virtual dispatch on the actual object.",
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+    {
+      "id": "fundamentals-oop-concepts-003",
+      "topic": "oop-concepts",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "An `Order` owns its `OrderLine` objects, and the lines are deleted whenever the order is deleted. Which relationship is this?",
+      "options": ["Association", "Aggregation", "Inheritance", "Composition"],
+      "answer": [3],
+      "explanation": "Composition is a whole/part relationship where the whole owns the parts' lifetime. In aggregation the parts can outlive the whole; in association there is no ownership at all.",
+      "optionNotes": [
+        "Association has independent lifetimes.",
+        "Aggregation parts can exist without the whole.",
+        "An order line is not a kind of order.",
+        null
+      ],
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+    {
+      "id": "fundamentals-oop-concepts-004",
+      "topic": "oop-concepts",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this code print?",
+      "code": "class Base\n{\n    public virtual string Who() => \"Base\";\n    public string Name() => \"Base\";\n}\nclass Derived : Base\n{\n    public override string Who() => \"Derived\";\n    public new string Name() => \"Derived\";\n}\n\nBase b = new Derived();\nConsole.WriteLine($\"{b.Who()} {b.Name()}\");",
+      "codeLang": "csharp",
+      "options": ["Derived Derived", "Derived Base", "Base Base", "Base Derived"],
+      "answer": [1],
+      "explanation": "`Who` is virtual and overridden, so the call is dispatched on the actual object type (`Derived`). `Name` is hidden with `new`, which is not polymorphic: the call is bound at compile time to the variable's static type (`Base`).",
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+    {
+      "id": "fundamentals-oop-concepts-005",
+      "topic": "oop-concepts",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which pair of C# method declarations in the same class is a valid overload?",
+      "options": [
+        "`int Sum(int a, int b)` and `int Sum(int a, int b, int c)`",
+        "`int Sum(int a, int b)` and `long Sum(int a, int b)`",
+        "`int Sum(int a, int b)` and `int Sum(int x, int y)`",
+        "`int Sum(int a, int b)` and `void Sum(int a, int b)`"
+      ],
+      "answer": [0],
+      "explanation": "Overloads must differ in their parameter lists (number, types or ref kinds). Return type and parameter names are not part of the signature used to distinguish overloads.",
+      "optionNotes": [
+        null,
+        "Differing only by return type is a compile error.",
+        "Parameter names do not change the signature.",
+        "Differing only by return type is a compile error."
+      ],
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+    {
+      "id": "fundamentals-oop-concepts-006",
+      "topic": "oop-concepts",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these indicate **low coupling**? (Select all that apply)",
+      "options": [
+        "A service receives an `IOrderRepository` through its constructor",
+        "A service creates `new SqlOrderRepository()` inside each method",
+        "Modules talk to each other through a small, well-defined interface",
+        "Renaming a private field in one class forces edits in many other classes"
+      ],
+      "answer": [0, 2],
+      "explanation": "Low coupling means a module depends on few things, and on abstractions, so changes do not ripple. Constructor-injected interfaces and narrow contracts achieve that; newing up concrete classes and leaking internals do the opposite.",
+      "optionNotes": [
+        null,
+        "Hard-wires a concrete dependency, which is tight coupling.",
+        null,
+        "Changes rippling across classes is the symptom of tight coupling."
+      ],
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+    {
+      "id": "fundamentals-oop-concepts-007",
+      "topic": "oop-concepts",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You have `EmailNotifier` and `SmsNotifier`, and each may need retry, logging or both, in any combination. Which design scales best?",
+      "options": [
+        "A subclass for every combination, e.g. `LoggedRetryingEmailNotifier`",
+        "One notifier class with boolean flags for every feature",
+        "Static helper methods called from each notifier",
+        "Decorators that implement `INotifier` and wrap another `INotifier`"
+      ],
+      "answer": [3],
+      "explanation": "This is composition over inheritance: small decorators can be stacked in any order and combination without a class explosion. ASP.NET Core DI (and libraries like Scrutor) make registering decorators straightforward.",
+      "optionNotes": [
+        "Leads to a combinatorial explosion of subclasses.",
+        "Grows into a god class with branching on flags.",
+        "Every notifier must remember to call the helpers; nothing is composable.",
+        null
+      ],
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+    {
+      "id": "fundamentals-oop-concepts-008",
+      "topic": "oop-concepts",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does this print? (It illustrates the fragile base class problem.)",
+      "code": "class Counter\n{\n    protected int count;\n    public virtual void Add() => count++;\n    public virtual void AddMany(int n) { for (var i = 0; i < n; i++) Add(); }\n}\nclass AuditedCounter : Counter\n{\n    public int Calls;\n    public override void Add() { Calls++; base.Add(); }\n    public override void AddMany(int n) { Calls += n; base.AddMany(n); }\n}\n\nvar c = new AuditedCounter();\nc.AddMany(3);\nConsole.WriteLine(c.Calls);",
+      "codeLang": "csharp",
+      "options": ["3", "6", "0", "9"],
+      "answer": [1],
+      "explanation": "`AddMany` adds 3, then `base.AddMany` calls `Add()` three times, and because `Add` is virtual each call runs the override, adding 3 more. The subclass silently depends on how the base implements `AddMany`; composition avoids this coupling.",
+      "readMore": "/fundamentals/oop-concepts/"
+    },
+
+    {
+      "id": "fundamentals-operating-systems-001",
+      "topic": "operating-systems",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What do threads of the same process share?",
+      "options": [
+        "Their call stacks",
+        "The heap and global/static data",
+        "Their CPU registers",
+        "Their program counters"
+      ],
+      "answer": [1],
+      "explanation": "Threads share the process's address space, so heap objects and static data are visible to all of them. Each thread has its own stack, registers and program counter, which is why shared heap data needs synchronisation.",
+      "readMore": "/fundamentals/operating-systems/"
+    },
+    {
+      "id": "fundamentals-operating-systems-002",
+      "topic": "operating-systems",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which of these is **not** one of the four Coffman conditions for deadlock?",
+      "options": ["Mutual exclusion", "Hold and wait", "Starvation", "Circular wait"],
+      "answer": [2],
+      "explanation": "The four conditions are mutual exclusion, hold and wait, no preemption and circular wait. Starvation is a different problem: a thread never gets a resource although the system as a whole keeps making progress.",
+      "readMore": "/fundamentals/operating-systems/"
+    },
+    {
+      "id": "fundamentals-operating-systems-003",
+      "topic": "operating-systems",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A Node.js server handles thousands of in-flight requests while running JavaScript on a single thread. This is an example of:",
+      "options": ["Parallelism", "Multiprocessing", "Neither concurrency nor parallelism", "Concurrency without parallelism"],
+      "answer": [3],
+      "explanation": "Concurrency means making progress on many tasks by interleaving them, which works on one thread with non-blocking I/O. Parallelism needs tasks executing at the same instant on multiple cores.",
+      "readMore": "/fundamentals/operating-systems/"
+    },
+    {
+      "id": "fundamentals-operating-systems-004",
+      "topic": "operating-systems",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`Transfer()` locks account A then account B. `Refund()` locks B then A. Under load the app occasionally hangs. What is the best fix?",
+      "options": [
+        "Always acquire the locks in one global order, e.g. by account id",
+        "Increase the thread-pool minimum thread count",
+        "Mark the balance fields as `volatile`",
+        "Add `Thread.Sleep(10)` between acquiring the two locks"
+      ],
+      "answer": [0],
+      "explanation": "Opposite lock orders create a circular wait, one of the four deadlock conditions. A consistent lock order makes a cycle impossible. More threads, volatile or sleeps do not remove the cycle.",
+      "optionNotes": [
+        null,
+        "Deadlocked threads stay deadlocked no matter how many others exist.",
+        "Volatile affects visibility, not lock ordering.",
+        "Only changes the timing; the deadlock can still occur."
+      ],
+      "readMore": "/fundamentals/operating-systems/"
+    },
+    {
+      "id": "fundamentals-operating-systems-005",
+      "topic": "operating-systems",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about mutexes and semaphores are true? (Select all that apply)",
+      "options": [
+        "A semaphore can allow up to N holders at the same time",
+        "A mutex has an owner; only the acquiring thread should release it",
+        "A semaphore can only be released by the thread that acquired it",
+        "`SemaphoreSlim` can be awaited asynchronously with `WaitAsync`"
+      ],
+      "answer": [0, 1, 3],
+      "explanation": "A semaphore is a counter with no ownership, so any thread may release it, and it can admit N holders. A mutex is owned by the thread that acquired it. `SemaphoreSlim.WaitAsync` is the usual async-compatible lock in .NET.",
+      "optionNotes": [null, null, "Semaphores have no owner; any thread can signal them.", null],
+      "readMore": "/fundamentals/operating-systems/"
+    },
+    {
+      "id": "fundamentals-operating-systems-006",
+      "topic": "operating-systems",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens if a Round Robin scheduler uses a very small time quantum?",
+      "options": [
+        "It behaves like First Come First Served",
+        "Short jobs starve behind long ones",
+        "Context-switch overhead consumes a large share of CPU time",
+        "Threads deadlock more often"
+      ],
+      "answer": [2],
+      "explanation": "Every quantum expiry triggers a context switch. If the quantum is tiny, the CPU spends a large fraction of its time switching instead of doing work. A very large quantum is what makes Round Robin degenerate into FCFS.",
+      "readMore": "/fundamentals/operating-systems/"
+    },
+    {
+      "id": "fundamentals-operating-systems-007",
+      "topic": "operating-systems",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why is a context switch between two threads of the same process usually cheaper than a switch between two processes?",
+      "options": [
+        "Thread switches do not need to save any registers",
+        "The address space stays the same, so page tables are not swapped and TLB/cache contents stay useful",
+        "Threads are scheduled by the application, not the OS",
+        "Threads always run on the same CPU core"
+      ],
+      "answer": [1],
+      "explanation": "Both kinds of switch save and restore registers. A process switch additionally changes the virtual address space, which invalidates much of the TLB and leaves caches cold. Threads of one process share the address space, so that cost is avoided.",
+      "readMore": "/fundamentals/operating-systems/"
+    },
+    {
+      "id": "fundamentals-operating-systems-008",
+      "topic": "operating-systems",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A server shows a very high page-fault rate, the disk is constantly busy, yet CPU utilisation is low. What is the most likely cause?",
+      "options": [
+        "A deadlock between two CPU-bound threads",
+        "The thread pool has too few threads",
+        "The TLB has been disabled by the OS",
+        "Thrashing: the combined working sets do not fit in physical RAM"
+      ],
+      "answer": [3],
+      "explanation": "When processes need more pages than RAM can hold, the OS keeps evicting pages that are needed again almost immediately. The system spends its time paging to and from disk, so the CPU sits idle waiting. Fix by reducing memory use, running fewer processes or adding RAM.",
+      "readMore": "/fundamentals/operating-systems/"
+    },
+
+    {
+      "id": "fundamentals-networking-001",
+      "topic": "networking",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "At which OSI layer does IP (and routing between networks) operate?",
+      "options": ["Layer 4: Transport", "Layer 3: Network", "Layer 2: Data link", "Layer 7: Application"],
+      "answer": [1],
+      "explanation": "IP addresses and routers belong to the network layer (3). TCP and UDP are layer 4, Ethernet and switches are layer 2, and HTTP is layer 7.",
+      "readMore": "/fundamentals/networking/"
+    },
+    {
+      "id": "fundamentals-networking-002",
+      "topic": "networking",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which transport and port does DNS mainly use for ordinary lookups?",
+      "options": ["Mainly UDP on port 53", "Only TCP on port 53", "UDP on port 443", "TCP on port 80"],
+      "answer": [0],
+      "explanation": "Standard DNS queries go over UDP port 53. TCP port 53 is used for large responses and zone transfers. DNS over HTTPS uses 443, but that is a separate, newer transport.",
+      "readMore": "/fundamentals/networking/"
+    },
+    {
+      "id": "fundamentals-networking-003",
+      "topic": "networking",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the correct order of the TCP three-way handshake?",
+      "options": ["SYN, ACK, SYN-ACK", "ACK, SYN, SYN-ACK", "SYN, SYN-ACK, ACK", "SYN, SYN, ACK"],
+      "answer": [2],
+      "explanation": "The client sends SYN with its initial sequence number, the server answers SYN-ACK acknowledging it and sending its own, and the client confirms with ACK. Data can flow after one round trip.",
+      "readMore": "/fundamentals/networking/"
+    },
+    {
+      "id": "fundamentals-networking-004",
+      "topic": "networking",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which workload is the best fit for plain UDP rather than TCP?",
+      "options": [
+        "A bank transfer API",
+        "Downloading a large installer",
+        "Queries from an API to SQL Server",
+        "A live video call"
+      ],
+      "answer": [3],
+      "explanation": "Live media prefers low latency over perfect delivery: a late packet is useless, so retransmission and in-order delivery only add delay. Transfers, downloads and database protocols need every byte in order, which TCP provides.",
+      "readMore": "/fundamentals/networking/"
+    },
+    {
+      "id": "fundamentals-networking-005",
+      "topic": "networking",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You need `/api/*` routed to an ASP.NET Core pool and everything else to an Angular static site, with TLS terminated in front. What do you need?",
+      "options": [
+        "A layer 4 load balancer",
+        "A NAT gateway",
+        "A layer 7 load balancer or reverse proxy",
+        "A forward proxy on each client"
+      ],
+      "answer": [2],
+      "explanation": "Path-based routing and TLS termination require reading HTTP, which is layer 7 (Azure Application Gateway or Front Door; AWS: ALB). A layer 4 balancer only sees IPs and ports.",
+      "optionNotes": [
+        "L4 cannot see the URL path.",
+        "NAT translates addresses for outbound traffic; it does not route by path.",
+        null,
+        "A forward proxy represents clients, not your servers."
+      ],
+      "readMore": "/fundamentals/networking/"
+    },
+    {
+      "id": "fundamentals-networking-006",
+      "topic": "networking",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Behind a reverse proxy, your ASP.NET Core app logs every client IP as `10.0.0.4` and believes all requests are `http`. What is the fix?",
+      "options": [
+        "Disable HTTPS redirection in the app",
+        "Enable the forwarded headers middleware for `X-Forwarded-For` and `X-Forwarded-Proto`",
+        "Switch the proxy to forward traffic over UDP",
+        "Lower the DNS TTL of the domain"
+      ],
+      "answer": [1],
+      "explanation": "The proxy opens its own connection to the app, so the app sees the proxy's IP and scheme. The proxy passes the original values in forwarded headers, and `UseForwardedHeaders()` (with trusted proxies configured) applies them to the request.",
+      "readMore": "/fundamentals/networking/"
+    },
+    {
+      "id": "fundamentals-networking-007",
+      "topic": "networking",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about DNS resolution are true? (Select all that apply)",
+      "options": [
+        "Root servers return the final IP address for every domain",
+        "Answers are cached according to the record's TTL",
+        "A CNAME record maps a name directly to an IPv4 address",
+        "A recursive resolver walks the root, TLD and authoritative servers"
+      ],
+      "answer": [1, 3],
+      "explanation": "The recursive resolver queries root, then TLD, then authoritative servers, and caches the result for the TTL. Root servers only refer to TLD servers. A CNAME is an alias to another name; A and AAAA records hold addresses.",
+      "optionNotes": [
+        "Root servers only point to the TLD servers.",
+        null,
+        "That is an A record; CNAME points to another name.",
+        null
+      ],
+      "readMore": "/fundamentals/networking/"
+    },
+    {
+      "id": "fundamentals-networking-008",
+      "topic": "networking",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An app does `using var client = new HttpClient();` for every outgoing request. Under load it starts failing with socket errors. Why?",
+      "options": [
+        "HttpClient is not thread-safe, so concurrent use corrupts it",
+        "The DNS cache fills up and lookups fail",
+        "Each disposal closes a connection that lingers in TIME_WAIT, exhausting ephemeral ports",
+        "TCP limits a process to 100 concurrent connections"
+      ],
+      "answer": [2],
+      "explanation": "Each new client opens a new TCP connection. The side that closes first keeps the socket in TIME_WAIT for a while, so under load the available ephemeral ports run out. Reuse a long-lived `HttpClient` or use `IHttpClientFactory`.",
+      "optionNotes": [
+        "HttpClient instance methods like SendAsync are safe for concurrent use.",
+        "DNS caching is not the cause here.",
+        null,
+        "There is no such fixed TCP limit."
+      ],
+      "readMore": "/fundamentals/networking/"
+    },
+
+    {
+      "id": "fundamentals-http-https-001",
+      "topic": "http-https",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A user is logged in with a valid token but lacks the required role. Which status code should the API return?",
+      "options": ["400 Bad Request", "401 Unauthorized", "403 Forbidden", "404 Not Found"],
+      "answer": [2],
+      "explanation": "403 means the server knows who the caller is but they are not allowed. 401 means not authenticated (missing or invalid credentials). Some APIs return 404 to hide a resource's existence, but 403 is the standard answer.",
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-002",
+      "topic": "http-https",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does HTTP/3 run on?",
+      "options": ["TCP with TLS 1.2", "WebSockets", "SCTP", "QUIC over UDP"],
+      "answer": [3],
+      "explanation": "HTTP/3 uses QUIC, a transport built on UDP that includes TLS 1.3 and gives each stream independent delivery, removing TCP head-of-line blocking.",
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-003",
+      "topic": "http-https",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which cookie attribute prevents JavaScript from reading the cookie via `document.cookie`?",
+      "options": ["Secure", "HttpOnly", "SameSite", "Domain"],
+      "answer": [1],
+      "explanation": "`HttpOnly` hides the cookie from scripts, limiting token theft through XSS. `Secure` restricts it to HTTPS, and `SameSite` controls whether it is sent on cross-site requests.",
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-004",
+      "topic": "http-https",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which HTTP methods are idempotent by definition? (Select all that apply)",
+      "options": ["GET", "POST", "PUT", "DELETE"],
+      "answer": [0, 2, 3],
+      "explanation": "Repeating GET, PUT or DELETE leaves the server in the same state as sending it once (responses may differ, e.g. 404 on a second DELETE). POST is not idempotent, so retrying it safely needs an idempotency key.",
+      "optionNotes": [null, "Repeating a POST can create duplicates.", null, null],
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-005",
+      "topic": "http-https",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular page must show live order-status updates. Only the server sends data, and it should reconnect automatically after a network blip. What is the simplest fit?",
+      "options": [
+        "Server-Sent Events",
+        "WebSockets",
+        "Short polling every 100 ms",
+        "gRPC called directly from the browser"
+      ],
+      "answer": [0],
+      "explanation": "SSE is one-way server-to-client over plain HTTP, and the browser's `EventSource` reconnects automatically. WebSockets work too but are bidirectional and need manual reconnect logic. Aggressive polling wastes requests, and browsers cannot call native gRPC without gRPC-Web.",
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-006",
+      "topic": "http-https",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "For a brand-new HTTPS connection using HTTP/2 over TCP with TLS 1.3 (DNS already resolved), how many round trips pass before the client can send its first HTTP request?",
+      "options": ["1", "2", "3", "4"],
+      "answer": [1],
+      "explanation": "One round trip for the TCP handshake (SYN, SYN-ACK), then one for TLS 1.3 (ClientHello, then ServerHello through server Finished). The request goes out with the client's Finished. TLS 1.2 would add another round trip; HTTP/3 over QUIC combines the transport and TLS handshakes into one.",
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-007",
+      "topic": "http-https",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The browser sends `If-None-Match: \"a1b2\"` and the resource's current ETag is still `\"a1b2\"`. What should the server return?",
+      "options": [
+        "200 OK with the full body",
+        "204 No Content",
+        "412 Precondition Failed",
+        "304 Not Modified with no body"
+      ],
+      "answer": [3],
+      "explanation": "A matching ETag on a conditional GET means the cached copy is still valid, so the server returns 304 without a body and the browser reuses its cache. 412 is for failed preconditions on writes such as `If-Match` on a PUT.",
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-008",
+      "topic": "http-https",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why can HTTP/2 still suffer head-of-line blocking on a lossy mobile network?",
+      "options": [
+        "It still sends one request at a time per connection",
+        "Its text-based framing must be parsed in order",
+        "All streams share one TCP connection that delivers bytes strictly in order",
+        "Browsers disable multiplexing when packet loss is detected"
+      ],
+      "answer": [2],
+      "explanation": "HTTP/2 multiplexes streams at the HTTP layer, but TCP underneath guarantees in-order bytes, so one lost segment stalls every stream until it is retransmitted. QUIC (HTTP/3) delivers each stream independently.",
+      "optionNotes": [
+        "That describes HTTP/1.1; HTTP/2 multiplexes.",
+        "HTTP/2 uses binary framing.",
+        null,
+        "No such behaviour exists."
+      ],
+      "readMore": "/fundamentals/http-https/"
+    },
+    {
+      "id": "fundamentals-http-https-009",
+      "topic": "http-https",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "TLS 1.3 allows 0-RTT \"early data\" on resumed connections. What is the main risk, and the usual mitigation?",
+      "options": [
+        "Early data is sent unencrypted; disable it on public Wi-Fi",
+        "Early data can be replayed by an attacker; only allow idempotent requests in it",
+        "The server certificate is skipped; pin certificates in the client",
+        "It forces a downgrade to TLS 1.2; set a minimum TLS version"
+      ],
+      "answer": [1],
+      "explanation": "0-RTT data is encrypted with keys from a previous session, but the handshake cannot prove it is not a replay, so an attacker could resend it. Servers therefore accept only safe, idempotent requests (such as GET) as early data, or disable it.",
+      "readMore": "/fundamentals/http-https/"
+    },
+
+    {
+      "id": "fundamentals-dbms-theory-001",
+      "topic": "dbms-theory",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which ACID property guarantees that a committed transaction survives a server crash?",
+      "options": ["Atomicity", "Consistency", "Isolation", "Durability"],
+      "answer": [3],
+      "explanation": "Durability is usually provided by write-ahead logging: commit returns only after the log record is flushed to stable storage, and recovery replays it after a crash.",
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+    {
+      "id": "fundamentals-dbms-theory-002",
+      "topic": "dbms-theory",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A table stores `EmployeeId, ZipCode, City`, where City is determined by ZipCode. Which normal form does this violate?",
+      "options": ["1NF", "3NF", "2NF", "None, it is fully normalized"],
+      "answer": [1],
+      "explanation": "`City` depends on `ZipCode`, a non-key column, which depends on the key: a transitive dependency. Third normal form removes it by moving ZipCode and City to their own table.",
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+    {
+      "id": "fundamentals-dbms-theory-003",
+      "topic": "dbms-theory",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does BASE stand for in the ACID vs BASE comparison?",
+      "options": [
+        "Basically Available, Soft state, Eventual consistency",
+        "Balanced, Atomic, Serializable, Encrypted",
+        "Batch Access, Strong consistency, Elastic scale",
+        "Basic Availability, Sharded storage, Event sourcing"
+      ],
+      "answer": [0],
+      "explanation": "BASE systems favour availability and scale: they stay basically available, their state may change without new input as replicas sync, and replicas become consistent eventually.",
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+    {
+      "id": "fundamentals-dbms-theory-004",
+      "topic": "dbms-theory",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does a B+ tree index handle `WHERE OrderDate BETWEEN @from AND @to` efficiently?",
+      "options": [
+        "It hashes the date to find all rows in O(1)",
+        "It stores every row in the root page",
+        "It seeks to the first key, then walks the linked, sorted leaf pages",
+        "It caches the whole table in memory"
+      ],
+      "answer": [2],
+      "explanation": "A B+ tree keeps keys sorted and links the leaf pages together. The engine seeks down the tree to the start of the range in O(log n) and then reads leaves sequentially until the end of the range. A hash index cannot do ranges.",
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+    {
+      "id": "fundamentals-dbms-theory-005",
+      "topic": "dbms-theory",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "T1 reads a row. T2 updates that row and commits. T1 reads the same row again and sees a different value. Which anomaly is this?",
+      "options": ["Dirty read", "Non-repeatable read", "Phantom read", "Lost update"],
+      "answer": [1],
+      "explanation": "The same row returned different committed values within one transaction. A dirty read involves uncommitted data, and a phantom involves new rows appearing in a range. Repeatable Read or higher prevents it.",
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+    {
+      "id": "fundamentals-dbms-theory-006",
+      "topic": "dbms-theory",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about clustered indexes in SQL Server are true? (Select all that apply)",
+      "options": [
+        "The leaf level of the clustered index contains the data rows",
+        "A table can have several clustered indexes",
+        "Non-clustered index leaves locate rows through the clustering key",
+        "A clustered index makes inserts and updates free"
+      ],
+      "answer": [0, 2],
+      "explanation": "The clustered index is the table, sorted by its key, so there can be only one. Non-clustered indexes on a clustered table store the clustering key as the row locator. Every index adds write cost.",
+      "optionNotes": [null, "Only one: the data can be physically ordered one way.", null, "All indexes must be maintained on writes."],
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+    {
+      "id": "fundamentals-dbms-theory-007",
+      "topic": "dbms-theory",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Students can enrol in many courses and each course has many students. Each enrolment also has a grade. How should this be modelled?",
+      "options": [
+        "A `CourseIds` comma-separated column on Student",
+        "A `StudentId` foreign key on Course",
+        "One wide table with columns Course1, Course2, Course3",
+        "An Enrollments junction table with StudentId, CourseId and Grade"
+      ],
+      "answer": [3],
+      "explanation": "Many-to-many relationships need a junction table holding foreign keys to both sides, and it is the natural home for relationship attributes such as grade. The other options break 1NF or allow only one student per course.",
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+    {
+      "id": "fundamentals-dbms-theory-008",
+      "topic": "dbms-theory",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which statement correctly contrasts the \"C\" in ACID with the \"C\" in CAP?",
+      "options": [
+        "They mean the same thing: data is never lost",
+        "ACID-C is about replicas agreeing; CAP-C is about constraints",
+        "ACID-C means constraints hold after each transaction; CAP-C means reads see the latest write on any replica",
+        "CAP-C applies only to single-node databases"
+      ],
+      "answer": [2],
+      "explanation": "ACID consistency is about moving the database between valid states (constraints, foreign keys, invariants). CAP consistency is linearizability across replicas of a distributed store. They are different properties that share a word.",
+      "readMore": "/fundamentals/dbms-theory/"
+    },
+
+    {
+      "id": "fundamentals-compilers-runtimes-001",
+      "topic": "compilers-runtimes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does the C# compiler (Roslyn) produce in a normal build?",
+      "options": [
+        "Native machine code for the current CPU",
+        "JavaScript for the browser",
+        "IL (Intermediate Language) plus metadata in an assembly",
+        "Source code for an interpreter"
+      ],
+      "answer": [2],
+      "explanation": "Roslyn emits IL and metadata into a .dll. At run time the CLR's JIT compiles IL to native code; Native AOT moves that second step to publish time.",
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+    {
+      "id": "fundamentals-compilers-runtimes-002",
+      "topic": "compilers-runtimes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is \"managed code\" in .NET?",
+      "options": [
+        "Code whose memory and type safety are managed by the CLR",
+        "Code reviewed and approved by a manager",
+        "Code that runs only inside IIS",
+        "Code written in C++ with smart pointers"
+      ],
+      "answer": [0],
+      "explanation": "Managed code runs under the CLR, which provides garbage collection, type safety, bounds checks and exception handling. Native C/C++ code is unmanaged, even when it uses smart pointers.",
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+    {
+      "id": "fundamentals-compilers-runtimes-003",
+      "topic": "compilers-runtimes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which memory-management approach cannot reclaim reference cycles on its own?",
+      "options": ["Mark-and-sweep", "Reference counting", "Copying collection", "Generational tracing GC"],
+      "answer": [1],
+      "explanation": "Objects in a cycle keep each other's counts above zero even when nothing else reaches them. Tracing collectors start from roots, so unreachable cycles are never marked and get freed. CPython adds a separate cycle detector for this reason.",
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+    {
+      "id": "fundamentals-compilers-runtimes-004",
+      "topic": "compilers-runtimes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Your ASP.NET Core service runs in containers that scale to zero, and cold-start time matters. What is the main benefit of publishing it with Native AOT?",
+      "options": [
+        "Higher peak throughput thanks to dynamic PGO",
+        "Unrestricted reflection and run-time code generation",
+        "Smaller source code in the repository",
+        "Faster startup and a smaller memory footprint"
+      ],
+      "answer": [3],
+      "explanation": "Native AOT ships precompiled machine code with no JIT, so the process starts quickly and uses less memory. The trade-offs are no run-time re-optimisation and limits on reflection and dynamic code.",
+      "optionNotes": [
+        "Dynamic PGO needs the JIT, which Native AOT does not have.",
+        "Native AOT restricts these features.",
+        "Source code is unchanged.",
+        null
+      ],
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+    {
+      "id": "fundamentals-compilers-runtimes-005",
+      "topic": "compilers-runtimes",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about .NET tiered compilation are true? (Select all that apply)",
+      "options": [
+        "Methods are first compiled quickly with fewer optimisations",
+        "Frequently called methods are recompiled with full optimisations",
+        "IL is interpreted line by line until a method becomes hot",
+        "It only works when publishing with Native AOT"
+      ],
+      "answer": [0, 1],
+      "explanation": "Tier 0 JIT gives fast startup; hot methods are re-JITed at Tier 1, using dynamic PGO data in .NET 8+. The CLR does not interpret IL, and Native AOT has no JIT at all.",
+      "optionNotes": [null, null, "Tier 0 is JIT-compiled native code, not interpretation.", "Native AOT has no JIT, so there are no tiers."],
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+    {
+      "id": "fundamentals-compilers-runtimes-006",
+      "topic": "compilers-runtimes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does this TypeScript fail to compile when `OrderDto` is declared as an `interface`?",
+      "code": "if (value instanceof OrderDto) {\n  console.log(value.id);\n}",
+      "codeLang": "ts",
+      "options": [
+        "`instanceof` only works with primitive types",
+        "Angular forbids `instanceof` in components",
+        "It requires `strict` mode to be turned off",
+        "Interfaces are erased at compile time, so nothing exists at run time to check"
+      ],
+      "answer": [3],
+      "explanation": "TypeScript types are erased when compiled to JavaScript, so an interface has no run-time value for `instanceof`. Use a type guard that checks properties, a class, or schema validation instead.",
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+    {
+      "id": "fundamentals-compilers-runtimes-007",
+      "topic": "compilers-runtimes",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A hot JavaScript function slows down after it starts receiving objects of many different shapes. What is the most likely reason in V8?",
+      "options": [
+        "The garbage collector stops running for that function",
+        "Its optimised code assumed specific object shapes; new shapes cause deoptimisation and slower generic paths",
+        "V8 switches the function to a separate thread",
+        "The function is recompiled to TypeScript"
+      ],
+      "answer": [1],
+      "explanation": "Optimising tiers specialise code for the hidden classes seen so far. When unexpected shapes arrive, the engine deoptimises back to bytecode, and call sites that see many shapes stay on slower generic lookups.",
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+    {
+      "id": "fundamentals-compilers-runtimes-008",
+      "topic": "compilers-runtimes",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why are gen 0 collections in .NET usually cheap?",
+      "options": [
+        "Most objects in gen 0 are already dead, so there is little live data to mark and move",
+        "Gen 0 objects are stored on the thread's stack",
+        "Gen 0 uses reference counting instead of tracing",
+        "Gen 0 is never compacted, so no objects move"
+      ],
+      "answer": [0],
+      "explanation": "The generational hypothesis says most objects die young. A tracing collection's cost depends mostly on live objects, so collecting a young generation full of garbage is fast. Survivors are promoted to gen 1 and gen 2, which are collected less often.",
+      "readMore": "/fundamentals/compilers-runtimes/"
+    },
+
+    {
+      "id": "fundamentals-git-001",
+      "topic": "git",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A bad commit is already pushed to the shared `main` branch. What is the safe way to undo it?",
+      "options": [
+        "`git reset --hard HEAD~1` then `git push --force`",
+        "`git revert <sha>` and push the new commit",
+        "`git checkout <sha>` and push",
+        "`git stash` the commit"
+      ],
+      "answer": [1],
+      "explanation": "`git revert` adds a new commit that reverses the change, so shared history is preserved and teammates are not affected. Reset plus force-push rewrites history that others have already pulled.",
+      "readMore": "/fundamentals/git/"
+    },
+    {
+      "id": "fundamentals-git-002",
+      "topic": "git",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `git stash` do?",
+      "options": [
+        "Deletes all uncommitted changes permanently",
+        "Commits the changes to a hidden branch on the remote",
+        "Squashes the last few commits",
+        "Saves uncommitted changes aside and cleans the working tree"
+      ],
+      "answer": [3],
+      "explanation": "Stash shelves your working-tree and staged changes so you can switch context, then `git stash pop` or `apply` brings them back. Add `-u` to include untracked files. Stashes are local, not pushed.",
+      "readMore": "/fundamentals/git/"
+    },
+    {
+      "id": "fundamentals-git-003",
+      "topic": "git",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which command performs a binary search through history to find the commit that introduced a bug?",
+      "options": ["git bisect", "git blame", "git log --grep", "git reflog"],
+      "answer": [0],
+      "explanation": "`git bisect` checks out midpoints between a known good and a known bad commit until it isolates the first bad one, in about log2(n) steps. `git blame` shows who last changed each line, which is useful but not a search.",
+      "readMore": "/fundamentals/git/"
+    },
+    {
+      "id": "fundamentals-git-004",
+      "topic": "git",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the effect of `git reset --soft HEAD~1`?",
+      "options": [
+        "Deletes the last commit and all of its changes",
+        "Creates a new commit that undoes the last one",
+        "Removes the last commit but keeps its changes staged",
+        "Unstages all files without touching commits"
+      ],
+      "answer": [2],
+      "explanation": "`--soft` only moves the branch pointer, leaving the index and working tree as they were, so the changes are staged and ready to recommit. `--mixed` would leave them unstaged and `--hard` would discard them.",
+      "readMore": "/fundamentals/git/"
+    },
+    {
+      "id": "fundamentals-git-005",
+      "topic": "git",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You rebased a feature branch that a teammate had already pulled, then force-pushed. What happens when the teammate next pulls?",
+      "options": [
+        "Nothing; rebase keeps the same commit SHAs",
+        "Their branch has the old commits, so histories diverge and duplicate commits can appear",
+        "Git automatically rebases their local work",
+        "The remote rejects their pull permanently"
+      ],
+      "answer": [1],
+      "explanation": "Rebase creates new commits with new SHAs. The teammate's copy still contains the originals, so a normal pull merges both versions together, producing duplicates and confusing conflicts. That is why you never rebase shared commits.",
+      "readMore": "/fundamentals/git/"
+    },
+    {
+      "id": "fundamentals-git-006",
+      "topic": "git",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which operations rewrite existing commits rather than only adding new ones? (Select all that apply)",
+      "options": ["git rebase", "git revert", "git commit --amend", "git merge"],
+      "answer": [0, 2],
+      "explanation": "Rebase replays commits as new ones, and `--amend` replaces the last commit with a new one. Revert and merge only add commits on top of the existing history, which is why they are safe on shared branches.",
+      "optionNotes": [null, "Revert adds a new commit.", null, "Merge adds a merge commit or fast-forwards."],
+      "readMore": "/fundamentals/git/"
+    },
+    {
+      "id": "fundamentals-git-007",
+      "topic": "git",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A hotfix commit on `main` must also go to `release/2.3`, but none of the other new commits on `main` should. What do you use?",
+      "options": [
+        "Merge `main` into `release/2.3`",
+        "Rebase `release/2.3` onto `main`",
+        "`git stash` on main and pop on the release branch",
+        "`git cherry-pick <sha>` on the release branch"
+      ],
+      "answer": [3],
+      "explanation": "Cherry-pick applies just that commit's changes to the current branch as a new commit. Merging or rebasing would bring in everything else on `main` too.",
+      "readMore": "/fundamentals/git/"
+    },
+    {
+      "id": "fundamentals-git-008",
+      "topic": "git",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You ran `git reset --hard HEAD~3` on a local branch and realised you needed those three commits. They were never pushed. How do you get them back?",
+      "options": [
+        "You cannot; `--hard` deletes commits immediately",
+        "Find the previous HEAD in `git reflog` and reset or branch to it",
+        "Run `git revert HEAD~3`",
+        "Run `git stash pop`"
+      ],
+      "answer": [1],
+      "explanation": "Reset only moves the branch pointer; the commits still exist until garbage collection prunes unreachable objects. `git reflog` records where HEAD has been, so `git reset --hard HEAD@{1}` (or `git branch rescue <sha>`) restores them. Uncommitted changes discarded by `--hard` are a different story.",
+      "readMore": "/fundamentals/git/"
+    },
+
+    {
+      "id": "fundamentals-agile-practices-001",
+      "topic": "agile-practices",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the timebox of the Daily Scrum?",
+      "options": ["5 minutes", "15 minutes", "30 minutes", "1 hour"],
+      "answer": [1],
+      "explanation": "The Daily Scrum is a 15-minute event for the Developers to inspect progress toward the Sprint Goal and adapt the plan for the next day.",
+      "readMore": "/fundamentals/agile-practices/"
+    },
+    {
+      "id": "fundamentals-agile-practices-002",
+      "topic": "agile-practices",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In Scrum, who is accountable for ordering the Product Backlog?",
+      "options": ["The Scrum Master", "The Developers", "The stakeholders", "The Product Owner"],
+      "answer": [3],
+      "explanation": "The Product Owner is accountable for maximising value, which includes ordering and clarifying Product Backlog items. Others can contribute, but the PO decides the order.",
+      "readMore": "/fundamentals/agile-practices/"
+    },
+    {
+      "id": "fundamentals-agile-practices-003",
+      "topic": "agile-practices",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does Kanban explicitly limit to improve flow?",
+      "options": ["Sprint length", "Team size", "Work in progress (WIP)", "Number of stakeholders"],
+      "answer": [2],
+      "explanation": "Kanban sets WIP limits per column so the team finishes work before starting more, which shortens cycle time and exposes bottlenecks. It has no sprints.",
+      "readMore": "/fundamentals/agile-practices/"
+    },
+    {
+      "id": "fundamentals-agile-practices-004",
+      "topic": "agile-practices",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which of these belongs in the team's Definition of Done rather than in one story's acceptance criteria?",
+      "options": [
+        "The CSV export includes order id, date and total",
+        "Code is reviewed, tests pass in CI and it is deployed to the test environment",
+        "Only managers can see the Export button",
+        "The export is limited to 10,000 rows"
+      ],
+      "answer": [1],
+      "explanation": "The DoD is a quality bar that applies to every item. Acceptance criteria are functional conditions for one specific story, like the columns or row limit of this export.",
+      "readMore": "/fundamentals/agile-practices/"
+    },
+    {
+      "id": "fundamentals-agile-practices-005",
+      "topic": "agile-practices",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What do story points measure?",
+      "options": [
+        "Relative effort, complexity and uncertainty compared with other stories",
+        "The exact number of hours a story will take",
+        "The business value of a story",
+        "An individual developer's productivity"
+      ],
+      "answer": [0],
+      "explanation": "Story points are relative sizes. The team calibrates against reference stories, and velocity turns points into a forecast. They are not hours, not value, and should never be used to rate individuals.",
+      "readMore": "/fundamentals/agile-practices/"
+    },
+    {
+      "id": "fundamentals-agile-practices-006",
+      "topic": "agile-practices",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these are events defined in the Scrum Guide (2020)? (Select all that apply)",
+      "options": ["Sprint Planning", "Backlog Refinement", "Sprint Retrospective", "Release Planning"],
+      "answer": [0, 2],
+      "explanation": "The Scrum events are the Sprint, Sprint Planning, Daily Scrum, Sprint Review and Sprint Retrospective. Backlog refinement is an ongoing activity, not an event, and release planning is not part of the current guide.",
+      "optionNotes": [null, "An ongoing activity, not a formal event.", null, "Not in the 2020 Scrum Guide."],
+      "readMore": "/fundamentals/agile-practices/"
+    },
+    {
+      "id": "fundamentals-agile-practices-007",
+      "topic": "agile-practices",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A Kanban team has on average 20 items in progress and finishes 5 items per week. By Little's Law, what is the average cycle time?",
+      "options": ["1 week", "2 weeks", "4 weeks", "100 weeks"],
+      "answer": [2],
+      "explanation": "Little's Law: average cycle time = WIP / throughput = 20 / 5 = 4 weeks. Reducing WIP is the most direct way to shorten it.",
+      "readMore": "/fundamentals/agile-practices/"
+    },
+    {
+      "id": "fundamentals-agile-practices-008",
+      "topic": "agile-practices",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Midway through a sprint the business pivots and the Sprint Goal becomes obsolete. According to the Scrum Guide, who can cancel the sprint?",
+      "options": [
+        "The Scrum Master",
+        "The Developers, by majority vote",
+        "Any senior stakeholder",
+        "Only the Product Owner"
+      ],
+      "answer": [3],
+      "explanation": "A sprint may be cancelled if its goal becomes obsolete, and only the Product Owner has that authority. Cancellation is rare; usually scope is renegotiated within the sprint instead.",
+      "readMore": "/fundamentals/agile-practices/"
+    }
+  ]
+}

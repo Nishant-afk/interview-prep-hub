@@ -1,0 +1,519 @@
+---
+title: C# Coding Round
+description: Nine typical .NET live-coding tasks - LINQ puzzles, string manipulation, yield iterators, IComparer, Lazy singleton, Channel producer-consumer, async retry, generic repository and a TTL cache - with full solutions and talking points.
+sidebar:
+  order: 16
+  badge: { text: Hot, variant: danger }
+importance: high
+difficulty: medium
+estimatedMinutes: 50
+tags: [csharp, live-coding, linq, yield, channels, async, generics]
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import QuizBlock from '~/components/QuizBlock.astro';
+
+## Why it matters in interviews
+
+Service companies and many product teams hiring .NET developers replace (or follow) the DSA round with a **C#-specific live-coding round**: "write a LINQ query for this", "make this thread-safe", "implement a retry". The problems are easy algorithmically. What is graded is **idiomatic modern C#**, handling of nulls, edge cases and concurrency, and how well you explain trade-offs while typing. Every solution below compiles on .NET 10 and was run against tests, including edge cases.
+
+## Core idea
+
+How to approach any task in this round:
+
+1. **Clarify** inputs, nulls, empty collections, thread-safety needs, and whether to optimise for readability or speed.
+2. **Write the signature first**: types, `async` + `CancellationToken` where I/O is involved, nullable annotations.
+3. **Start simple and correct**, then mention the production upgrade (e.g. "in real code I'd use `IMemoryCache` / Polly").
+4. **Talk through complexity** and the one or two edge cases you handled.
+
+| Task type | What they are really checking |
+|---|---|
+| LINQ puzzles | `GroupBy`, `SelectMany`, joins, deferred execution, `Distinct` + ordering |
+| Strings | two pointers, `StringBuilder`, `Span`-awareness, `char` helpers, culture |
+| `yield` / `IEnumerable<T>` | lazy evaluation, iterator state machines, deferred exceptions |
+| `IComparer<T>` | multi-key ordering, null handling, stable vs unstable sort |
+| Singleton / cache / repository | thread-safety, `Lazy<T>`, `ConcurrentDictionary`, generics and constraints |
+| Channels / retry | async correctness, cancellation, back-pressure, exception filters |
+
+## 1. LINQ puzzles
+
+**Task:** given employees, find the second-highest distinct salary, the top earner per department, departments with average salary above a threshold, each employee with their manager's name, the top N words in a text, and duplicate values in an array.
+
+```csharp
+public record Employee(int Id, string Name, string Dept, decimal Salary, int? ManagerId = null);
+
+public static class LinqPuzzles
+{
+    // Second-highest DISTINCT salary, or null if there isn't one.
+    public static decimal? SecondHighestSalary(IEnumerable<Employee> emps) =>
+        emps.Select(e => e.Salary).Distinct().OrderByDescending(s => s)
+            .Skip(1).Cast<decimal?>().FirstOrDefault();
+
+    // Highest-paid employee per department.
+    public static Dictionary<string, string> TopEarnerPerDept(IEnumerable<Employee> emps) =>
+        emps.GroupBy(e => e.Dept)
+            .ToDictionary(g => g.Key, g => g.MaxBy(e => e.Salary)!.Name);
+
+    // Departments with average salary above a threshold, sorted by average desc.
+    public static List<(string Dept, decimal Avg)> RichDepts(IEnumerable<Employee> emps, decimal min) =>
+        emps.GroupBy(e => e.Dept)
+            .Select(g => (Dept: g.Key, Avg: g.Average(e => e.Salary)))
+            .Where(x => x.Avg > min)
+            .OrderByDescending(x => x.Avg)
+            .ToList();
+
+    // Employee name with manager name (self-join; employees without a manager get "-").
+    public static List<string> WithManager(IReadOnlyList<Employee> emps) =>
+        (from e in emps
+         join m in emps on e.ManagerId equals m.Id into mgrs
+         from m in mgrs.DefaultIfEmpty()
+         select $"{e.Name} -> {m?.Name ?? "-"}").ToList();
+
+    // Top N most frequent words, case-insensitive, ties broken alphabetically.
+    public static List<string> TopWords(string text, int n) =>
+        text.Split([' ', ',', '.', '!', '?', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => w.ToLowerInvariant())
+            .CountBy(w => w)                       // .NET 9+: KeyValuePair<word, count>
+            .OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key)
+            .Take(n).Select(kv => kv.Key).ToList();
+
+    // Values that appear more than once.
+    public static int[] Duplicates(int[] nums) =>
+        nums.GroupBy(x => x).Where(g => g.Count() > 1).Select(g => g.Key).ToArray();
+}
+```
+
+**Talking points**
+- `Cast<decimal?>().FirstOrDefault()` returns `null` when there is no second salary. Plain `FirstOrDefault()` on `decimal` would return `0`, which is a wrong answer that looks valid.
+- `MaxBy` (.NET 6+) avoids sorting each group: O(n) instead of O(n log n). `CountBy` and `AggregateBy` (.NET 9+) replace `GroupBy(...).Select(g => g.Count())` without building groups.
+- The manager query is a **left outer join** (`join ... into` + `DefaultIfEmpty`). For a list this small, a `Dictionary<int, Employee>` lookup is equally good and easier to read.
+- Against EF Core these queries become SQL; `MaxBy` and `CountBy` may not translate on older providers, so check the generated SQL.
+
+## 2. String manipulation
+
+**Task:** reverse the words in a sentence, reverse a string, check a palindrome ignoring case and punctuation, count characters, find the first non-repeating character, run-length compress.
+
+```csharp
+public static class StringTasks
+{
+    public static string ReverseWords(string s) =>
+        string.Join(' ', s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Reverse());
+
+    public static string ReverseString(string s)
+    {
+        var chars = s.ToCharArray();
+        for (int i = 0, j = chars.Length - 1; i < j; i++, j--)
+            (chars[i], chars[j]) = (chars[j], chars[i]);
+        return new string(chars);
+    }
+
+    // Ignore case and non-alphanumeric characters; two pointers, O(1) extra space.
+    public static bool IsPalindrome(string s)
+    {
+        int i = 0, j = s.Length - 1;
+        while (i < j)
+        {
+            if (!char.IsLetterOrDigit(s[i])) { i++; continue; }
+            if (!char.IsLetterOrDigit(s[j])) { j--; continue; }
+            if (char.ToLowerInvariant(s[i]) != char.ToLowerInvariant(s[j])) return false;
+            i++; j--;
+        }
+        return true;
+    }
+
+    public static Dictionary<char, int> CharCount(string s)
+    {
+        var counts = new Dictionary<char, int>();
+        foreach (var c in s.Where(char.IsLetter).Select(char.ToLowerInvariant))
+            counts[c] = counts.GetValueOrDefault(c) + 1;
+        return counts;
+    }
+
+    public static char? FirstNonRepeating(string s)
+    {
+        var counts = s.CountBy(c => c).ToDictionary();
+        foreach (var c in s)
+            if (counts[c] == 1) return c;
+        return null;
+    }
+
+    // "aaabcc" -> "a3b1c2"
+    public static string Compress(string s)
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < s.Length;)
+        {
+            int j = i;
+            while (j < s.Length && s[j] == s[i]) j++;
+            sb.Append(s[i]).Append(j - i);
+            i = j;
+        }
+        return sb.ToString();
+    }
+}
+```
+
+**Talking points**
+- Strings are **immutable**: building output with `+=` in a loop is O(n²); use `StringBuilder` or a `char[]`.
+- `Split` with `RemoveEmptyEntries` handles multiple and leading/trailing spaces in `ReverseWords`. An O(1)-extra-space version reverses the whole `char[]`, then each word.
+- `ToLowerInvariant` avoids culture surprises (the Turkish "I" problem). For non-BMP characters (emoji), a `char` is half a surrogate pair; mention `StringInfo` / `Rune` if the interviewer asks about Unicode.
+- `FirstNonRepeating` is two passes, O(n) time, O(k) space for k distinct characters.
+
+## 3. Custom `IEnumerable<T>` with `yield`
+
+**Task:** write an infinite Fibonacci sequence, a custom LINQ-style operator, and a collection class that supports `foreach`.
+
+```csharp
+public static class Sequences
+{
+    public static IEnumerable<long> Fibonacci()
+    {
+        long a = 0, b = 1;
+        while (true)                       // infinite, but lazy: caller decides how many
+        {
+            yield return a;
+            (a, b) = (b, a + b);
+        }
+    }
+
+    public static IEnumerable<T> WhereNot<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(source);   // NOTE: runs lazily, see talking points
+        foreach (var item in source)
+            if (!predicate(item)) yield return item;
+    }
+}
+
+// A hand-written collection implementing IEnumerable<T>.
+public class Countdown(int from) : IEnumerable<int>
+{
+    public IEnumerator<int> GetEnumerator()
+    {
+        for (int i = from; i >= 0; i--) yield return i;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+```
+
+Usage: `Sequences.Fibonacci().Take(8)` gives `0,1,1,2,3,5,8,13`; `new Countdown(3).Sum()` is 6 because every `IEnumerable<int>` gets LINQ for free.
+
+**Talking points**
+- The compiler turns an iterator method into a **state machine** class; nothing runs until the first `MoveNext()`. That is why the infinite loop is safe.
+- **Deferred argument validation:** the null check in `WhereNot` only fires when the result is enumerated. The BCL avoids this by splitting into a non-iterator public method that validates eagerly and a private iterator (or a local function) that yields.
+- Each `foreach` over the result re-runs the iterator. Calling `.Count()` and then `foreach` enumerates twice (the "multiple enumeration" warning).
+- Implementing the non-generic `IEnumerable.GetEnumerator()` explicitly is required because `IEnumerable<T>` inherits it.
+
+## 4. Custom `IComparer<T>`
+
+**Task:** sort employees by department A-Z, then salary high-to-low, then name.
+
+```csharp
+public class EmployeeComparer : IComparer<Employee>
+{
+    // Department A-Z, then salary high-to-low, then name A-Z.
+    public int Compare(Employee? x, Employee? y)
+    {
+        if (ReferenceEquals(x, y)) return 0;
+        if (x is null) return -1;
+        if (y is null) return 1;
+        int byDept = string.Compare(x.Dept, y.Dept, StringComparison.Ordinal);
+        if (byDept != 0) return byDept;
+        int bySalary = y.Salary.CompareTo(x.Salary);     // reversed for descending
+        return bySalary != 0 ? bySalary : string.Compare(x.Name, y.Name, StringComparison.Ordinal);
+    }
+}
+```
+
+Usage: `emps.Order(new EmployeeComparer())` (LINQ, .NET 7+) or `list.Sort(new EmployeeComparer())` (in place).
+
+**Talking points**
+- The contract: negative if x comes first, 0 if equal, positive if y comes first. It must be **consistent** (transitive), or `List.Sort` can throw or loop.
+- Reverse an order by swapping the operands (`y.CompareTo(x)`), not by negating: `-int.MinValue` overflows.
+- `List<T>.Sort` / `Array.Sort` are **unstable** (introsort); LINQ `OrderBy` / `Order` is **stable**. Adding the name as a final tie-breaker makes the result deterministic either way.
+- Without a class: `OrderBy(e => e.Dept).ThenByDescending(e => e.Salary).ThenBy(e => e.Name)` or `Comparer<Employee>.Create((a, b) => ...)`.
+
+## 5. Thread-safe singleton with `Lazy<T>`
+
+**Task:** a single shared configuration object, created on first use, safe under concurrent access.
+
+```csharp
+public sealed class AppConfig
+{
+    private static readonly Lazy<AppConfig> _instance = new(() => new AppConfig());
+    public static AppConfig Instance => _instance.Value;   // thread-safe by default
+
+    public Guid Id { get; } = Guid.NewGuid();
+    private AppConfig() { }                            // nobody else can new it up
+}
+```
+
+**Talking points**
+- `Lazy<T>` defaults to `LazyThreadSafetyMode.ExecutionAndPublication`: the factory runs **once** even if 50 threads ask at the same moment (verified with 50 parallel tasks returning the same `Id`).
+- `sealed` + private constructor prevent subclassing and direct construction. Alternatives: a `static readonly` field (thread-safe via the type initializer, but less lazy), or double-checked locking with `volatile` (easy to get wrong; mention it, don't write it).
+- If the factory throws, `Lazy<T>` caches the exception and rethrows it on every access in this mode.
+- In ASP.NET Core, prefer `services.AddSingleton<T>()`: the container gives the same guarantee and keeps the class testable. The hand-written pattern is for libraries and console apps.
+
+## 6. Producer-consumer with `Channel<T>`
+
+**Task:** one producer generates work items, N consumers process them concurrently; the producer must slow down if consumers fall behind.
+
+```csharp
+public static async Task<int> RunAsync(int items, int consumers, CancellationToken ct = default)
+{
+    // Bounded: producers wait when the buffer is full (back-pressure).
+    var channel = Channel.CreateBounded<int>(new BoundedChannelOptions(capacity: 10)
+    {
+        FullMode = BoundedChannelFullMode.Wait,
+        SingleWriter = true,
+    });
+
+    var producer = Task.Run(async () =>
+    {
+        try
+        {
+            for (int i = 1; i <= items; i++)
+                await channel.Writer.WriteAsync(i, ct);
+        }
+        finally
+        {
+            channel.Writer.Complete();          // tells consumers "no more items"
+        }
+    }, ct);
+
+    int total = 0;
+    var workers = Enumerable.Range(0, consumers).Select(_ => Task.Run(async () =>
+    {
+        await foreach (var item in channel.Reader.ReadAllAsync(ct))
+        {
+            await Task.Delay(1, ct);            // simulate work
+            Interlocked.Add(ref total, item);   // shared state: use Interlocked
+        }
+    }, ct)).ToArray();
+
+    await producer;
+    await Task.WhenAll(workers);
+    return total;
+}
+```
+
+**Talking points**
+- `Channel<T>` is the modern async replacement for `BlockingCollection<T>`: no thread is blocked while waiting, and `ReadAllAsync` ends cleanly when the writer calls `Complete()`.
+- **Bounded vs unbounded:** bounded gives back-pressure (`WriteAsync` waits when full); unbounded can grow until memory runs out if consumers are slow. `FullMode` can also drop the oldest or newest item.
+- `Complete()` in `finally` guarantees consumers exit even if the producer fails; otherwise they wait forever.
+- This is the standard way to hand work from a controller to a `BackgroundService`: register the channel as a singleton, write in the request, read in `ExecuteAsync`.
+
+## 7. Async retry helper with exponential backoff
+
+**Task:** retry a transient failure (HTTP, timeout) up to N times with increasing delays; never retry non-transient errors.
+
+```csharp
+public static async Task<T> ExecuteAsync<T>(
+    Func<CancellationToken, Task<T>> action,
+    int maxAttempts = 3,
+    TimeSpan? baseDelay = null,
+    Func<Exception, bool>? isTransient = null,
+    CancellationToken ct = default)
+{
+    ArgumentOutOfRangeException.ThrowIfLessThan(maxAttempts, 1);
+    var delay = baseDelay ?? TimeSpan.FromMilliseconds(200);
+    isTransient ??= ex => ex is HttpRequestException or TimeoutException;
+
+    for (int attempt = 1; ; attempt++)
+    {
+        try
+        {
+            return await action(ct);
+        }
+        catch (Exception ex) when (attempt < maxAttempts && isTransient(ex))
+        {
+            // 200ms, 400ms, 800ms ... plus jitter so clients don't retry in lockstep.
+            var backoff = delay * Math.Pow(2, attempt - 1);
+            var jitter = TimeSpan.FromMilliseconds(Random.Shared.Next(0, 100));
+            await Task.Delay(backoff + jitter, ct);
+        }
+    }
+}
+```
+
+**Talking points**
+- The **exception filter** (`when`) decides before the stack unwinds. On the last attempt, or for a non-transient error, the filter is false and the original exception propagates with its stack trace intact. No `throw;` bookkeeping needed.
+- Tests confirmed: success on the 3rd attempt, giving up after `maxAttempts`, and no retry at all for `InvalidOperationException`.
+- **Jitter** prevents a thundering herd when many clients fail at the same moment.
+- Only retry **idempotent** operations (GET, PUT with the same body, or POST with an idempotency key).
+- In production use `Microsoft.Extensions.Http.Resilience` / Polly v8 (`AddStandardResilienceHandler()`), which adds circuit breakers and timeouts on top.
+
+## 8. Generic repository stub
+
+**Task:** a generic CRUD repository interface plus an in-memory implementation for tests.
+
+```csharp
+public interface IEntity { int Id { get; set; } }
+
+public interface IRepository<T> where T : class, IEntity
+{
+    Task<T?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<T>> ListAsync(Func<T, bool>? filter = null, CancellationToken ct = default);
+    Task<T> AddAsync(T entity, CancellationToken ct = default);
+    Task<bool> UpdateAsync(T entity, CancellationToken ct = default);
+    Task<bool> DeleteAsync(int id, CancellationToken ct = default);
+}
+
+public class InMemoryRepository<T> : IRepository<T> where T : class, IEntity
+{
+    private readonly ConcurrentDictionary<int, T> _store = new();
+    private int _nextId;
+
+    public Task<T?> GetByIdAsync(int id, CancellationToken ct = default) =>
+        Task.FromResult(_store.GetValueOrDefault(id));
+
+    public Task<IReadOnlyList<T>> ListAsync(Func<T, bool>? filter = null, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<T>>(_store.Values.Where(filter ?? (_ => true)).OrderBy(e => e.Id).ToList());
+
+    public Task<T> AddAsync(T entity, CancellationToken ct = default)
+    {
+        entity.Id = Interlocked.Increment(ref _nextId);
+        _store[entity.Id] = entity;
+        return Task.FromResult(entity);
+    }
+
+    public Task<bool> UpdateAsync(T entity, CancellationToken ct = default)
+    {
+        if (!_store.TryGetValue(entity.Id, out var existing)) return Task.FromResult(false);
+        return Task.FromResult(_store.TryUpdate(entity.Id, entity, existing));
+    }
+
+    public Task<bool> DeleteAsync(int id, CancellationToken ct = default) =>
+        Task.FromResult(_store.TryRemove(id, out _));
+}
+```
+
+**Talking points**
+- The **generic constraints** (`class, IEntity`) let the repository read `Id` without reflection.
+- `Func<T, bool>` is fine in memory, but an EF Core version must take `Expression<Func<T, bool>>` so the filter is translated to SQL. With `Func` the whole table is loaded and filtered in memory.
+- `Task.FromResult` keeps the async signature without fake `async` methods (no state machine allocated).
+- The debate: `DbContext` already is a repository + unit of work. A generic repository over EF adds little; specific repositories (`IOrderRepository.GetOpenOrdersAsync`) or query objects are often better. Say you know both sides.
+
+## 9. In-memory cache with expiry
+
+**Task:** a thread-safe key-value cache where entries expire after a TTL. Make it testable without `Thread.Sleep`.
+
+```csharp
+public sealed class TtlCache<TKey, TValue>(TimeProvider clock) where TKey : notnull
+{
+    private readonly ConcurrentDictionary<TKey, (TValue Value, DateTimeOffset ExpiresAt)> _items = new();
+
+    public void Set(TKey key, TValue value, TimeSpan ttl) =>
+        _items[key] = (value, clock.GetUtcNow() + ttl);
+
+    public bool TryGet(TKey key, out TValue? value)
+    {
+        if (_items.TryGetValue(key, out var entry))
+        {
+            if (entry.ExpiresAt > clock.GetUtcNow())
+            {
+                value = entry.Value;
+                return true;
+            }
+            _items.TryRemove(KeyValuePair.Create(key, entry));  // lazy eviction, only if unchanged
+        }
+        value = default;
+        return false;
+    }
+
+    public TValue GetOrAdd(TKey key, Func<TKey, TValue> factory, TimeSpan ttl)
+    {
+        if (TryGet(key, out var cached)) return cached!;
+        var value = factory(key);
+        Set(key, value, ttl);
+        return value;
+    }
+
+    // Call from a timer / BackgroundService so never-read keys don't leak memory.
+    public int RemoveExpired()
+    {
+        var now = clock.GetUtcNow();
+        int removed = 0;
+        foreach (var kv in _items)
+            if (kv.Value.ExpiresAt <= now && _items.TryRemove(kv)) removed++;
+        return removed;
+    }
+
+    public int Count => _items.Count;
+}
+```
+
+**Talking points**
+- **`TimeProvider`** (.NET 8+) is injected so tests can advance a fake clock instead of sleeping. Pass `TimeProvider.System` in production; `FakeTimeProvider` ships in `Microsoft.Extensions.TimeProvider.Testing`.
+- `TryRemove(KeyValuePair)` removes only if the entry is still the expired one, so a concurrent `Set` of a fresh value is not lost.
+- `GetOrAdd` can run the factory twice under a race (two threads miss at once). Fix with `Lazy<TValue>` values or a per-key `SemaphoreSlim` if the factory is expensive; this is the **cache stampede** problem.
+- Enumerating a `ConcurrentDictionary` while modifying it is safe (no exception, snapshot-ish view).
+- In production: `IMemoryCache` (size limits, sliding expiration, eviction callbacks) or `HybridCache` (.NET 9+) for L1 + distributed L2 with stampede protection.
+
+## Interview Q&A
+
+<details>
+<summary>What is the difference between `IEnumerable<T>` and `IQueryable<T>` in a LINQ coding task?</summary>
+
+`IEnumerable<T>` runs the query in memory with delegates (`Func`). `IQueryable<T>` holds an expression tree (`Expression<Func>`) that a provider such as EF Core translates to SQL. Calling `AsEnumerable()` or `ToList()` too early pulls the whole table into memory and filters there.
+</details>
+
+<details>
+<summary>Why is `lock` not allowed around an `await`, and what do you use instead?</summary>
+
+A `lock` is owned by a thread, and the code after `await` may resume on a different thread, so the compiler forbids `await` inside `lock`. Use `SemaphoreSlim(1, 1)` with `await WaitAsync()` and `Release()` in `finally`. .NET 9's `System.Threading.Lock` type has the same restriction.
+</details>
+
+<details>
+<summary>How would you make the `TtlCache` factory run only once per key under concurrency?</summary>
+
+Store `Lazy<TValue>` in the dictionary and use `ConcurrentDictionary.GetOrAdd(key, _ => new Lazy<TValue>(...))`. Several `Lazy` wrappers may be created in a race, but only the one stored wins and its factory runs once. For async factories, store `Lazy<Task<TValue>>` or use `HybridCache`, which does this for you.
+</details>
+
+<details>
+<summary>When does a `yield` iterator method actually start executing?</summary>
+
+On the first `MoveNext()` call, which `foreach`, `ToList()` or `First()` make. Calling the method only creates the state-machine object. Side effects and argument checks are therefore deferred, which surprises people in tests.
+</details>
+
+<details>
+<summary>`Channel<T>` vs `BlockingCollection<T>` vs `ConcurrentQueue<T>`?</summary>
+
+`ConcurrentQueue<T>` is a thread-safe queue with no waiting; consumers must poll. `BlockingCollection<T>` adds blocking `Take` and bounded capacity, but blocks threads. `Channel<T>` provides the same producer-consumer semantics with `async` waiting, completion signalling and bounded back-pressure, and is the default choice in modern .NET.
+</details>
+
+<details>
+<summary>How do you test code that uses time, like the TTL cache or retry delays?</summary>
+
+Inject `TimeProvider` and use `FakeTimeProvider` in tests to advance time instantly. For `Task.Delay`, use the overload `Task.Delay(delay, timeProvider, ct)` so the fake clock controls it too. Avoid `DateTime.Now` and real sleeps in unit tests: they are slow and flaky.
+</details>
+
+<details>
+<summary>The interviewer asks you to make a method generic. What do you consider?</summary>
+
+Which operations the method needs on `T` and the constraints that express them (`where T : class`, `IComparable<T>`, `new()`, `notnull`, or static abstract interface members such as `INumber<T>` for generic math). Also whether a non-generic overload with an interface parameter is simpler. Generics over value types avoid boxing, which is a common follow-up.
+</details>
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+- `FirstOrDefault()` on value types returning `0` instead of "not found".
+- String concatenation in loops instead of `StringBuilder`.
+- Writing `async void` helpers, or blocking with `.Result` inside a "retry" or "cache" helper.
+- Forgetting `Writer.Complete()`, so consumers never finish.
+- Retrying every exception, including `ArgumentException` and `OperationCanceledException`.
+- `Func<T, bool>` filters in an EF repository (whole table loaded into memory).
+- Using `DateTime.Now` in code you will be asked to unit-test.
+- Silently mutating input collections (e.g. sorting the caller's list in place) without mentioning it.
+</Aside>
+
+## Related
+
+- [LINQ](../../csharp/linq/)
+- [Async/Await Deep Dive](../../csharp/async-await/)
+- [Threading & synchronization](../../csharp/threading/)
+- [Curated Problem List](../problem-list/)
+
+## Quick quiz
+
+<QuizBlock section="dsa" topic="csharp-coding-round" />

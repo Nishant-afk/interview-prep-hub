@@ -1,0 +1,171 @@
+---
+title: Tell Me About Yourself
+description: "Present-past-future structure, a 60-90 second fill-in template and a sample pitch for a 3-4 year .NET + Angular developer."
+sidebar:
+  order: 1
+  badge: { text: Hot, variant: danger }
+importance: high
+difficulty: easy
+estimatedMinutes: 20
+tags: [behavioral, introduction, pitch, hr]
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Why it matters in interviews
+
+*"Tell me about yourself"* (or *"walk me through your profile"*) opens almost every round: technical, managerial and HR. It looks like small talk, but the interviewer is using the first 90 seconds to decide:
+
+- **Can you communicate clearly and concisely?** Rambling here predicts rambling in design discussions.
+- **What level are you really at?** "I worked on APIs" sounds junior. "I own the order search and import modules and cut p95 latency by 80%" sounds like a solid SDE-2 candidate.
+- **Where should I dig?** Whatever you mention becomes the agenda for the next 45 minutes. You are choosing the questions you will be asked.
+- **Is there a fit?** Your stack, domain and direction against the role they are hiring for.
+
+Treat it as a **trailer for the rest of the interview**: short, specific, and ending on a hook you are happy to be questioned about.
+
+## The structure: present, past, future
+
+| Block | Time | What to say |
+|---|---|---|
+| **Present** | 20-30 s | Current role, company type, product/domain, your stack, what you own |
+| **Past** | 20-30 s | How you got here: previous role(s), 1-2 concrete achievements with numbers |
+| **Strengths** | 10-15 s | The 2-3 things you are genuinely good at (backed by the achievements) |
+| **Future** | 10-15 s | Why you are looking, and why this role fits that direction |
+
+Total: **60-90 seconds**, about 150-220 spoken words. In an HR round lean on the future block. In a technical round add one more technical detail to the present block.
+
+Start with the present (not "I was born in..." or "I did my B.Tech from...") because your current work is the most relevant thing about you. Education only belongs in the pitch if it is directly relevant, for example a strong CS degree for a product company that cares about fundamentals. One clause is enough.
+
+## Fill-in template
+
+```text
+PRESENT
+"I'm a software engineer with [N] years of experience, currently at [Company],
+a [product / service] company in the [domain] space. I work on [product/module],
+which [one line: what it does and for whom]. My main stack is [ASP.NET Core / C#],
+[EF Core / SQL Server] on the back end and [Angular version] on the front end,
+deployed on [Azure service]. I own [module/feature area] end to end."
+
+PAST
+"Before that I spent [N] years at [Previous company] working on [project/domain],
+where I [achievement 1 with metric].
+At [Company] my most significant work has been [achievement 2]: I [action],
+which [result: metric, e.g. reduced X from A to B / saved N hours a week]."
+
+STRENGTHS
+"What I'm strongest at is [strength 1, e.g. API performance and SQL tuning]
+and [strength 2, e.g. taking a feature from requirement to production].
+I'm also the person on the team who [informal role, e.g. reviews most PRs /
+onboards new joiners / handles release coordination]."
+
+FUTURE
+"I'm now looking for [kind of role/scope, e.g. a product team / larger scale /
+more design ownership], which is why [Target company / this role] interests me:
+[one specific reason linked to their product, stack or scale]."
+```
+
+Fill it in, then **read it aloud with a timer**. If it runs over 90 seconds, cut adjectives first, then the second past achievement.
+
+## Sample answer
+
+<Aside type="tip" title="Sample: replace with your own story">
+Fictional but realistic profile. Use it to calibrate the level of detail, not as your script.
+</Aside>
+
+```text
+"I'm a full-stack .NET developer with about three and a half years of experience.
+For the last eighteen months I've been at TradeLink, a B2B SaaS product that
+distributors use to manage orders, pricing and fulfilment. My stack is ASP.NET Core 8
+Web APIs with EF Core and SQL Server, an Angular front end, and we run on Azure
+App Service with Service Bus for background processing. I own the order search and
+bulk order import modules end to end.
+
+Before TradeLink I spent two years at a mid-size IT services company building an
+insurance claims portal for a UK client, also .NET and Angular. There I learned to
+work closely with a client and ship on fixed release dates.
+
+At TradeLink the work I'm proudest of is the order search rewrite. Search was timing
+out for our largest customers, so I profiled the queries, redesigned the indexes and
+moved to keyset pagination, which took p95 latency from about 2.8 seconds to under
+400 milliseconds. I also built the bulk import pipeline that lets customers upload
+10,000-line CSVs, processed asynchronously through Service Bus.
+
+My strengths are SQL and API performance, and taking a feature from a vague
+requirement to production. I also review most back-end PRs on my team.
+
+I'm now looking for a role with larger scale and more say in design decisions,
+which is why this role on your [team name] platform interests me."
+```
+
+Notice what it does: every claim is concrete, there are two numbers, and it plants three hooks the interviewer will almost certainly pick up (index redesign, keyset pagination, Service Bus import). Prepare for each of them on the [project walkthrough](../project-walkthrough/) page.
+
+### Variations to prepare
+
+| Situation | Adjust |
+|---|---|
+| HR / managerial round | Fewer technologies, more scope, impact and why you are moving |
+| Service company (client-facing roles) | Mention client interaction, Agile ceremonies, domains you have worked in, flexibility across projects |
+| Product company | Emphasise ownership, metrics, scale and design decisions |
+| "In 30 seconds" | Present + one achievement + future. Drop the past block |
+| Career gap or switch | One honest sentence on it in the past block, then move on (see [HR questions](../hr-questions/)) |
+
+## Do / Don't
+
+| Do | Don't |
+|---|---|
+| Lead with your current role and what you own | Recite your resume line by line or start with school |
+| Use 1-2 numbers (latency, users, hours saved, revenue) | Say "worked on various modules and technologies" |
+| Say "I" for your work and "we" for team outcomes | Say "we" throughout so they cannot see your contribution |
+| Name the stack once, briefly | List 15 technologies including ones you used once |
+| End with why this role, specific to them | End with "...so yes, that's about me" and trail off |
+| Rehearse until natural, not memorised word for word | Sound robotic, or improvise and run for 4 minutes |
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+- **Too long.** Over two minutes and the interviewer stops listening. Aim for 60-90 seconds.
+- **Hooks you cannot defend.** If you say "microservices" or "Kubernetes", expect three deep questions on it. Only mention what you can discuss in depth.
+- **Inflated titles or numbers.** Interviewers cross-check with the project walkthrough. Inconsistency kills trust faster than a modest number.
+- **Negative reasons for leaving** ("my manager is bad", "the project is boring") in the future block.
+- **The same pitch for every company.** Change the last sentence at least, so it references their product or stack.
+- **Personal details** (hometown, family, hobbies) unless asked. Keep one hobby line in reserve for HR rounds.
+</Aside>
+
+## Follow-up questions to expect
+
+<details>
+<summary>"You mentioned you reduced latency. How exactly?"</summary>
+
+This is the hook working. Give a 3-step answer: how you measured (Application Insights, execution plans), what you changed (index, query shape, pagination), how you verified (load test, p95 before and after). Then stop and let them choose the next drill-down. See [indexes](../../data/indexes/) and [execution plans](../../data/execution-plans/).
+</details>
+
+<details>
+<summary>"What exactly was your role versus the team's?"</summary>
+
+Be precise: "I designed and implemented X, paired with Y on Z, and the DBA approved the index changes." Precise attribution sounds more senior than claiming everything.
+</details>
+
+<details>
+<summary>"Why do you want to leave after only [N] months / years?"</summary>
+
+Keep it forward-looking: growth, scale, scope, tech. One sentence, no criticism of the current employer. Full framing on the [HR questions](../hr-questions/) page.
+</details>
+
+<details>
+<summary>"Are you more back-end or front-end?"</summary>
+
+Answer honestly with a ratio and a reason: "About 70% back-end. I'm strongest in API design and SQL, but I'm comfortable owning Angular features end to end, for example [feature]." Then align to the role if it leans one way.
+</details>
+
+<details>
+<summary>"Tell me something not on your resume."</summary>
+
+Have one short, true item ready: an internal tool you built, a tech talk you gave, a side project, mentoring. Keep it work-adjacent and under 20 seconds.
+</details>
+
+## Related
+
+- [Project walkthrough](../project-walkthrough/)
+- [STAR story bank](../star-stories/)
+- [Common HR questions](../hr-questions/)
+- [System design interview framework](../../system-design/interview-framework/)

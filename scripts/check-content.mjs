@@ -87,6 +87,8 @@ for (const file of files) {
     if (!data.description) warn(file, 'front matter: description is missing');
     if (data.importance && !['high', 'medium', 'low'].includes(data.importance)) err(file, `importance must be high|medium|low`);
     if (data.difficulty && !['easy', 'medium', 'hard'].includes(data.difficulty)) err(file, `difficulty must be easy|medium|hard`);
+    if (data.tags && (!Array.isArray(data.tags) || data.tags.some((t) => typeof t !== 'string'))) err(file, 'tags must be strings (quote numbers, e.g. "429")');
+    if (data.estimatedMinutes !== undefined && !Number.isInteger(data.estimatedMinutes)) err(file, 'estimatedMinutes must be an integer');
   }
   const body = fm ? src.slice(fm[0].length) : src;
 

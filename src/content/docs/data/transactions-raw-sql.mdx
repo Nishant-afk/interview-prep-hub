@@ -1,0 +1,272 @@
+---
+title: Transactions, Bulk Ops & Raw SQL
+description: The implicit transaction in SaveChanges, explicit transactions and savepoints, TransactionScope, ExecuteUpdate/ExecuteDelete, FromSql/SqlQuery, stored procedures and SQL injection safety.
+sidebar:
+  order: 6
+  badge: { text: Hot, variant: danger }
+importance: high
+difficulty: medium
+estimatedMinutes: 30
+tags: [efcore, transactions, executeupdate, raw-sql, stored-procedures, sql-injection]
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import QuizBlock from '~/components/QuizBlock.astro';
+
+## Why it matters in interviews
+
+Expect *"is SaveChanges transactional?"*, *"how do you update 100,000 rows with EF?"*, *"how do you call a stored procedure?"* and the security follow-up *"is `FromSqlRaw($"... {input}")` safe?"*. These questions check whether you know where EF's abstractions end and plain SQL begins, and whether you can cross that line without opening an injection hole.
+
+## Core idea
+
+### The implicit transaction
+
+Every `SaveChanges` call is atomic: EF wraps its INSERT/UPDATE/DELETE statements in a transaction and commits only if all succeed. You do **not** need `BeginTransaction` for a single `SaveChanges`.
+
+You need an **explicit** transaction when one business operation spans:
+
+- several `SaveChanges` calls (e.g. you need a generated id before the next step),
+- `SaveChanges` plus `ExecuteUpdate`/`ExecuteDelete`/`ExecuteSql`,
+- more than one `DbContext` sharing a connection.
+
+```csharp
+await using var tx = await db.Database.BeginTransactionAsync(ct);
+db.Orders.Add(order);
+await db.SaveChangesAsync(ct);                              // order.Id now known
+await db.Stock.Where(s => s.Sku == order.Sku)
+              .ExecuteUpdateAsync(s => s.SetProperty(x => x.Reserved, x => x.Reserved + order.Qty), ct);
+await tx.CommitAsync(ct);                                  // dispose without commit = rollback
+```
+
+Inside a user transaction, each `SaveChanges` creates a **savepoint** first; if it fails, EF rolls back to the savepoint and the outer transaction stays usable. You can also call `tx.CreateSavepointAsync("name")` yourself.
+
+### Transactions and retry strategies
+
+With `EnableRetryOnFailure()` (recommended for Azure SQL (AWS: RDS) transient faults), EF refuses a user-initiated transaction unless you run the **whole unit** inside the execution strategy, because a retry must replay everything from the start:
+
+```csharp
+var strategy = db.Database.CreateExecutionStrategy();
+await strategy.ExecuteAsync(async () =>
+{
+    await using var tx = await db.Database.BeginTransactionAsync(ct);
+    // ... all reads and writes of the unit ...
+    await db.SaveChangesAsync(ct);
+    await tx.CommitAsync(ct);
+});
+```
+
+### TransactionScope
+
+`System.Transactions.TransactionScope` creates an **ambient** transaction that EF (and other ADO.NET code) enlists in automatically. Use it when code you do not control opens its own connections. Rules:
+
+- In async code, construct it with `TransactionScopeAsyncFlowOption.Enabled`, or the ambient transaction does not flow across `await`.
+- If two **different connections** enlist, the transaction escalates to a **distributed** transaction. Modern .NET supports that only on Windows (via MSDTC), and Azure SQL Database has its own elastic transaction model. In practice, avoid escalation: prefer `BeginTransaction`, or the outbox pattern for cross-service consistency.
+
+| | `SaveChanges` alone | `BeginTransaction` | `TransactionScope` |
+|---|---|---|---|
+| Scope | One call | One context/connection (shareable with `UseTransaction`) | Ambient, any enlisting connection |
+| Async | n/a | Native | Needs `AsyncFlowOption.Enabled` |
+| Distributed risk | None | None | Escalates with 2+ connections |
+| Typical use | Most writes | Multi-step unit of work | Legacy or library code you cannot change |
+
+Isolation levels and locking behaviour are covered in [Transactions, Isolation & Locking](../transactions-isolation/).
+
+### Bulk updates and deletes: ExecuteUpdate / ExecuteDelete (EF Core 7+)
+
+The classic way to "deactivate inactive users" loads every row, flips a flag and calls `SaveChanges`: N rows read, N tracked, N UPDATE statements (batched, but still N). `ExecuteUpdate` sends **one** set-based statement:
+
+```csharp
+var affected = await db.Users
+    .Where(u => u.LastLoginAt < cutoff)
+    .ExecuteUpdateAsync(s => s
+        .SetProperty(u => u.IsActive, false)
+        .SetProperty(u => u.DeactivatedAt, DateTime.UtcNow), ct);
+```
+
+```sql
+UPDATE [u]
+SET [u].[IsActive] = @p,
+    [u].[DeactivatedAt] = @p1
+FROM [Users] AS [u]
+WHERE [u].[LastLoginAt] < @cutoff
+```
+
+What you give up, and must remember:
+
+- It runs **immediately**, not at `SaveChanges`, and in its own implicit statement (wrap in a transaction if combined with other writes).
+- It **bypasses the change tracker**: already-tracked entities keep stale values; `SaveChangesInterceptor` auditing, soft-delete interception and in-memory cascade logic do not run. Database cascades still apply.
+- No automatic concurrency-token check; add the condition to the `Where` yourself.
+
+EF Core 10 also accepts a regular (block) lambda, so you can set properties conditionally with an `if` inside the setter.
+
+For **bulk inserts**, `AddRange` + one `SaveChanges` is batched and fine for thousands of rows. For hundreds of thousands, drop to `SqlBulkCopy` or a library such as EFCore.BulkExtensions (check its licence terms).
+
+### Raw SQL
+
+| API | Returns | Since | Notes |
+|---|---|---|---|
+| `DbSet.FromSql($"...")` | Entities (tracked unless `AsNoTracking`) | EF Core 7 (was `FromSqlInterpolated`) | Must return all entity columns; composable if it is a `SELECT` |
+| `DbSet.FromSqlRaw("...", params)` | Entities | EF Core 3 | You pass parameters yourself; never concatenate input |
+| `Database.SqlQuery<T>($"...")` | Scalars (EF 7) or **unmapped types / DTOs** (EF Core 8+) | EF Core 7/8 | Great for reports without a keyless entity |
+| `Database.ExecuteSql($"...")` | Rows affected | EF Core 7 | Writes, DDL, proc calls without results |
+
+**Why interpolation is safe here**: `FromSql`, `SqlQuery` and `ExecuteSql` take a `FormattableString`. EF receives the format and the arguments separately and turns each `{value}` into a `DbParameter`. The SQL text never contains the user's input.
+
+```csharp
+// Safe: becomes WHERE City = @p0
+db.Customers.FromSql($"SELECT * FROM Customers WHERE City = {city}");
+
+// DANGEROUS: FromSqlRaw takes a plain string, interpolation happens before EF sees it
+db.Customers.FromSqlRaw($"SELECT * FROM Customers WHERE City = '{city}'");
+
+// Safe raw form: explicit parameter
+db.Customers.FromSqlRaw("SELECT * FROM Customers WHERE City = {0}", city);
+```
+
+The trap is subtle: the second line compiles, looks identical, and is a textbook [SQL injection](../../security/owasp-top-10/). Also note that parameters only work for **values**; table or column names cannot be parameterized, so whitelist them.
+
+**Composition**: EF wraps a composable raw query as a subquery, so LINQ after it still runs in SQL:
+
+```sql
+SELECT [c].[Id], [c].[City], [c].[Name]
+FROM (
+    SELECT * FROM Customers WHERE City = @p0
+) AS [c]
+WHERE [c].[Name] LIKE N'A%'
+```
+
+### Stored procedures
+
+```csharp
+// Proc returning entity rows: not composable, so materialize immediately
+var orders = await db.Orders
+    .FromSql($"EXEC dbo.GetOrdersForCustomer @CustomerId = {customerId}")
+    .AsNoTracking()
+    .ToListAsync(ct);
+
+// Proc returning a DTO shape (EF Core 8+)
+var totals = await db.Database
+    .SqlQuery<CityTotal>($"EXEC dbo.SalesByCity @From = {from}")
+    .ToListAsync(ct);
+
+// Proc with no result set
+await db.Database.ExecuteSqlAsync($"EXEC dbo.ArchiveOrders @Before = {cutoff}", ct);
+```
+
+Adding `Where` or `Include` after an `EXEC` fails because SQL Server cannot use `EXEC` as a subquery. For output parameters, pass a `SqlParameter` with `Direction = ParameterDirection.Output` to `ExecuteSqlRawAsync`. EF Core 7+ can also map an entity's insert/update/delete to procs (`InsertUsingStoredProcedure`), handy for legacy databases.
+
+## Code
+
+```csharp
+public sealed record CityTotal(string City, decimal Total);
+
+public sealed class CheckoutService(ShopDb db)
+{
+    public async Task<int> PlaceAsync(Cart cart, CancellationToken ct)
+    {
+        var strategy = db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+            var order = Order.From(cart);
+            db.Orders.Add(order);
+            await db.SaveChangesAsync(ct);                       // savepoint + INSERTs
+
+            foreach (var line in cart.Lines)
+            {
+                var updated = await db.Stock                     // atomic, set-based decrement
+                    .Where(s => s.Sku == line.Sku && s.Available >= line.Qty)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Available, x => x.Available - line.Qty), ct);
+                if (updated == 0) throw new OutOfStockException(line.Sku); // rollback on dispose
+            }
+
+            await tx.CommitAsync(ct);
+            return order.Id;
+        });
+    }
+}
+```
+
+## Interview Q&A
+
+<details>
+<summary>Is `SaveChanges` transactional? When do you need `BeginTransaction`?</summary>
+
+Yes, each call is atomic. You need an explicit transaction when one business operation includes several `SaveChanges` calls, or mixes `SaveChanges` with `ExecuteUpdate`/`ExecuteDelete`/raw SQL, or spans two contexts on one connection.
+
+</details>
+
+<details>
+<summary>What do `ExecuteUpdate` and `ExecuteDelete` give you, and what do they skip?</summary>
+
+One set-based SQL statement with no entity loading or tracking, which is dramatically faster for bulk changes. They run immediately, bypass the change tracker (tracked instances become stale), skip `SaveChanges` interceptors and events, do not check concurrency tokens, and are not part of a later `SaveChanges` unless you share an explicit transaction.
+
+</details>
+
+<details>
+<summary>Why does `FromSql($"... {x}")` not cause SQL injection?</summary>
+
+The argument is a `FormattableString`, so EF gets the template and values separately and sends each value as a `DbParameter`. Injection appears when you pass an interpolated string to `FromSqlRaw` or `ExecuteSqlRaw`, which take a plain `string` that was already built with the input inside it.
+
+</details>
+
+<details>
+<summary>`FromSql` vs `SqlQuery`: when to use which?</summary>
+
+`FromSql` is on a `DbSet` and returns mapped entities, so the SQL must return every column of that entity, and results can be tracked. `SqlQuery<T>` is on `Database` and returns scalars or (EF Core 8+) any unmapped type whose property names match the columns, which is ideal for reporting queries and procs returning custom shapes.
+
+</details>
+
+<details>
+<summary>How do retries (`EnableRetryOnFailure`) interact with transactions?</summary>
+
+A retrying execution strategy cannot retry part of a user transaction, so EF throws if you begin one outside the strategy. Wrap the entire unit (begin, work, commit) in `db.Database.CreateExecutionStrategy().ExecuteAsync(...)` so a transient failure replays the whole thing. Make that unit safe to re-run.
+
+</details>
+
+<details>
+<summary>When would you choose `TransactionScope` over `BeginTransaction`?</summary>
+
+Only when code you do not control opens its own connections and must join the same transaction. It needs `TransactionScopeAsyncFlowOption.Enabled` for async code and can escalate to a distributed transaction if two connections enlist. For EF-only code, `BeginTransaction` is simpler and explicit.
+
+</details>
+
+<details>
+<summary>How do you insert 500,000 rows efficiently?</summary>
+
+Not row by row with `SaveChanges` per item. For moderate volumes, `AddRange` and one `SaveChanges` with change detection under control. For large volumes, `SqlBulkCopy` into a staging table and a set-based `MERGE`/`INSERT ... SELECT`, or a bulk library. Disable tracking where possible and batch in chunks to keep the transaction log and locks manageable.
+
+</details>
+
+<details>
+<summary>Can you compose LINQ on top of a stored procedure call?</summary>
+
+No. EF composes by wrapping raw SQL in a subquery, and `EXEC` cannot be a subquery in SQL Server. Materialize right after the call (`ToListAsync`), or rewrite the logic as a table-valued function or view that EF can compose over.
+
+</details>
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+
+- **`FromSqlRaw` / `ExecuteSqlRaw` with an interpolated or concatenated string**: SQL injection.
+- **Assuming `ExecuteUpdate` participates in the next `SaveChanges`**: it already ran.
+- **Stale tracked entities** after `ExecuteUpdate` in the same context.
+- **Audit or soft-delete interceptors** silently skipped by `ExecuteDelete`.
+- **User transactions with a retrying strategy** outside `strategy.ExecuteAsync`.
+- **`TransactionScope` in async code without `AsyncFlowOption.Enabled`**.
+- **Long transactions** that wait on HTTP calls or user input while holding locks.
+
+</Aside>
+
+## Related
+
+- [EF Core Architecture & Change Tracking](../efcore-architecture/)
+- [Concurrency Control](../concurrency/)
+- [Transactions, Isolation & Locking](../transactions-isolation/)
+- [Stored Procedures, Functions, Views & Triggers](../stored-procs-views/)
+
+## Quick quiz
+
+<QuizBlock section="data" topic="transactions-raw-sql" />

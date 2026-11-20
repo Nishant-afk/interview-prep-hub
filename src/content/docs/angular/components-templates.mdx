@@ -1,0 +1,279 @@
+---
+title: Components & Templates
+description: Component anatomy, binding types, @if/@for/@switch with track, @let, signal inputs/outputs/model, content projection, viewChild/contentChild, host bindings and view encapsulation.
+sidebar:
+  order: 2
+  badge: { text: Hot, variant: danger }
+importance: high
+difficulty: medium
+estimatedMinutes: 35
+tags: [angular, components, templates, control-flow, inputs, outputs, content-projection]
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import QuizBlock from '~/components/QuizBlock.astro';
+
+## Why it matters in interviews
+
+Components are where you spend most of your Angular day, so interviewers probe them from several angles: *"what binding types are there?"*, *"why does `@for` need `track`?"*, *"`@Input()` vs `input()`?"*, *"how does a child talk to its parent?"*, *"what is `ng-content`?"*. Many companies still have decorator-based code, so be ready to explain both the legacy and the signal-based API.
+
+## Core idea
+
+A component is a TypeScript class plus a template plus styles, tied together by `@Component` metadata. Angular compiles the template into instructions that create DOM nodes and update only the bindings whose values changed.
+
+```ts
+@Component({
+  selector: 'app-product-card',        // how it is used: <app-product-card />
+  imports: [CurrencyPipe],             // template dependencies (standalone)
+  templateUrl: './product-card.html',
+  styleUrl: './product-card.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'card', '[class.sold-out]': 'soldOut()' },
+})
+export class ProductCard { /* inputs, outputs, state */ }
+```
+
+### Binding types
+
+| Syntax | Direction | Example |
+|---|---|---|
+| Interpolation `{{ }}` | class → view (text) | `{{ product().name }}` |
+| Property binding `[prop]` | class → view (DOM property / input) | `[disabled]="saving()"` |
+| Attribute binding `[attr.x]` | class → view (HTML attribute) | `[attr.aria-label]="label()"` |
+| Class / style binding | class → view | `[class.active]="isActive()"`, `[style.width.px]="w()"` |
+| Event binding `(event)` | view → class | `(click)="save()"`, `(keydown.enter)="search()"` |
+| Two-way `[( )]` | both | `[(value)]="qty"` (banana in a box) |
+| Template reference `#ref` | template only | `<input #box>` then `box.value` |
+
+Two-way binding is sugar: `[(value)]="qty"` expands to `[value]="qty" (valueChange)="qty = $event"`. With `model()` inputs and a writable signal, Angular writes the signal directly.
+
+### Control flow: `@if`, `@for`, `@switch`
+
+Built-in control flow (v17, stable since v18) replaced the structural directives `*ngIf`, `*ngFor` and `*ngSwitch`. It is part of the template language, so it needs no imports, type-narrows better and is faster.
+
+```html
+@if (orders().length > 0) {
+  <ul>
+    @for (order of orders(); track order.id; let i = $index, last = $last) {
+      <li [class.last]="last">{{ i + 1 }}. {{ order.number }}</li>
+    } @empty {
+      <li>No orders</li>
+    }
+  </ul>
+} @else if (loading()) {
+  <app-spinner />
+} @else {
+  <p>Nothing yet.</p>
+}
+
+@switch (status()) {
+  @case ('paid') { <span>Paid</span> }
+  @case ('failed') { <span class="err">Failed</span> }
+  @default { <span>Pending</span> }
+}
+```
+
+**Why `track` is mandatory.** When the array changes, Angular must decide which DOM rows to keep, move, create or destroy. `track order.id` tells it the identity of each item. With a stable key, re-fetching the same 500 orders (new object references, same ids) reuses all 500 rows. Tracking by object reference would destroy and recreate every row, losing focus, input state and running every child's lifecycle again. Use `track $index` only for static lists that never reorder.
+
+`@let` (stable since v19) declares a read-only template variable: `@let total = subtotal() + tax();`. It is handy to avoid repeating an expression or an `async` pipe several times.
+
+### Inputs, outputs and `model()`
+
+| | Decorator (legacy, still supported) | Signal-based (stable since v19) |
+|---|---|---|
+| Input | `@Input() name!: string` | `name = input<string>()` / `input.required<string>()` |
+| Transform / alias | `@Input({ transform: booleanAttribute, alias: 'x' })` | `input(false, { transform: booleanAttribute, alias: 'x' })` |
+| React to change | `ngOnChanges` or a setter | `computed()` / `effect()` on the input signal |
+| Output | `@Output() saved = new EventEmitter<Order>()` | `saved = output<Order>()` |
+| Two-way | `@Input() value` + `@Output() valueChange` | `value = model<number>(0)` |
+| Queries | `@ViewChild`, `@ContentChild` | `viewChild()`, `contentChild()`, `viewChildren()` |
+
+Signal inputs are **read-only** inside the child (`this.name()`), which enforces one-way data flow. `model()` is the exception: a writable input that also emits `<name>Change`, intended for two-way binding. `output()` returns an `OutputEmitterRef` with `emit()`; it is not an RxJS `Subject`, but `outputFromObservable()` and `outputToObservable()` bridge the two.
+
+### Content projection
+
+Content projection lets a parent pass markup *into* a child, like a slot. The child places it with `<ng-content>`, optionally with a `select` to create named slots.
+
+```html
+<!-- card.html -->
+<div class="card">
+  <header><ng-content select="[card-title]" /></header>
+  <section><ng-content /></section>   <!-- everything else -->
+</div>
+
+<!-- usage -->
+<app-card>
+  <h3 card-title>Order #42</h3>
+  <p>3 items, total 120 EUR</p>
+</app-card>
+```
+
+Projected content is created and owned by the **parent**: it is checked in the parent's change detection context, and the child cannot make it conditional by wrapping `<ng-content>` in an `@if` (the content is still created). If the child needs to control when content is instantiated, accept an `<ng-template>` and render it with `ngTemplateOutlet`.
+
+### View queries and content queries
+
+- `viewChild()` finds something in the component's **own template** (a child component, a `#ref`, an element). Available after the view is created.
+- `contentChild()` finds something in the **projected content**.
+- Signal queries return signals, so `chart = viewChild.required(ChartComponent)` is read as `this.chart()` and can be used in `computed`.
+
+### Host bindings and view encapsulation
+
+The `host` metadata binds to the component's own element: `host: { role: 'button', '(click)': 'toggle()', '[class.open]': 'open()' }`. Prefer it to `@HostBinding` / `@HostListener` decorators (still supported, but the style guide now recommends `host`).
+
+| Encapsulation | Behaviour |
+|---|---|
+| `Emulated` (default) | Angular adds attributes like `_ngcontent-abc` and rewrites CSS selectors so styles stay inside the component |
+| `ShadowDom` | Uses the browser's native Shadow DOM |
+| `None` | Styles become global. Use sparingly, for example for third-party overrides |
+
+`:host` targets the component element, and `::ng-deep` pierces encapsulation but is deprecated; prefer CSS custom properties for theming children.
+
+## Code
+
+<Tabs>
+  <TabItem label="qty-stepper.ts">
+
+```ts
+import { Component, booleanAttribute, computed, input, model, output } from '@angular/core';
+
+@Component({
+  selector: 'app-qty-stepper',
+  templateUrl: './qty-stepper.html',
+  host: { class: 'stepper', '[class.disabled]': 'disabled()' },
+})
+export class QtyStepper {
+  readonly value = model(1);                       // two-way: [(value)]
+  readonly max = input.required<number>();         // must be bound
+  readonly disabled = input(false, { transform: booleanAttribute });
+  readonly limitReached = output<number>();
+
+  readonly atMax = computed(() => this.value() >= this.max());
+
+  increment() {
+    if (this.atMax()) {
+      this.limitReached.emit(this.max());
+      return;
+    }
+    this.value.update((v) => v + 1);
+  }
+}
+```
+
+  </TabItem>
+  <TabItem label="qty-stepper.html">
+
+```html
+<button type="button" (click)="value.set(value() - 1)" [disabled]="disabled() || value() <= 1">-</button>
+<span aria-live="polite">{{ value() }}</span>
+<button type="button" (click)="increment()" [disabled]="disabled()">+</button>
+@if (atMax()) {
+  <small>Max {{ max() }} per order</small>
+}
+```
+
+  </TabItem>
+  <TabItem label="parent usage">
+
+```html
+@for (line of cart.lines(); track line.sku) {
+  <app-qty-stepper
+    [(value)]="line.qty"
+    [max]="line.stock"
+    (limitReached)="toast.show('Only ' + $event + ' left')" />
+}
+```
+
+  </TabItem>
+  <TabItem label="Legacy equivalent">
+
+```ts
+@Component({ selector: 'app-qty-stepper', templateUrl: './qty-stepper.html' })
+export class QtyStepperComponent {
+  @Input() value = 1;
+  @Output() valueChange = new EventEmitter<number>();
+  @Input({ required: true }) max!: number;
+  @Input({ transform: booleanAttribute }) disabled = false;
+  @Output() limitReached = new EventEmitter<number>();
+  @HostBinding('class.disabled') get isDisabled() { return this.disabled; }
+}
+// template: *ngIf="atMax" and *ngFor="let l of lines; trackBy: trackBySku"
+```
+
+  </TabItem>
+</Tabs>
+
+In the parent example, `line.qty` should be a `WritableSignal<number>` for `[(value)]` to write back through `model()`; with a plain property Angular assigns the new value to it.
+
+## Interview Q&A
+
+<details>
+<summary>What is the difference between property binding and attribute binding?</summary>
+
+Property binding sets a **DOM property** (`[value]`, `[disabled]`) or a component input. Attribute binding sets an **HTML attribute** (`[attr.aria-label]`, `[attr.colspan]`) and is needed when there is no matching DOM property, for example ARIA and SVG attributes. Attributes are initial values; properties are the live state.
+</details>
+
+<details>
+<summary>Why does `@for` require `track`, and what should you track by?</summary>
+
+Angular diffs the old and new arrays and needs an identity to reuse DOM nodes. Track by a stable unique key such as `item.id`. Without a good key, refreshed data with new object references causes every row to be destroyed and re-created: slow, and it resets focus and child state. `*ngFor` made `trackBy` optional, which is why many legacy lists were slow.
+</details>
+
+<details>
+<summary>`@Input()` vs `input()`: what is the practical difference?</summary>
+
+`input()` returns a read-only signal, so derived values are a `computed()` instead of `ngOnChanges` plumbing, and the component works naturally with OnPush and zoneless change detection. `input.required()` is checked at compile time. Decorator inputs are mutable fields and still work; the official migration (`ng generate @angular/core:signal-input-migration`) converts them.
+</details>
+
+<details>
+<summary>What is `model()` and when would you use it?</summary>
+
+`model()` creates a writable signal input that also exposes a `<name>Change` output, so the parent can use `[(name)]`. Use it for reusable controls whose value both the parent and the child change: a stepper, a toggle, a date picker. For plain data flowing down, use `input()`; for events, use `output()`.
+</details>
+
+<details>
+<summary>How can parent and child components communicate?</summary>
+
+Parent to child: inputs. Child to parent: outputs (or `model()` for two-way). Parent calling child methods: `viewChild()`. Siblings or distant components: a shared service holding signals or observables, scoped where needed. Router state for URL-driven data. Avoid reaching through `viewChild` chains for normal data flow.
+</details>
+
+<details>
+<summary>What is content projection and how is it different from passing an input?</summary>
+
+Inputs pass **data**; projection passes **markup** that the parent wrote and owns. `<ng-content>` is a placeholder for it, and `select` creates named slots. The projected nodes are created by the parent even if the child never displays them, so for lazy or repeated content you pass an `<ng-template>` and render it with `ngTemplateOutlet`.
+</details>
+
+<details>
+<summary>`viewChild` vs `contentChild`?</summary>
+
+`viewChild` queries the component's own template. `contentChild` queries what the parent projected into it. A tabs component, for example, uses `contentChildren(Tab)` to find the tab components the consumer placed between its tags.
+</details>
+
+<details>
+<summary>How does Angular emulate style encapsulation?</summary>
+
+With `ViewEncapsulation.Emulated` (the default) the compiler adds a unique attribute to every element in the component's template and rewrites each CSS selector to include it, so `.title` becomes something like `.title[_ngcontent-abc]`. Styles don't leak out, and global styles can still leak in.
+</details>
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+
+- Calling heavy methods in templates (`{{ total() }}` where `total` is a plain method that loops). It runs on every check; use `computed()`.
+- Tracking `@for` by object identity, or using `$index` for a list that reorders, which causes needless DOM churn and lost input state.
+- Trying to `set()` a signal input inside the child. Inputs are read-only; use `model()` or emit an output.
+- Expecting `<ng-content>` inside `@if` to avoid creating the projected content. It is still instantiated by the parent.
+- Using `::ng-deep` or `ViewEncapsulation.None` to restyle children, which leaks styles app-wide.
+- Forgetting that signals must be called in templates: `{{ count }}` prints the function, `{{ count() }}` prints the value.
+
+</Aside>
+
+## Related
+
+- [Lifecycle hooks](../lifecycle-hooks/)
+- [Signals deep dive](../signals/)
+- [Directives and pipes](../directives-pipes/)
+- [Scenario questions: component communication](../angular-scenarios/)
+
+## Quick quiz
+
+<QuizBlock section="angular" topic="components-templates" />

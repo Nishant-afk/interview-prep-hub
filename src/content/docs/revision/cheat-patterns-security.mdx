@@ -1,0 +1,75 @@
+---
+title: "Cheat Sheet: Patterns, Security & DevOps"
+description: One-page revision of SOLID, common design patterns, web security and Docker/Kubernetes essentials.
+sidebar:
+  order: 8
+noProgress: true
+tableOfContents: false
+---
+
+## SOLID
+
+| Principle | One-line test | Smell |
+|---|---|---|
+| **S**ingle responsibility | One reason to change | `OrderService` that also emails and writes PDFs |
+| **O**pen/closed | Add behaviour without editing existing code | Growing `switch` on type |
+| **L**iskov substitution | Subtype works wherever the base type does | Override throws `NotSupportedException` |
+| **I**nterface segregation | Clients don't depend on methods they don't use | `IRepository` with 20 methods |
+| **D**ependency inversion | Depend on abstractions, inject them | `new SqlConnection()` inside business logic |
+
+[More](../../patterns/solid/)
+
+## Patterns you should be able to sketch
+
+| Pattern | Intent | Where in .NET / Angular |
+|---|---|---|
+| Strategy | Swap an algorithm at runtime | Payment providers chosen via DI |
+| Decorator | Add behaviour by wrapping | `Stream` wrappers, DI decoration (caching repository) |
+| Chain of responsibility | Pass a request along handlers | ASP.NET Core middleware, `HttpClient` handlers, Angular interceptors |
+| Observer | Notify subscribers | C# events, `IObservable`, RxJS |
+| Factory | Hide object creation | `IHttpClientFactory`, `ILoggerFactory` |
+| Builder | Step-by-step construction | `WebApplication.CreateBuilder`, `StringBuilder` |
+| Adapter | Make an incompatible API fit | Wrapping a third-party SDK behind your interface |
+| Facade | Simple front for a subsystem | Angular facade service over a store |
+| Mediator | Objects talk via a mediator | MediatR handlers |
+| Repository / UoW | Abstract persistence | EF Core `DbSet` / `DbContext` already are these |
+
+[Creational](../../patterns/creational-patterns/) · [Structural](../../patterns/structural-patterns/) · [Behavioral](../../patterns/behavioral-patterns/) · [Enterprise](../../patterns/enterprise-patterns/)
+
+**Clean Architecture:** dependencies point inward. Domain has no dependencies; Application defines interfaces; Infrastructure implements them; the API is the outer layer. [More](../../patterns/architecture-styles/)
+
+## Security
+
+- **OWASP 2025 top three:** Broken Access Control (now including SSRF), Security Misconfiguration, Software Supply Chain Failures. [More](../../security/owasp-top-10/)
+- **SQL injection:** parameterise (EF LINQ, `FromSql` interpolation). **XSS:** Angular escapes bindings, so avoid `bypassSecurityTrust*`; add CSP. **CSRF:** `SameSite` cookies + anti-forgery tokens. [More](../../security/web-attacks/)
+- **JWT:** short-lived access token + rotating refresh token. In an SPA, prefer memory or the BFF pattern with an `HttpOnly` cookie over `localStorage`. [More](../../security/authn-authz-tokens/)
+- **OAuth 2.0 / OIDC:** authorization code + PKCE for SPAs. The access token is for the API; the ID token is for the client. [More](../../security/oauth-oidc/)
+- **Passwords:** hash with a slow salted algorithm (PBKDF2 / Argon2); never encrypt them. Keep secrets in Key Vault with managed identity (AWS: Secrets Manager + IAM roles). [More](../../security/crypto-secrets/)
+
+## Testing
+
+Test pyramid: many unit tests, fewer integration tests (`WebApplicationFactory` + Testcontainers), few e2e tests (Playwright). Mock only what you don't own or what is slow. [More](../../testing-devops/testing-strategy/)
+
+## Docker and Kubernetes
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY *.csproj .
+RUN dotnet restore
+COPY . .
+RUN dotnet publish -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app .
+USER app
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Api.dll"]
+```
+
+- **Multi-stage builds** keep the SDK out of the final image. Copy the csproj and restore first so the restore layer stays cached. [More](../../testing-devops/docker-dotnet-angular/)
+- **Kubernetes objects:** a Pod runs containers; a Deployment manages ReplicaSets (rolling updates, rollback); a Service gives a stable virtual IP; Ingress or Gateway API routes HTTP; ConfigMap and Secret hold config. [More](../../testing-devops/kubernetes-core/)
+- **Probes:** liveness restarts the container, readiness takes it out of the Service, startup protects slow starts. Map them to ASP.NET Core health checks. [More](../../testing-devops/kubernetes-operations/)
+- **Requests/limits:** requests schedule the pod; exceeding the memory limit gets it OOM-killed. HPA scales on CPU or custom metrics.
+- **CI/CD:** build → test → scan → publish image → deploy to staging → approve → production (blue-green or canary). [More](../../testing-devops/ci-cd/)

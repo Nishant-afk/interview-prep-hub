@@ -1,0 +1,421 @@
+---
+title: SOLID Principles
+description: Each SOLID principle with violating and fixed C# code, and how SRP, OCP, LSP, ISP and DIP show up in ASP.NET Core and Angular.
+sidebar:
+  order: 1
+  badge: { text: Hot, variant: danger }
+importance: high
+difficulty: medium
+estimatedMinutes: 35
+tags: [solid, srp, ocp, lsp, isp, dip, oop]
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import QuizBlock from '~/components/QuizBlock.astro';
+
+## Why it matters in interviews
+
+*"Explain SOLID with an example from your project"* is one of the most common questions at 3-4 years. Reciting five definitions is not enough. Interviewers want to hear a **concrete smell you saw, why it hurt, and how you refactored it**. They also like follow-ups such as *"isn't that over-engineering?"* or *"DIP vs DI?"*. This page gives you one realistic before/after per principle that you can adapt to your own codebase.
+
+## Core idea
+
+SOLID is five guidelines for keeping object-oriented code **easy to change**. Each one targets a specific kind of pain:
+
+| Principle | One-liner | Smell that breaks it | Typical fix |
+|---|---|---|---|
+| **S**ingle Responsibility | A class should have one reason to change (one actor it serves) | "God" service that validates, saves, emails and logs | Split by responsibility, compose them |
+| **O**pen/Closed | Open for extension, closed for modification | Growing `switch`/`if` on a type code | Polymorphism, strategies, DI registration |
+| **L**iskov Substitution | Subtypes must be usable wherever the base type is expected | Overrides that throw `NotSupportedException` or tighten inputs | Fix the hierarchy or the abstraction |
+| **I**nterface Segregation | Clients shouldn't depend on methods they don't use | Fat interfaces, empty or throwing implementations | Smaller, role-based interfaces |
+| **D**ependency Inversion | High-level policy depends on abstractions, not details | `new SqlConnection()` / `new SmtpClient()` inside business code | Interfaces owned by the core + constructor injection |
+
+<Aside type="tip" title="How to answer in an interview">
+Use **smell → pain → refactor → result**. For example: *"Our `OrderService` had 900 lines and every change to email templates broke order tests (SRP). We extracted `IOrderNotifier`, and the email change no longer touched order logic."*
+</Aside>
+
+## Code
+
+### S: Single Responsibility Principle
+
+"One reason to change" means **one actor or stakeholder**. Validation rules (product owner), persistence (DBA) and email wording (marketing) change for different reasons, so they belong in different classes.
+
+<Tabs>
+  <TabItem label="Before">
+
+```csharp
+public class OrderService(string connectionString)
+{
+    public async Task PlaceAsync(Order order)
+    {
+        // 1. validation rules
+        if (order.Lines.Count == 0) throw new ArgumentException("Empty order");
+
+        // 2. persistence details
+        await using var conn = new SqlConnection(connectionString);
+        await conn.OpenAsync();
+        var cmd = new SqlCommand("INSERT INTO Orders (Id, Total) VALUES (@id, @t)", conn);
+        cmd.Parameters.AddWithValue("@id", order.Id);
+        cmd.Parameters.AddWithValue("@t", order.Total);
+        await cmd.ExecuteNonQueryAsync();
+
+        // 3. notification formatting and transport
+        using var smtp = new SmtpClient("smtp.company.com");
+        await smtp.SendMailAsync("shop@company.com", order.CustomerEmail,
+            "Order placed", $"Your order {order.Id} total is {order.Total:C}");
+    }
+}
+```
+
+  </TabItem>
+  <TabItem label="After">
+
+```csharp
+public interface IOrderRepository { Task AddAsync(Order order, CancellationToken ct); }
+public interface IOrderNotifier { Task OrderPlacedAsync(Order order, CancellationToken ct); }
+
+public class OrderValidator
+{
+    public void Validate(Order order)
+    {
+        if (order.Lines.Count == 0) throw new ArgumentException("Empty order");
+    }
+}
+
+// Orchestrates; each collaborator has one reason to change.
+public class OrderService(OrderValidator validator, IOrderRepository repo, IOrderNotifier notifier)
+{
+    public async Task PlaceAsync(Order order, CancellationToken ct)
+    {
+        validator.Validate(order);
+        await repo.AddAsync(order, ct);
+        await notifier.OrderPlacedAsync(order, ct);
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+SRP is about **cohesion**, not "one method per class". A `UserRepository` with ten query methods is fine: all of them change when the user schema changes.
+
+### O: Open/Closed Principle
+
+Adding a new payment method should mean **adding a class**, not editing a tested `switch` in the checkout code.
+
+<Tabs>
+  <TabItem label="Before">
+
+```csharp
+public class CheckoutService
+{
+    public Task<string> PayAsync(string method, decimal amount) => method switch
+    {
+        "card" => ChargeCardAsync(amount),
+        "upi" => ChargeUpiAsync(amount),
+        "wallet" => ChargeWalletAsync(amount),
+        // every new method = edit + retest this class
+        _ => throw new NotSupportedException(method)
+    };
+
+    private Task<string> ChargeCardAsync(decimal a) => Task.FromResult("card-tx");
+    private Task<string> ChargeUpiAsync(decimal a) => Task.FromResult("upi-tx");
+    private Task<string> ChargeWalletAsync(decimal a) => Task.FromResult("wallet-tx");
+}
+```
+
+  </TabItem>
+  <TabItem label="After">
+
+```csharp
+public interface IPaymentProvider
+{
+    string Method { get; }
+    Task<string> ChargeAsync(decimal amount, CancellationToken ct);
+}
+
+public class CardProvider : IPaymentProvider
+{
+    public string Method => "card";
+    public Task<string> ChargeAsync(decimal amount, CancellationToken ct) => Task.FromResult("card-tx");
+}
+
+public class UpiProvider : IPaymentProvider
+{
+    public string Method => "upi";
+    public Task<string> ChargeAsync(decimal amount, CancellationToken ct) => Task.FromResult("upi-tx");
+}
+
+// Closed for modification: a new provider is a new class + one DI line.
+public class CheckoutService(IEnumerable<IPaymentProvider> providers)
+{
+    private readonly Dictionary<string, IPaymentProvider> _byMethod =
+        providers.ToDictionary(p => p.Method);
+
+    public Task<string> PayAsync(string method, decimal amount, CancellationToken ct) =>
+        _byMethod.TryGetValue(method, out var p)
+            ? p.ChargeAsync(amount, ct)
+            : throw new NotSupportedException(method);
+}
+// Program.cs: services.AddScoped<IPaymentProvider, CardProvider>();
+//             services.AddScoped<IPaymentProvider, UpiProvider>();
+```
+
+  </TabItem>
+</Tabs>
+
+OCP doesn't mean "never edit a class". It means **designing the points that change often** (payment methods, discount rules, export formats) so they are extended by addition.
+
+### L: Liskov Substitution Principle
+
+A subtype must honour the base type's **contract**: it can't demand more (stronger preconditions), promise less (weaker postconditions), or throw where the base doesn't.
+
+<Tabs>
+  <TabItem label="Before">
+
+```csharp
+public abstract class NotificationSender
+{
+    // Contract: sends any non-empty message.
+    public abstract Task SendAsync(string to, string message);
+}
+
+public class EmailSender : NotificationSender
+{
+    public override Task SendAsync(string to, string message) => Task.CompletedTask;
+}
+
+public class SmsSender : NotificationSender
+{
+    public override Task SendAsync(string to, string message)
+    {
+        // Stronger precondition: callers written against the base type now break.
+        if (message.Length > 160) throw new InvalidOperationException("Too long for SMS");
+        return Task.CompletedTask;
+    }
+}
+```
+
+  </TabItem>
+  <TabItem label="After">
+
+```csharp
+public abstract class NotificationSender
+{
+    // The limit is now part of the contract, visible to every caller.
+    public virtual int MaxLength => int.MaxValue;
+    public abstract Task SendAsync(string to, string message);
+}
+
+public class EmailSender : NotificationSender
+{
+    public override Task SendAsync(string to, string message) => Task.CompletedTask;
+}
+
+public class SmsSender : NotificationSender
+{
+    public override int MaxLength => 160;
+
+    // Honours the base contract: any message is accepted, split into parts.
+    public override async Task SendAsync(string to, string message)
+    {
+        foreach (var part in message.Chunk(MaxLength))
+            await SendPartAsync(to, new string(part));
+    }
+
+    private Task SendPartAsync(string to, string part) => Task.CompletedTask;
+}
+```
+
+  </TabItem>
+</Tabs>
+
+The textbook example is `Square : Rectangle`: setting `Width` on a square also changes `Height`, which breaks code that assumes they are independent. Inside .NET, `ReadOnlyCollection<T>` implements `ICollection<T>` and throws on `Add`. That is a known LSP compromise, softened by the `IsReadOnly` flag (`Stream` does the same with `CanSeek` and `CanWrite`).
+
+### I: Interface Segregation Principle
+
+<Tabs>
+  <TabItem label="Before">
+
+```csharp
+public interface IRepository<T>
+{
+    Task<T?> GetAsync(int id);
+    Task<List<T>> ListAsync();
+    Task AddAsync(T entity);
+    Task DeleteAsync(int id);
+    Task BulkImportAsync(Stream csv);
+}
+
+// Reporting only reads, but must "implement" writes.
+public class SalesReportRepository : IRepository<Sale>
+{
+    public Task<Sale?> GetAsync(int id) => Task.FromResult<Sale?>(null);
+    public Task<List<Sale>> ListAsync() => Task.FromResult(new List<Sale>());
+    public Task AddAsync(Sale entity) => throw new NotSupportedException();
+    public Task DeleteAsync(int id) => throw new NotSupportedException();
+    public Task BulkImportAsync(Stream csv) => throw new NotSupportedException();
+}
+```
+
+  </TabItem>
+  <TabItem label="After">
+
+```csharp
+public interface IReadRepository<T>
+{
+    Task<T?> GetAsync(int id);
+    Task<List<T>> ListAsync();
+}
+
+public interface IWriteRepository<T>
+{
+    Task AddAsync(T entity);
+    Task DeleteAsync(int id);
+}
+
+public interface IBulkImporter<T> { Task BulkImportAsync(Stream csv); }
+
+public class SalesReportRepository : IReadRepository<Sale>
+{
+    public Task<Sale?> GetAsync(int id) => Task.FromResult<Sale?>(null);
+    public Task<List<Sale>> ListAsync() => Task.FromResult(new List<Sale>());
+}
+```
+
+  </TabItem>
+</Tabs>
+
+.NET does this itself: `IEnumerable<T>`, `IReadOnlyCollection<T>` and `IReadOnlyList<T>` let a method ask only for what it needs, and ASP.NET Core has separate `IAuthenticationService` and `IAuthorizationService` instead of one giant security interface. One class can still implement several small interfaces.
+
+### D: Dependency Inversion Principle
+
+High-level modules (invoice rules) and low-level modules (SQL, SMTP) should both depend on **abstractions owned by the high-level side**.
+
+<Tabs>
+  <TabItem label="Before">
+
+```csharp
+public class InvoiceService
+{
+    // Hard-wired to details: can't unit test, can't swap SMTP for SendGrid.
+    private readonly SqlInvoiceStore _store = new("Server=.;Database=Shop;");
+    private readonly SmtpMailer _mailer = new("smtp.company.com");
+
+    public async Task IssueAsync(Invoice invoice)
+    {
+        await _store.SaveAsync(invoice);
+        await _mailer.SendAsync(invoice.Email, "Your invoice");
+    }
+}
+```
+
+  </TabItem>
+  <TabItem label="After">
+
+```csharp
+// Abstractions live in the core/application project.
+public interface IInvoiceStore { Task SaveAsync(Invoice invoice, CancellationToken ct); }
+public interface IMailer { Task SendAsync(string to, string subject, CancellationToken ct); }
+
+public class InvoiceService(IInvoiceStore store, IMailer mailer)
+{
+    public async Task IssueAsync(Invoice invoice, CancellationToken ct)
+    {
+        await store.SaveAsync(invoice, ct);
+        await mailer.SendAsync(invoice.Email, "Your invoice", ct);
+    }
+}
+
+// Infrastructure implements them; Program.cs wires them:
+// builder.Services.AddScoped<IInvoiceStore, EfInvoiceStore>();
+// builder.Services.AddSingleton<IMailer, SendGridMailer>();
+```
+
+  </TabItem>
+</Tabs>
+
+**DIP vs DI vs IoC**: DIP is the *design principle* (depend on abstractions, with the high-level side owning them). Dependency Injection is a *technique* for supplying dependencies from outside (constructor injection). An IoC container (`Microsoft.Extensions.DependencyInjection`) is a *tool* that automates DI. You can do DI without a container, and you can use a container and still violate DIP, for example by injecting a concrete `SqlInvoiceStore`.
+
+### SOLID in ASP.NET Core and Angular
+
+| Principle | ASP.NET Core | Angular |
+|---|---|---|
+| SRP | Thin controllers; validation in FluentValidation or filters; cross-cutting work in middleware | Presentational components only render; services fetch and hold data |
+| OCP | Middleware pipeline, multiple `IHostedService` or `IExceptionHandler` registrations | Functional HTTP interceptors, swapping providers without touching consumers |
+| LSP | Any `ILoggerProvider` or `Stream` works where the base is expected | Any `ControlValueAccessor` works with forms |
+| ISP | `IReadOnlyList<T>`, `IOptions<T>` vs `IOptionsMonitor<T>` | Small lifecycle interfaces: `OnInit`, `OnDestroy` |
+| DIP | Built-in container, `IOptions<T>`, `IHttpClientFactory` | `inject()` with `InjectionToken`, `useClass` / `useFactory` providers |
+
+## Interview Q&A
+
+<details>
+<summary>Explain SRP. Doesn't it lead to hundreds of tiny classes?</summary>
+
+SRP means a class has **one reason to change**, that is, it serves one actor. It does not mean one method per class. Group things that change together (cohesion) and separate things that change for different reasons. Taken too far you get "class explosion" where reading one feature means opening 15 files, so apply it where change actually happens.
+</details>
+
+<details>
+<summary>Give a real example of OCP from your work.</summary>
+
+A good answer: *"We supported card and UPI payments with a `switch` in `CheckoutService`. Adding wallets meant editing and retesting checkout. We introduced `IPaymentProvider` with a `Method` key, registered each provider in DI and resolved them through `IEnumerable<IPaymentProvider>`. Adding PayPal later was one class plus one registration."* Middleware and `IExceptionHandler` are framework examples.
+</details>
+
+<details>
+<summary>What is a Liskov violation, and how do you spot one?</summary>
+
+A subtype that can't replace its base without surprising callers. Red flags: overrides that throw `NotSupportedException`, `if (x is SpecialType)` checks in callers, overrides that ignore parameters or demand extra preconditions. Fix by correcting the hierarchy (often composition instead of inheritance) or making the capability explicit in the contract (`CanWrite`, `MaxLength`).
+</details>
+
+<details>
+<summary>What is the difference between ISP and SRP?</summary>
+
+SRP is about the **implementation** side: a class should have one reason to change. ISP is about the **client** side: callers shouldn't depend on members they don't use. A fat interface can be implemented by a cohesive class and still violate ISP because different clients use different slices of it.
+</details>
+
+<details>
+<summary>DIP vs Dependency Injection vs IoC container?</summary>
+
+DIP is the principle: policy code depends on abstractions it owns, and details implement them. DI is the technique of passing dependencies in, usually through the constructor. An IoC container automates object creation and lifetimes. Injecting a concrete class through the container is DI but not DIP.
+</details>
+
+<details>
+<summary>Where does ASP.NET Core itself follow SOLID?</summary>
+
+Middleware (each component does one thing and the pipeline grows by adding components: SRP and OCP), the DI container and `IOptions<T>` (DIP), logging providers that all implement `ILoggerProvider` (LSP and OCP), and small read-only interfaces like `IReadOnlyList<T>` (ISP).
+</details>
+
+<details>
+<summary>Can following SOLID be harmful?</summary>
+
+Yes, when applied speculatively: an interface for every class with one implementation, strategy hierarchies for rules that never change, or layers that make simple CRUD hard to follow. Apply SOLID where you have **evidence of change** or need a test seam. See [YAGNI and KISS](../design-principles/).
+</details>
+
+<details>
+<summary>How does SOLID help unit testing?</summary>
+
+DIP plus constructor injection lets you replace `IOrderRepository` and `IMailer` with fakes or mocks (Moq, NSubstitute). SRP keeps each test focused on one behaviour. A class that creates `SqlConnection` internally can only be tested against a real database.
+</details>
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+
+- **An interface for everything** "because SOLID", even with one implementation and no test need. It adds indirection, not flexibility.
+- **Reading SRP as "one method per class"** and scattering one feature across dozens of files.
+- **Confusing DIP with DI.** Injecting concrete classes through the container still couples policy to details.
+- **Calling `serviceProvider.GetService()` everywhere** (service locator). Dependencies become hidden and DIP is lost.
+- **Inheritance for code reuse** that later forces `NotSupportedException` overrides (LSP). Prefer composition.
+- **Putting abstractions in the infrastructure project.** Under DIP the core owns the interface and infrastructure implements it.
+
+</Aside>
+
+## Related
+
+- [DRY, KISS, YAGNI & Friends](../design-principles/)
+- [Behavioral Patterns (Strategy)](../behavioral-patterns/)
+- [Architecture Styles (Clean Architecture)](../architecture-styles/)
+- [Dependency Injection in ASP.NET Core](../../aspnet/dependency-injection/)
+
+## Quick quiz
+
+<QuizBlock section="patterns" topic="solid" />

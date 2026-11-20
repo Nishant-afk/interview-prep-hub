@@ -1,0 +1,61 @@
+---
+title: "Cheat Sheet: C# & .NET"
+description: One-page revision of C# language and .NET runtime essentials for interviews.
+sidebar:
+  order: 2
+noProgress: true
+tableOfContents: false
+---
+
+Print this page (Ctrl+P) for a one-page summary. Each line links back to the full topic.
+
+## Types and memory
+
+| Concept | Remember |
+|---|---|
+| Value vs reference | Value types copy the data; reference types copy the reference. "Stack vs heap" is an implementation detail: a value-type field of a class lives on the heap. [More](../../csharp/value-reference-types/) |
+| Boxing | Value type → `object`/interface allocates on the heap. Avoid in hot loops; generics prevent it. |
+| `struct` vs `class` vs `record` | `struct`: small, immutable, no identity. `record`: value equality, `with` cloning. `record struct`: both. |
+| `string` | Immutable, interned literals. Many concatenations → `StringBuilder`. Slicing without allocating → `Span<T>`. [More](../../csharp/strings-span/) |
+| GC | Generations 0/1/2 + LOH (≥ 85,000 bytes). Finalizers delay collection. `IDisposable` + `using` releases unmanaged resources deterministically. [More](../../csharp/memory-gc/) |
+| Common leaks | Event handlers never unsubscribed, static caches, timers, captured closures. |
+
+## OOP
+
+- **Abstract class vs interface:** abstract class = shared state + partial implementation, single inheritance. Interface = contract, multiple, can have default methods (C# 8+). [More](../../csharp/oop-csharp/)
+- **`virtual`/`override`** = runtime polymorphism. **`new`** = hides, decided by the static type. **`sealed`** stops further overriding.
+- **Overloading** = compile time. **Overriding** = runtime.
+
+## Collections and LINQ
+
+| Need | Use | Lookup |
+|---|---|---|
+| Ordered list, index access | `List<T>` | O(1) index, O(n) search |
+| Key → value | `Dictionary<K,V>` | O(1) average |
+| Unique set | `HashSet<T>` | O(1) average |
+| FIFO / LIFO | `Queue<T>` / `Stack<T>` | O(1) |
+| Smallest first | `PriorityQueue<TElement,TPriority>` | O(log n) |
+| Threads | `ConcurrentDictionary`, `Channel<T>` | |
+
+- **Deferred execution:** `Where`/`Select` run when enumerated. `ToList()`/`Count()`/`First()` execute immediately. Enumerating twice runs the query twice. [More](../../csharp/linq/)
+- **`IEnumerable` vs `IQueryable`:** in-memory delegates vs expression trees translated to SQL. Calling `AsEnumerable()` too early pulls the whole table.
+
+## Async and threading
+
+- `await` releases the thread during I/O; the continuation resumes later. No thread waits. [More](../../csharp/async-await/)
+- Never `.Result`/`.Wait()` on async code: deadlocks under a SynchronizationContext, starvation elsewhere.
+- `async void` only for event handlers. `ValueTask` only for hot, usually-synchronous paths, awaited once.
+- `ConfigureAwait(false)` in libraries; no effect in ASP.NET Core.
+- Concurrency: start the tasks, then `await Task.WhenAll(...)`. Always pass a `CancellationToken`.
+- Locks: `lock` (sync code), `SemaphoreSlim.WaitAsync` (async code), `Interlocked` (counters). Producer/consumer → `Channel<T>`. [More](../../csharp/threading/)
+
+## Delegates, exceptions, modern C#
+
+- `Func<>` returns a value, `Action<>` returns void, events = delegates that only the owner can invoke. [More](../../csharp/delegates-events/)
+- `throw;` keeps the stack trace; `throw ex;` resets it. Use exception filters with `when`. [More](../../csharp/exceptions/)
+- Modern C#: records, pattern matching, switch expressions, `required`, primary constructors (C# 12), collection expressions `[1, 2, 3]`, extension members (C# 14), union types (C# 15, .NET 11). [More](../../csharp/modern-csharp/)
+
+## .NET platform
+
+- C# → IL → JIT → machine code. Tiered compilation + Dynamic PGO optimise hot methods. Native AOT compiles ahead of time (fast start, no runtime JIT, trimming limits reflection). [More](../../csharp/dotnet-platform/)
+- LTS releases are the even versions (8, 10) with 3 years of support. STS releases are the odd versions (9, 11) with 2 years.

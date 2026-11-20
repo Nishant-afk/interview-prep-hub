@@ -1,0 +1,1884 @@
+{
+  "section": "aspnet",
+  "version": 1,
+  "questions": [
+    {
+      "id": "aspnet-hosting-startup-001",
+      "topic": "hosting-startup",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "An API is deployed to a VM and neither `ASPNETCORE_ENVIRONMENT` nor `DOTNET_ENVIRONMENT` is set. Which environment does it run in?",
+      "options": [
+        "Development",
+        "Production",
+        "Staging",
+        "None: startup fails until it is set"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The host defaults to `Production` when no environment variable is set. This safe default means a forgotten setting never enables the developer exception page or Development-only config.",
+      "optionNotes": [
+        "Development is set locally by launchSettings.json, not by default.",
+        null,
+        "Staging must be set explicitly.",
+        "Startup works fine without it."
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-hosting-startup-002",
+      "topic": "hosting-startup",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is `Properties/launchSettings.json` used for?",
+      "options": [
+        "It configures Kestrel endpoints in production",
+        "It overrides appsettings.json in every environment",
+        "It sets URLs, environment and profiles for local `dotnet run` / Visual Studio only",
+        "It is read by Azure App Service to choose the runtime stack"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "launchSettings.json is a local development convenience. Published apps don't use it, so it has no effect in App Service, IIS or containers. Deployed environments get their settings from environment variables or host configuration.",
+      "optionNotes": [
+        "Production Kestrel config comes from appsettings, env vars or code.",
+        "It is not a configuration provider.",
+        null,
+        "App Service ignores it."
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-hosting-startup-003",
+      "topic": "hosting-startup",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens when this code runs?",
+      "code": "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\nbuilder.Services.AddScoped<IOrderService, OrderService>();\napp.MapGet(\"/orders\", (IOrderService s) => s.GetAll());\napp.Run();",
+      "codeLang": "csharp",
+      "options": [
+        "An InvalidOperationException is thrown because the service collection is read-only after Build()",
+        "It works; the registration is picked up lazily on first request",
+        "It compiles but `IOrderService` resolves to null in the handler",
+        "The registration is silently ignored and the endpoint returns 500 only in Production"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`Build()` creates the service provider and makes `builder.Services` read-only. Adding a registration afterwards throws. All services must be registered before `Build()`; pipeline and endpoints are configured after it.",
+      "optionNotes": [
+        null,
+        "The container is already built; there is no lazy pickup.",
+        "The add call itself throws before the handler runs.",
+        "It fails loudly in every environment."
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-hosting-startup-004",
+      "topic": "hosting-startup",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Your API runs behind an Azure Application Gateway that terminates TLS. After adding `app.UseHttpsRedirection()`, browsers get an endless redirect loop. What is the right fix?",
+      "options": [
+        "Remove HTTPS from the gateway and expose Kestrel on port 443",
+        "Call `UseHttpsRedirection()` after `MapControllers()`",
+        "Set `ASPNETCORE_ENVIRONMENT=Development` so redirection is skipped",
+        "Add `UseForwardedHeaders()` early with `XForwardedProto` and trust the gateway's network"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The gateway forwards plain HTTP, so the app thinks every request is HTTP and redirects again. Forwarded Headers middleware reads `X-Forwarded-Proto` from the trusted proxy and sets `Request.Scheme` to https, which stops the loop and also fixes the client IP.",
+      "optionNotes": [
+        "Unnecessary and loses the benefits of the gateway.",
+        "Middleware after endpoints doesn't run for matched requests and doesn't fix the scheme.",
+        "Hides the symptom and enables Development-only behaviour in production.",
+        null
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-hosting-startup-005",
+      "topic": "hosting-startup",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With the default **in-process** IIS hosting model, how are requests served?",
+      "options": [
+        "IIS forwards each request over loopback HTTP to Kestrel in a separate dotnet.exe",
+        "The app runs inside the IIS worker process (w3wp.exe) and uses the IIS HTTP Server instead of Kestrel",
+        "IIS hosts Kestrel and HTTP.sys side by side and load-balances between them",
+        "The ASP.NET Core Module compiles the app to native code and runs it as an IIS module"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "In-process hosting loads the CoreCLR and the app into `w3wp.exe` and uses the in-process IIS HTTP Server, avoiding the loopback hop. Out-of-process hosting is the one that proxies to Kestrel in a separate process.",
+      "optionNotes": [
+        "That describes out-of-process hosting.",
+        null,
+        "No such arrangement exists.",
+        "ANCM doesn't compile apps to native code."
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-hosting-startup-006",
+      "topic": "hosting-startup",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these does `WebApplication.CreateBuilder(args)` set up by default? (Select all that apply)",
+      "options": [
+        "Configuration from appsettings files, environment variables and command-line args",
+        "User secrets as a configuration source when the environment is Development",
+        "DI scope validation when the environment is Development",
+        "The HTTPS redirection middleware in the request pipeline"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "The builder wires configuration providers (including user secrets in Development), logging, the DI container with scope and build validation in Development, and the server. Pipeline middleware such as HTTPS redirection is only added when you call `UseHttpsRedirection()`.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "You must add it yourself after Build()."
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-hosting-startup-007",
+      "topic": "hosting-startup",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Kubernetes sends SIGTERM to a pod. A `BackgroundService` in the API ignores its `stoppingToken` and keeps processing a long batch. What happens?",
+      "options": [
+        "The host waits for the batch to finish no matter how long it takes",
+        "The host restarts the background service on another thread",
+        "The host stops waiting after `HostOptions.ShutdownTimeout` and exits; unfinished work is lost",
+        "Kestrel keeps accepting new requests until the batch completes"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "On shutdown the host fires ApplicationStopping, drains requests and calls `StopAsync` on hosted services, but only waits up to `ShutdownTimeout` (30 s by default). Kubernetes also kills the pod after its grace period. Work that ignores cancellation is cut off mid-way.",
+      "optionNotes": [
+        "The wait is bounded by the shutdown timeout and the pod grace period.",
+        "Hosted services are not restarted during shutdown.",
+        null,
+        "The server stops accepting new connections when shutdown begins."
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-hosting-startup-008",
+      "topic": "hosting-startup",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "After upgrading a containerised API to the official .NET 8+ `aspnet` base image, health probes against port 80 fail. Nothing else changed. What is the most likely cause?",
+      "options": [
+        "The new images listen on port 8080 by default",
+        "Kestrel no longer supports HTTP/1.1 in containers",
+        "The new images require HTTPS on every port",
+        "Health checks were removed from the framework"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Since .NET 8 the official images set `ASPNETCORE_HTTP_PORTS=8080` and run as a non-root user, which can't bind ports below 1024 by default. Update the Dockerfile `EXPOSE`, the probe and the service port, or set the port variable explicitly.",
+      "optionNotes": [
+        null,
+        "HTTP/1.1 is fully supported.",
+        "HTTPS is not forced by the image.",
+        "Health checks are still part of ASP.NET Core."
+      ],
+      "readMore": "/aspnet/hosting-startup/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-001",
+      "topic": "middleware-pipeline",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the difference between `app.Use(...)` and `app.Run(...)`?",
+      "options": [
+        "`Use` is for synchronous middleware and `Run` for asynchronous",
+        "`Use` runs only in Development, `Run` in all environments",
+        "`Run` executes once at startup, `Use` on every request",
+        "`Use` can call the next middleware; `Run` is terminal and never calls next"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`Use` receives a `next` delegate and may call it or short-circuit. `Run` adds terminal middleware with no `next`, so anything registered after it is never reached.",
+      "optionNotes": [
+        "Both are asynchronous.",
+        "Neither is environment-specific.",
+        "Both run per request.",
+        null
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-002",
+      "topic": "middleware-pipeline",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why is the exception handler middleware registered first in the pipeline?",
+      "options": [
+        "Because it is the fastest middleware",
+        "Because it can only catch exceptions thrown by middleware that runs after it",
+        "Because the framework throws if it isn't first",
+        "Because it needs to run before Kestrel parses the request"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Middleware wraps everything registered after it through `await next()`. Placed first, the exception handler surrounds the whole pipeline and can turn any exception into a proper error response.",
+      "optionNotes": [
+        "Speed is not the reason.",
+        null,
+        "No such check exists; misplacing it just leaves gaps.",
+        "Kestrel always parses the request before any middleware."
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-003",
+      "topic": "middleware-pipeline",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this pipeline write to the console for one request?",
+      "code": "app.Use(async (ctx, next) => { Console.Write(\"A1 \"); await next(ctx); Console.Write(\"A2 \"); });\napp.Use(async (ctx, next) => { Console.Write(\"B1 \"); await next(ctx); Console.Write(\"B2 \"); });\napp.Run(async ctx => { Console.Write(\"C \"); await ctx.Response.WriteAsync(\"done\"); });",
+      "codeLang": "csharp",
+      "options": [
+        "A1 B1 C A2 B2",
+        "A1 A2 B1 B2 C",
+        "A1 B1 C B2 A2",
+        "C B2 B1 A2 A1"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The request flows in through middleware in registration order and the response unwinds in reverse. A runs its before-code, B runs its before-code, C handles the request, then B's after-code and finally A's after-code.",
+      "optionNotes": [
+        "After-code unwinds in reverse order, so B2 comes before A2.",
+        "A only continues after `next` returns.",
+        null,
+        "Before-code runs first, in registration order."
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-004",
+      "topic": "middleware-pipeline",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A developer writes `app.UseAuthorization(); app.UseAuthentication();` in that order. What do clients with a valid JWT see on `[Authorize]` endpoints?",
+      "options": [
+        "401 responses, because authorization runs while the user is still anonymous",
+        "200 responses; the order doesn't matter",
+        "403 responses only for users without roles",
+        "A startup exception listing the correct order"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Authentication populates `HttpContext.User`. If authorization runs first it sees an anonymous user and challenges, producing 401 even for valid tokens. Authentication must come before authorization.",
+      "optionNotes": [
+        null,
+        "Order matters: AuthZ reads what AuthN produced.",
+        "The user isn't authenticated at all when AuthZ runs.",
+        "The framework doesn't validate this order at startup."
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-005",
+      "topic": "middleware-pipeline",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular app on another origin calls the API. GET requests work, but PUT requests fail in the browser with a CORS error, and the server logs show 401 for `OPTIONS` requests. What is the likely cause?",
+      "options": [
+        "PUT is not allowed by HTTP for cross-origin calls",
+        "The JWT is too large for a preflight request",
+        "The CORS middleware runs after authentication, so the token-less preflight is rejected",
+        "Kestrel doesn't support the OPTIONS verb"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Browsers send a preflight `OPTIONS` without the Authorization header. If authentication or a fallback policy rejects it before CORS answers, the browser reports a CORS failure. Place `UseCors` after routing and before authentication/authorization.",
+      "optionNotes": [
+        "PUT works cross-origin when the preflight succeeds.",
+        "Preflights don't carry the token at all.",
+        null,
+        "Kestrel handles OPTIONS normally."
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-006",
+      "topic": "middleware-pipeline",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A convention-based middleware needs the scoped `AppDbContext`. Where should it get it?",
+      "options": [
+        "In the constructor, next to `RequestDelegate`",
+        "As a parameter of `InvokeAsync`, which is resolved per request",
+        "From a static field set in Program.cs",
+        "From `app.Services.GetRequiredService<AppDbContext>()` in the constructor"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Convention-based middleware is constructed once when the pipeline is built, so constructor dependencies behave like singletons. Extra parameters on `InvokeAsync` are resolved from the request scope on each call. Alternatively implement `IMiddleware` and register it as scoped.",
+      "optionNotes": [
+        "That captures one DbContext for the app's lifetime (captive dependency).",
+        null,
+        "A static instance is shared across requests and threads.",
+        "Resolving scoped services from the root provider is a scope validation error."
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-007",
+      "topic": "middleware-pipeline",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "This middleware sometimes throws `InvalidOperationException: Headers are read-only, response has already started`. What is the best fix?",
+      "code": "app.Use(async (ctx, next) =>\n{\n    var sw = Stopwatch.StartNew();\n    await next(ctx);\n    ctx.Response.Headers[\"X-Elapsed-Ms\"] = sw.ElapsedMilliseconds.ToString();\n});",
+      "codeLang": "csharp",
+      "options": [
+        "Wrap the header assignment in try/catch and ignore the error",
+        "Move the middleware after `MapControllers()`",
+        "Use `ctx.Response.Headers.Append` instead of the indexer",
+        "Register `ctx.Response.OnStarting(...)` to set the header just before headers are sent"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Once the endpoint starts writing the body, headers are flushed and become read-only. `Response.OnStarting` runs a callback right before headers are sent, so you can compute and add the header safely.",
+      "optionNotes": [
+        "Swallowing the error means the header is silently missing.",
+        "That doesn't change when headers are flushed.",
+        "Any header modification after the response started throws.",
+        null
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-008",
+      "topic": "middleware-pipeline",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about pipeline branching are true? (Select all that apply)",
+      "options": [
+        "`Map(\"/admin\", ...)` sends matching requests down a branch that does not rejoin the main pipeline",
+        "`UseWhen` rejoins the main pipeline after the branch unless the branch short-circuits",
+        "`Map` moves the matched prefix from `Request.Path` to `Request.PathBase`",
+        "`MapWhen` branches are selected by endpoint routing using route templates"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "`Map` and `MapWhen` create terminal branches; `UseWhen` adds conditional middleware and then continues with the main pipeline. `Map` strips the prefix into `PathBase`. These are plain middleware branches, unrelated to endpoint routing's `MapGet` / `MapControllers`.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "MapWhen evaluates a predicate in the middleware chain, not route templates."
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-middleware-pipeline-009",
+      "topic": "middleware-pipeline",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `.ShortCircuit()` on `app.MapGet(\"/ping\", ...)` do (.NET 8+)?",
+      "options": [
+        "Caches the endpoint's response for all callers",
+        "Runs the endpoint immediately after routing, skipping later middleware such as authentication",
+        "Returns 204 without executing the handler",
+        "Moves the endpoint before the exception handler middleware"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A short-circuited endpoint is executed by the routing middleware as soon as it is matched, so middleware registered after routing (CORS, authentication, authorization, rate limiting) doesn't run for it. Useful for cheap pings or robots.txt.",
+      "optionNotes": [
+        "That is output caching.",
+        "The handler still runs.",
+        null,
+        "Middleware registered before routing, such as the exception handler, still runs."
+      ],
+      "readMore": "/aspnet/middleware-pipeline/"
+    },
+    {
+      "id": "aspnet-dependency-injection-001",
+      "topic": "dependency-injection",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What lifetime does `AddDbContext<AppDbContext>()` register the context with by default?",
+      "options": [
+        "Transient",
+        "Singleton",
+        "Scoped",
+        "Pooled singleton"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`DbContext` is scoped by default: one instance per HTTP request, shared by all services in that request and disposed at its end. It is not thread-safe, so it must not be a singleton.",
+      "optionNotes": [
+        "Transient would give each service its own context and break the unit of work.",
+        "A singleton DbContext would be shared across concurrent requests.",
+        null,
+        "Pooling (`AddDbContextPool`) reuses instances but they are still scoped per request."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-002",
+      "topic": "dependency-injection",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "`EmailNotifier` and `SmsNotifier` are both registered as `INotifier`. A constructor takes `IEnumerable<INotifier>`. What does it receive?",
+      "options": [
+        "Only the last registered notifier",
+        "Both notifiers, in registration order",
+        "Only the first registered notifier",
+        "An exception because the registration is ambiguous"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Resolving `IEnumerable<T>` returns all registrations in order. Resolving plain `INotifier` returns the last registration. Multiple registrations are a normal way to implement strategies or pipelines.",
+      "optionNotes": [
+        "That's what you get for a single `INotifier`.",
+        null,
+        "Neither single nor enumerable resolution returns only the first.",
+        "Multiple registrations are valid."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-003",
+      "topic": "dependency-injection",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Development, a singleton `PriceCache` takes `AppDbContext` (scoped) in its constructor. What happens?",
+      "options": [
+        "The app throws at startup: a scoped service can't be consumed from a singleton",
+        "The container silently upgrades `AppDbContext` to singleton",
+        "Each call to `PriceCache` receives a fresh `AppDbContext`",
+        "It works, but EF Core logs a warning on every query"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "In Development, `ValidateScopes` and `ValidateOnBuild` are on, so the container detects the captive dependency and throws. In Production validation is off by default, and the singleton would hold the first DbContext forever.",
+      "optionNotes": [
+        null,
+        "Lifetimes are never changed automatically.",
+        "A singleton is constructed once, so it can't get a new context per call.",
+        "Validation fails before any query runs."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-004",
+      "topic": "dependency-injection",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A `BackgroundService` needs to query the database every minute with EF Core. What is the correct approach?",
+      "options": [
+        "Inject `AppDbContext` in the constructor and reuse it for every iteration",
+        "Register the background service as scoped",
+        "Create `new AppDbContext()` manually without options",
+        "Inject `IServiceScopeFactory` and create a scope per iteration to resolve `AppDbContext`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Hosted services are singletons with no request scope. Creating a scope (or using `IDbContextFactory`) per unit of work gives a fresh, correctly disposed DbContext each time, without stale tracking or captive dependencies.",
+      "optionNotes": [
+        "Captive dependency: one long-lived context accumulates tracked entities and fails validation.",
+        "Hosted services are always resolved as singletons.",
+        "Bypasses configuration and DI entirely.",
+        null
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-005",
+      "topic": "dependency-injection",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which implementation does a constructor asking for `IClock` receive?",
+      "code": "services.AddSingleton<IClock, SystemClock>();\nservices.TryAddSingleton<IClock, FakeClock>();\nservices.AddSingleton<IClock, UtcClock>();",
+      "codeLang": "csharp",
+      "options": [
+        "SystemClock",
+        "FakeClock",
+        "UtcClock",
+        "An exception for duplicate registrations"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`TryAddSingleton` does nothing because `IClock` is already registered. The last `AddSingleton` wins for single resolution, so `UtcClock` is injected. `IEnumerable<IClock>` would contain SystemClock and UtcClock.",
+      "optionNotes": [
+        "It was registered first, but the last registration wins.",
+        "TryAdd skips when any registration for the service exists.",
+        null,
+        "Duplicates are allowed."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-006",
+      "topic": "dependency-injection",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Two `IPaymentGateway` implementations are registered with `AddKeyedSingleton` under the keys \"stripe\" and \"razorpay\". How does a class ask for the Razorpay one in its constructor?",
+      "options": [
+        "`[FromServices(\"razorpay\")] IPaymentGateway gateway`",
+        "`[FromKeyedServices(\"razorpay\")] IPaymentGateway gateway`",
+        "`IPaymentGateway<Razorpay> gateway`",
+        "`[Named(\"razorpay\")] IPaymentGateway gateway`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Keyed services (.NET 8+) are resolved with `[FromKeyedServices(key)]` on a parameter, or `GetRequiredKeyedService<T>(key)` at runtime. They replace hand-written factories for named implementations.",
+      "optionNotes": [
+        "FromServices has no key argument.",
+        null,
+        "Keyed services don't use generic markers.",
+        "That attribute belongs to other containers, not Microsoft.Extensions.DependencyInjection."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-007",
+      "topic": "dependency-injection",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A singleton calls `serviceProvider.GetRequiredService<ReportBuilder>()` on the **root** provider for every report. `ReportBuilder` is transient and implements `IDisposable`. Memory grows steadily. Why?",
+      "options": [
+        "Transient services are never garbage collected",
+        "`GetRequiredService` creates a new thread per call",
+        "The container tracks disposable transients it creates and keeps them until the root provider is disposed at shutdown",
+        "`IDisposable` objects are pinned on the large object heap"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The container disposes what it creates when the owning scope ends. For the root provider that is app shutdown, so every resolved disposable transient stays referenced. Create a scope per operation and dispose it, or construct the object yourself.",
+      "optionNotes": [
+        "Non-disposable transients are collected normally.",
+        "Resolution doesn't create threads.",
+        null,
+        "IDisposable has nothing to do with LOH or pinning."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-008",
+      "topic": "dependency-injection",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which dependency chains create a captive dependency problem? (Select all that apply)",
+      "options": [
+        "Singleton → Scoped",
+        "Singleton → Transient → Scoped",
+        "Scoped → Singleton",
+        "Transient → Scoped, resolved inside an HTTP request"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "A service must not depend on anything shorter-lived. A singleton holding a scoped service, directly or through a transient, keeps that scoped instance forever. Depending on longer-lived services is fine, and a transient consuming a scoped service inside a request lives no longer than the scope.",
+      "optionNotes": [
+        null,
+        null,
+        "Longer-lived dependencies are safe (if thread-safe).",
+        "Both live within the same request scope."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-dependency-injection-009",
+      "topic": "dependency-injection",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You register `services.AddSingleton(new BlobClientWrapper(...))`, and `BlobClientWrapper` implements `IDisposable`. Who disposes it?",
+      "options": [
+        "Nobody automatically; you created the instance, so you own its disposal",
+        "The container, at the end of each request",
+        "The container, at app shutdown",
+        "The garbage collector calls Dispose when it is collected"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The container only disposes instances it created. With `AddSingleton<T>()` or a factory it disposes at shutdown, but a pre-built instance passed to `AddSingleton(instance)` is left to you.",
+      "optionNotes": [
+        null,
+        "Singletons are never disposed per request.",
+        "That applies to singletons the container created itself.",
+        "The GC never calls Dispose; only finalizers run."
+      ],
+      "readMore": "/aspnet/dependency-injection/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-001",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In a controller marked `[ApiController]`, a POST body fails a `[Required]` check. What happens?",
+      "options": [
+        "The action runs and you must check `ModelState.IsValid` yourself",
+        "The framework throws a ValidationException that returns 500",
+        "The property is set to a default value and the action runs",
+        "The action is skipped and the client receives 400 with a ValidationProblemDetails body"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`[ApiController]` adds an automatic model-state filter: if binding or validation fails, it returns 400 with `ValidationProblemDetails` listing the errors, and the action never executes.",
+      "optionNotes": [
+        "That's the behaviour without `[ApiController]`.",
+        "No exception is thrown for invalid input.",
+        "Invalid input is reported, not silently defaulted.",
+        null
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-002",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In minimal APIs, what is the main benefit of returning `TypedResults.Ok(dto)` over `Results.Ok(dto)`?",
+      "options": [
+        "It serializes the DTO to JSON noticeably faster",
+        "Concrete return types give OpenAPI metadata and easy test assertions",
+        "It automatically adds HTTP caching headers to the response",
+        "It is the only option that supports async handlers"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`TypedResults` methods return concrete types like `Ok<OrderDto>`. The framework reads them to describe responses in the OpenAPI document, and tests can check the type and value without executing the result.",
+      "optionNotes": [
+        "Serialization is the same.",
+        null,
+        "No caching headers are added.",
+        "Both work in async handlers."
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-003",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An action is mapped with `[HttpGet(\"{id:int}\")]`. A client calls `GET /api/orders/abc`. What status code is returned (assuming no other route matches)?",
+      "options": [
+        "400 Bad Request",
+        "422 Unprocessable Entity",
+        "404 Not Found",
+        "500 Internal Server Error"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Route constraints take part in matching. `abc` doesn't satisfy `int`, so the route doesn't match and no endpoint is selected, resulting in 404. Constraints are for disambiguation, not input validation.",
+      "optionNotes": [
+        "400 would require the endpoint to match and validation to fail.",
+        "Nothing validates the value; the route simply doesn't match.",
+        null,
+        "No exception occurs."
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-004",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an `[ApiController]`, where does the `cmd` parameter of `public IActionResult Create(CreateOrder cmd)` bind from when no attribute is given?",
+      "options": [
+        "The query string",
+        "Form fields",
+        "Route values",
+        "The request body"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "With `[ApiController]`, complex types are inferred as `[FromBody]`. Simple types bind from route values when the name appears in the template, otherwise from the query string. Registered services bind from DI.",
+      "optionNotes": [
+        "Query is the inferred source for simple types not in the route.",
+        "Form is only inferred for IFormFile/IFormCollection.",
+        "Route is used for simple types named in the template.",
+        null
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-005",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why can't an action have two `[FromBody]` parameters?",
+      "options": [
+        "The body is a forward-only stream deserialized into one object; wrap both values in one DTO",
+        "JSON doesn't allow two objects in one document, so the client can't send them",
+        "It works, but only for XML bodies",
+        "Each `[FromBody]` parameter needs its own content type header"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The input formatter reads the request body stream once and produces one object. To accept more data, combine it into a single request DTO or move simple values to route, query or headers.",
+      "optionNotes": [
+        null,
+        "The limitation is in model binding, not in what clients can send.",
+        "The rule applies to every formatter.",
+        "HTTP has one Content-Type per body."
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-006",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Twenty minimal API endpoints under `/api/orders` all need authorization, the same OpenAPI tag and an audit filter. What is the cleanest approach?",
+      "options": [
+        "Call `RequireAuthorization()`, `WithTags()` and `AddEndpointFilter()` on each endpoint",
+        "Use `app.MapGroup(\"/api/orders\")` and apply the conventions to the group",
+        "Write a middleware that checks whether the path starts with /api/orders",
+        "Convert them to controllers because minimal APIs can't share conventions"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Route groups share a prefix plus metadata and filters: `MapGroup(...).RequireAuthorization().WithTags(\"Orders\").AddEndpointFilter<AuditFilter>()`. Every endpoint mapped on the group inherits them, and groups can be nested.",
+      "optionNotes": [
+        "Works but repetitive and easy to forget on new endpoints.",
+        null,
+        "Path string checks are brittle and bypass endpoint metadata.",
+        "Route groups exist exactly for this."
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-007",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A request DTO is a positional record: `public record CreateOrder(string CustomerId, int Quantity);`. Where should DataAnnotations go so MVC validates them?",
+      "options": [
+        "On the properties using the `[property: Required]` target",
+        "Only in a separate `[MetadataType]` buddy class",
+        "On the constructor parameters, e.g. `CreateOrder([Required] string CustomerId, ...)`",
+        "Nowhere; records can't be validated by MVC"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "MVC binds positional records through their constructor and reads validation metadata from the constructor parameters. Putting attributes on the generated properties with `property:` is reported as an error at runtime because the metadata would be ignored.",
+      "optionNotes": [
+        "MVC rejects validation metadata placed only on record properties.",
+        "Buddy classes are a legacy approach and not needed.",
+        null,
+        "Records are validated fine with parameter attributes."
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-controllers-minimal-apis-008",
+      "topic": "controllers-minimal-apis",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about minimal APIs and controllers in .NET 10 are true? (Select all that apply)",
+      "options": [
+        "Minimal APIs support Native AOT; MVC controllers do not",
+        "Minimal APIs can validate DataAnnotations after `builder.Services.AddValidation()`",
+        "Global MVC action filters also run for minimal API endpoints",
+        "Both are endpoints in the same routing system and can live in one app"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Minimal APIs use source-generated request delegates, which makes them AOT-friendly, and .NET 10 added built-in DataAnnotations validation for them. MVC filters only run inside the MVC action invoker; minimal APIs use endpoint filters instead. Both share endpoint routing, DI, auth and OpenAPI.",
+      "optionNotes": [
+        null,
+        null,
+        "MVC filters don't apply to minimal APIs; use IEndpointFilter.",
+        null
+      ],
+      "readMore": "/aspnet/controllers-minimal-apis/"
+    },
+    {
+      "id": "aspnet-filters-001",
+      "topic": "filters",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which MVC filter type runs first for a controller action?",
+      "options": [
+        "Action filter",
+        "Resource filter",
+        "Exception filter",
+        "Authorization filter"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Order: authorization → resource → model binding → action → (exception) → result. Authorization filters run first so unauthorised requests are rejected before any other work.",
+      "optionNotes": [
+        "Action filters run after model binding.",
+        "Resource filters run right after authorization filters.",
+        "Exception filters only run when something throws.",
+        null
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-filters-002",
+      "topic": "filters",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What can an action filter access that a middleware cannot easily access?",
+      "options": [
+        "The raw request headers",
+        "The bound action arguments and ModelState",
+        "The response status code",
+        "The client IP address"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Action filters run inside the MVC invoker after model binding, so they see `ActionArguments`, `ModelState`, the action descriptor and later the `IActionResult`. Middleware only sees `HttpContext`.",
+      "optionNotes": [
+        "Middleware sees headers too.",
+        null,
+        "Middleware can read the status code after `next`.",
+        "Middleware has `Connection.RemoteIpAddress`."
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-filters-003",
+      "topic": "filters",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A global exception filter returns ProblemDetails, but an exception thrown by a custom JSON converter while writing the response produces a raw 500. Why?",
+      "options": [
+        "Exception filters don't cover result execution, where serialization happens",
+        "Exception filters only catch exceptions of type `ApplicationException`",
+        "JSON converters run on a background thread",
+        "Global filters are disabled in Production"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Exception filters handle exceptions from model binding, action filters and the action. Result execution, resource filters and middleware are outside their scope. Use `UseExceptionHandler` with `IExceptionHandler` for global coverage.",
+      "optionNotes": [
+        null,
+        "They catch any exception type within their scope.",
+        "Serialization runs on the request's flow.",
+        "There is no such environment rule."
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-filters-004",
+      "topic": "filters",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A filter `AuditFilter` needs `IAuditStore` from DI and is applied to a few actions. How do you apply it?",
+      "options": [
+        "`[AuditFilter(new AuditStore())]`",
+        "`[ServiceFilter(typeof(AuditFilter))]` with `AuditFilter` registered in DI",
+        "Make `IAuditStore` a static property on the attribute",
+        "Filters can't use DI; read the store from configuration"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Attribute arguments must be compile-time constants, so attributes can't receive services. `ServiceFilter` resolves the filter from DI (it must be registered); `TypeFilter` creates it with `ActivatorUtilities` without registration.",
+      "optionNotes": [
+        "Attribute arguments can't be object instances.",
+        null,
+        "Static state hides dependencies and breaks lifetimes.",
+        "Filters fully support DI through these mechanisms."
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-filters-005",
+      "topic": "filters",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You want to replay a stored response for a repeated `Idempotency-Key` **before** the request body is deserialized. Which filter type fits best?",
+      "options": [
+        "Action filter",
+        "Result filter",
+        "Resource filter",
+        "Exception filter"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Resource filters run after authorization but before model binding, and can short-circuit by setting `context.Result`. That avoids binding and validating a body you won't use.",
+      "optionNotes": [
+        "Action filters run after model binding.",
+        "Result filters run after the action.",
+        null,
+        "Exception filters only run on errors."
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-filters-006",
+      "topic": "filters",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An action filter is registered globally (G), on the controller (C) and on the action (A), all with default `Order`. Each logs \"before\" and \"after\". What is logged?",
+      "options": [
+        "G-before, C-before, A-before, A-after, C-after, G-after",
+        "A-before, C-before, G-before, G-after, C-after, A-after",
+        "G-before, C-before, A-before, G-after, C-after, A-after",
+        "The order is undefined unless `Order` is set"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Filters nest by scope: global wraps controller, which wraps action. The before parts run outer to inner and the after parts run inner to outer. `Order` only overrides this default.",
+      "optionNotes": [
+        null,
+        "Inner scopes run inside outer ones, not before them.",
+        "After-code unwinds in reverse order.",
+        "The default order is well defined by scope."
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-filters-007",
+      "topic": "filters",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An action filter sets `context.Result = new NotFoundResult()` in `OnActionExecuting`. What runs next?",
+      "options": [
+        "Nothing; the response is empty and no other filters run",
+        "The action runs anyway and its result replaces NotFound",
+        "Exception filters run because short-circuiting counts as an error",
+        "The action is skipped, but result filters and result execution still run"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Setting `Result` in an action filter skips the action and later action filters, but result filters still wrap the execution of the NotFound result. Short-circuiting in authorization or resource filters skips result filters as well.",
+      "optionNotes": [
+        "The result still has to be executed, and result filters run around it.",
+        "Setting Result prevents the action from running.",
+        "Short-circuiting isn't an exception.",
+        null
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-filters-008",
+      "topic": "filters",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which mechanisms can add cross-cutting logic to **minimal API** endpoints? (Select all that apply)",
+      "options": [
+        "An `IEndpointFilter` added with `AddEndpointFilter`",
+        "A custom middleware in the pipeline",
+        "A global `IActionFilter` added in `AddControllers(o => o.Filters.Add(...))`",
+        "An endpoint filter applied to a route group"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Minimal APIs support endpoint filters on endpoints or route groups, and middleware runs for every request regardless of endpoint type. MVC filters only run inside the MVC action invoker, so they never apply to minimal APIs.",
+      "optionNotes": [
+        null,
+        null,
+        "MVC filters only run for controller actions.",
+        null
+      ],
+      "readMore": "/aspnet/filters/"
+    },
+    {
+      "id": "aspnet-configuration-options-001",
+      "topic": "configuration-options",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "`appsettings.json` sets `Payment:TimeoutSeconds` to 10, and the environment variable `Payment__TimeoutSeconds=30` is set. Which value does the app read with the default builder?",
+      "options": [
+        "10",
+        "30",
+        "Whichever file was modified last",
+        "The app throws because of the conflict"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Default precedence is appsettings.json → appsettings.{env}.json → user secrets (Development) → environment variables → command line. Later sources win, so the environment variable overrides the file.",
+      "optionNotes": [
+        "The file is overridden by environment variables.",
+        null,
+        "Precedence is by provider order, not timestamps.",
+        "Overrides are expected, not errors."
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-configuration-options-002",
+      "topic": "configuration-options",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In a Linux container, which environment variable name overrides the configuration key `Payment:Retry:MaxAttempts`?",
+      "options": [
+        "Payment.Retry.MaxAttempts",
+        "Payment:Retry:MaxAttempts",
+        "PAYMENT_RETRY_MAXATTEMPTS",
+        "Payment__Retry__MaxAttempts"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The environment variable provider maps a double underscore `__` to the `:` separator, which works on every platform. Colons are not portable in environment variable names.",
+      "optionNotes": [
+        "Dots are not hierarchy separators.",
+        "Colons aren't supported in env var names on all shells/platforms.",
+        "A single underscore is not mapped to a separator.",
+        null
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-configuration-options-003",
+      "topic": "configuration-options",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A singleton service must react to a feature setting changing in a reloaded config file, without an app restart. Which interface should it inject?",
+      "options": [
+        "IOptions<T>",
+        "IOptionsSnapshot<T>",
+        "IOptionsMonitor<T>",
+        "IConfigureOptions<T>"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`IOptionsMonitor<T>` is a singleton whose `CurrentValue` reflects the latest configuration, and `OnChange` notifies you. `IOptions<T>` never reloads, and `IOptionsSnapshot<T>` is scoped so it can't go into a singleton.",
+      "optionNotes": [
+        "Computed once; never sees changes.",
+        "Scoped; injecting it into a singleton is a captive dependency.",
+        null,
+        "That configures options; it's not for consuming them."
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-configuration-options-004",
+      "topic": "configuration-options",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the lifetime of `IOptionsSnapshot<T>` and its consequence?",
+      "options": [
+        "Scoped: recomputed per request, and it can't be injected into singletons",
+        "Singleton: computed once and shared",
+        "Transient: recomputed on every injection",
+        "Scoped, but it never reflects configuration reloads"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`IOptionsSnapshot<T>` is scoped. Each request gets values computed for that scope, so reloads apply from the next request and stay consistent within one. Being scoped, it can't be consumed by singletons.",
+      "optionNotes": [
+        null,
+        "That's IOptions<T>.",
+        "It is cached per scope, not per injection.",
+        "It does pick up reloads, from the next scope onward."
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-configuration-options-005",
+      "topic": "configuration-options",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A required `Payment:BaseUrl` is missing in production. The app starts fine and only fails hours later on the first payment. Which change makes it fail at startup instead?",
+      "options": [
+        "Mark the property `required` in C#",
+        "Add `.ValidateDataAnnotations().ValidateOnStart()` to the options registration",
+        "Inject `IConfiguration` instead of `IOptions<T>`",
+        "Set `reloadOnChange: false` for appsettings.json"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Options are validated lazily on first `.Value` access by default. `ValidateOnStart()` runs validation (DataAnnotations or custom `Validate` rules) when the host starts, so a misconfigured deployment fails fast.",
+      "optionNotes": [
+        "`required` is a compile-time rule for object initializers; it doesn't validate configuration at startup.",
+        null,
+        "That removes validation entirely.",
+        "Reload settings don't affect validation timing."
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-configuration-options-006",
+      "topic": "configuration-options",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "While the app runs, someone edits `appsettings.json` and changes `Limits:MaxItems` from 50 to 100. What does this singleton return afterwards?",
+      "code": "public sealed class LimitService(IOptions<LimitOptions> options)\n{\n    public int Max() => options.Value.MaxItems;\n}",
+      "codeLang": "csharp",
+      "options": [
+        "100, because appsettings.json is loaded with reloadOnChange",
+        "100 on new requests, 50 on in-flight ones",
+        "It throws because the options object was invalidated",
+        "50, because `IOptions<T>` is computed once and cached"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The file reload updates `IConfiguration`, but `IOptions<T>.Value` is created once and cached for the app's lifetime. Use `IOptionsMonitor<T>.CurrentValue` (or `IOptionsSnapshot<T>` in scoped services) to see changes.",
+      "optionNotes": [
+        "IConfiguration reloads, but IOptions<T> doesn't recompute.",
+        "That's IOptionsSnapshot behaviour.",
+        "Nothing is invalidated.",
+        null
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-configuration-options-007",
+      "topic": "configuration-options",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "With the Azure Key Vault configuration provider, which secret name maps to the key `ConnectionStrings:Orders`?",
+      "options": [
+        "ConnectionStrings:Orders",
+        "ConnectionStrings--Orders",
+        "ConnectionStrings__Orders",
+        "ConnectionStrings.Orders"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Key Vault secret names can't contain `:` or `_`, so the provider maps `--` to the `:` separator. `__` is the convention for environment variables, not Key Vault.",
+      "optionNotes": [
+        "Colons aren't allowed in Key Vault secret names.",
+        null,
+        "Double underscore is the env var convention, and underscores aren't valid in secret names.",
+        "Dots aren't mapped to separators."
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-configuration-options-008",
+      "topic": "configuration-options",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about .NET user secrets are true? (Select all that apply)",
+      "options": [
+        "They are stored in the user profile, outside the project folder",
+        "They are stored as plain JSON, not encrypted",
+        "The default builder loads them only in the Development environment",
+        "They are the recommended way to supply secrets in production"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "User secrets keep secrets out of source control during development by storing a `secrets.json` in the user profile. They are not encrypted and are loaded by default only in Development. Production should use Key Vault (AWS: Secrets Manager) or platform secrets.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "Use a vault or platform secret store in production."
+      ],
+      "readMore": "/aspnet/configuration-options/"
+    },
+    {
+      "id": "aspnet-logging-observability-001",
+      "topic": "logging-observability",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does **structured logging** mean?",
+      "options": [
+        "Writing logs into a relational database table",
+        "Capturing message-template placeholders as named, queryable properties alongside the text",
+        "Formatting every log line as indented JSON for readability",
+        "Grouping logs by class name in separate files"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "With `LogInformation(\"Order {OrderId} placed\", id)`, the provider stores `OrderId` as a separate field. Backends can filter and aggregate on it, instead of parsing text.",
+      "optionNotes": [
+        "Storage choice is unrelated.",
+        null,
+        "JSON output is a format; the key is named properties.",
+        "That's about categories or sinks."
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-002",
+      "topic": "logging-observability",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which log level is the most severe?",
+      "options": [
+        "Error",
+        "Warning",
+        "Critical",
+        "Trace"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The order is Trace < Debug < Information < Warning < Error < Critical. `None` is only used in configuration to disable logging for a category.",
+      "optionNotes": [
+        "Critical is above Error.",
+        "Warning is below Error.",
+        null,
+        "Trace is the least severe."
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-003",
+      "topic": "logging-observability",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is wrong with this log call?",
+      "code": "log.LogInformation($\"Order {order.Id} placed by {user.Email}\");",
+      "codeLang": "csharp",
+      "options": [
+        "Nothing; interpolation is the recommended modern style",
+        "It throws an exception when Information is disabled",
+        "It compiles only when Serilog is the logging provider",
+        "It formats even when disabled and loses structured properties"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Interpolation formats the string before the logger checks `IsEnabled`, and the backend receives one opaque message. A template with placeholders keeps `OrderId` as a field and skips formatting when disabled. Logging an email may also be a PII concern.",
+      "optionNotes": [
+        "Analyzer CA2254 flags this pattern.",
+        "It doesn't throw, it just wastes work.",
+        "It works with any provider, just badly.",
+        null
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-004",
+      "topic": "logging-observability",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With the configuration below, which call from a class in the `Microsoft.AspNetCore.Routing` namespace is written?",
+      "code": "\"Logging\": {\n  \"LogLevel\": {\n    \"Default\": \"Information\",\n    \"Microsoft.AspNetCore\": \"Warning\"\n  }\n}",
+      "codeLang": "json",
+      "options": [
+        "LogWarning",
+        "LogInformation",
+        "LogDebug",
+        "None of them, because the category is not listed exactly"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Category filters match by prefix, and the most specific matching prefix wins. `Microsoft.AspNetCore.Routing.*` matches `Microsoft.AspNetCore`, whose minimum is Warning, so Information and Debug are filtered out.",
+      "optionNotes": [
+        null,
+        "The more specific `Microsoft.AspNetCore` rule (Warning) overrides Default.",
+        "Debug is below both thresholds.",
+        "Prefix matching applies; an exact match isn't needed."
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-005",
+      "topic": "logging-observability",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `logger.BeginScope(new Dictionary<string, object> { [\"OrderId\"] = id })` do?",
+      "options": [
+        "Creates a new DI scope for the logger",
+        "Starts a new trace span for the order",
+        "Attaches OrderId to every log written within the scope, in any class in that async flow",
+        "Buffers logs in memory until the scope is disposed"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Logging scopes push properties onto an ambient async-local stack. Providers that support scopes add them to every log entry until the scope is disposed, which is how you tag a whole operation with an id.",
+      "optionNotes": [
+        "Logging scopes are unrelated to DI scopes.",
+        "Spans come from ActivitySource, not BeginScope.",
+        null,
+        "Logs are written immediately."
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-006",
+      "topic": "logging-observability",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How does a trace started in the Orders API continue in the Payment API it calls with `HttpClient`?",
+      "options": [
+        "Both services write to the same log file",
+        "`HttpClient` sends the W3C `traceparent` header, and the Payment API continues the same trace id",
+        "The Payment API queries Application Insights for the parent span",
+        "You must pass the trace id manually in the request body"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "ASP.NET Core and HttpClient instrumentation propagate W3C trace context automatically: the outgoing request carries `traceparent`, and the receiving service starts its activity as a child of that span.",
+      "optionNotes": [
+        "Shared files don't correlate traces.",
+        null,
+        "No backend lookup is involved in propagation.",
+        "Propagation is automatic through headers."
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-007",
+      "topic": "logging-observability",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does the `[LoggerMessage]` source generator improve compared with calling `log.LogInformation(template, args)` on a hot path?",
+      "options": [
+        "It writes logs on a background thread so they never block",
+        "It encrypts structured properties before sending them",
+        "It removes the need for log levels",
+        "It checks IsEnabled first, avoids boxing args into object[], and parses the template once"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Generated methods are strongly typed, so value types aren't boxed, the template is parsed at compile time, and the call returns early if the level is disabled. That reduces allocations and CPU on high-traffic paths.",
+      "optionNotes": [
+        "Threading is up to the provider.",
+        "No encryption is involved.",
+        "Each generated method declares a level.",
+        null
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-008",
+      "topic": "logging-observability",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A developer adds a `userId` tag to the `orders.placed` counter so dashboards can show orders per user. Why is this a bad idea?",
+      "options": [
+        "High cardinality: each user becomes a separate time series",
+        "Counters can't carry any tags in System.Diagnostics.Metrics",
+        "Tags are only allowed on histograms, not on counters",
+        "OpenTelemetry silently drops any tag named userId"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each unique combination of tag values is a separate time series. Unbounded values like user or order ids create millions of series. Keep metric tags low-cardinality (channel, status, region) and use logs or traces for per-user detail.",
+      "optionNotes": [
+        null,
+        "Counters support tags.",
+        "All instruments support tags.",
+        "Nothing strips them; they are stored."
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-logging-observability-009",
+      "topic": "logging-observability",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which .NET APIs produce signals that OpenTelemetry can export? (Select all that apply)",
+      "options": [
+        "`ILogger<T>` (logs)",
+        "`ActivitySource` / `Activity` (traces)",
+        "`Meter` with `Counter<T>` / `Histogram<T>` (metrics)",
+        "`Debug.WriteLine` (logs)"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "OpenTelemetry .NET builds on the platform APIs: `ILogger` for logs, `System.Diagnostics.Activity` for traces and `System.Diagnostics.Metrics` for metrics. `Debug.WriteLine` only writes to attached trace listeners/debuggers.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "Debug output is not an OpenTelemetry signal."
+      ],
+      "readMore": "/aspnet/logging-observability/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-001",
+      "topic": "authentication-authorization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A request has a valid JWT, but the user lacks the `Admin` role required by the endpoint. What status should the API return?",
+      "options": [
+        "401 Unauthorized",
+        "400 Bad Request",
+        "404 Not Found",
+        "403 Forbidden"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "401 means not authenticated (missing or invalid credentials). Here the user is authenticated but not permitted, which is 403 Forbidden. In ASP.NET Core terms: challenge vs forbid.",
+      "optionNotes": [
+        "The user is authenticated, so 401 is wrong.",
+        "The request itself is well-formed.",
+        "404 is sometimes used to hide a resource, but the standard answer is 403.",
+        null
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-002",
+      "topic": "authentication-authorization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which statement about a typical JWT access token is true?",
+      "options": [
+        "Its payload is encrypted, so only the API can read the claims",
+        "Its payload is base64url-encoded and signed, so anyone holding it can read the claims",
+        "It contains the user's password hash for verification",
+        "It must be sent to the identity provider on every API call"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A standard JWT (JWS) is signed, not encrypted. The signature prevents tampering but the payload is readable by anyone, so never put secrets in it. JWE exists for encryption but is rarely used for access tokens.",
+      "optionNotes": [
+        "Signing is not encryption.",
+        null,
+        "Tokens never carry passwords or hashes.",
+        "The API validates it locally with cached public keys."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-003",
+      "topic": "authentication-authorization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How does the JwtBearer handler verify a token issued by Microsoft Entra ID without calling Entra ID on every request?",
+      "options": [
+        "It decrypts the token with a shared password from appsettings",
+        "It trusts any token whose `iss` claim matches the authority",
+        "It fetches Entra ID's public signing keys from the OIDC discovery document, caches them and verifies the signature locally",
+        "It stores issued tokens in a database and looks them up"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The handler reads `{authority}/.well-known/openid-configuration`, downloads the JWKS public keys, caches and periodically refreshes them, then checks the signature, issuer, audience and lifetime locally.",
+      "optionNotes": [
+        "Entra ID signs with asymmetric keys; there is no shared password.",
+        "Claims are only trusted after signature verification.",
+        null,
+        "JWT validation is stateless."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-004",
+      "topic": "authentication-authorization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API validates signature, issuer and lifetime but sets `ValidateAudience = false`. What is the risk?",
+      "options": [
+        "Tokens issued by the same provider for a different API are accepted",
+        "Expired tokens are accepted",
+        "Tokens from any identity provider are accepted",
+        "Refresh tokens stop working"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The audience (`aud`) says which API a token is for. Without that check, a token a user obtained for another app in the same tenant can call your API, even though it was never granted for it.",
+      "optionNotes": [
+        null,
+        "Lifetime is still validated.",
+        "Issuer and signing keys are still validated.",
+        "Refresh flows are unrelated to audience validation in the API."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-005",
+      "topic": "authentication-authorization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Requirement: \"Customers can update only their own orders; Support can update any.\" What is the idiomatic ASP.NET Core approach?",
+      "options": [
+        "`[Authorize(Roles = \"Customer,Support\")]` on the action",
+        "Check the order owner inside the Angular route guard",
+        "A global middleware that parses the order id from the URL",
+        "Resource-based authorization: load the order, then call `IAuthorizationService.AuthorizeAsync(User, order, \"OrderOwner\")`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The decision depends on the loaded resource, which attributes can't see. A handler deriving from `AuthorizationHandler<TRequirement, Order>` compares the owner with the user's `sub` claim or checks the Support role.",
+      "optionNotes": [
+        "Roles alone can't tell whose order it is.",
+        "Client guards are UX only; the API must enforce it.",
+        "Duplicates data access and couples middleware to routes.",
+        null
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-006",
+      "topic": "authentication-authorization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does setting the authorization **fallback policy** to `RequireAuthenticatedUser()` achieve?",
+      "options": [
+        "Every endpoint, including those marked `[AllowAnonymous]`, requires a user",
+        "Endpoints without any authorization metadata require an authenticated user",
+        "Failed policies fall back to role checks",
+        "Unauthenticated requests are redirected to a fallback URL"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The fallback policy applies only when an endpoint has no `[Authorize]` / `[AllowAnonymous]` metadata. It makes the API secure by default, so a forgotten attribute doesn't expose data. Public endpoints opt out with `[AllowAnonymous]`.",
+      "optionNotes": [
+        "AllowAnonymous still opts out.",
+        null,
+        "There's no such fallback to roles.",
+        "It's not a redirect setting."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-007",
+      "topic": "authentication-authorization",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Policy P has requirements R1 and R2. R1 has two handlers: H1 calls `Succeed`, H2 does nothing. R2's only handler calls `Succeed`. Does P pass?",
+      "options": [
+        "No, because H2 didn't succeed",
+        "No, because a requirement needs all handlers to succeed",
+        "Yes: R1 passes since one handler succeeded and none called Fail, and R2 also passes",
+        "Only if R1 and R2 are in separate policies"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A requirement is satisfied if any handler succeeds and no handler explicitly calls `context.Fail()`. A policy passes only if all its requirements are satisfied. Doing nothing in a handler simply means it doesn't grant.",
+      "optionNotes": [
+        "Not succeeding is not the same as failing.",
+        "Handlers for one requirement are OR-ed, not AND-ed.",
+        null,
+        "Requirements in one policy are evaluated together."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-008",
+      "topic": "authentication-authorization",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The access token contains `\"roles\": [\"Admin\"]`, the JwtBearer handler has `MapInboundClaims = false`, but `User.IsInRole(\"Admin\")` returns false. What is the most likely fix?",
+      "options": [
+        "Set `TokenValidationParameters.RoleClaimType = \"roles\"`",
+        "Add `[Authorize(Roles = \"Admin\")]` so the role is loaded",
+        "Call `UseAuthorization()` before `UseAuthentication()`",
+        "Disable signature validation so all claims are read"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`IsInRole` checks the identity's configured role claim type. With inbound mapping off, the claim keeps its short name `roles`, but the default role claim type is the long `ClaimTypes.Role` URI. Point `RoleClaimType` at `roles`.",
+      "optionNotes": [
+        null,
+        "The attribute uses the same role claim type, so it fails too.",
+        "That breaks authorization entirely.",
+        "Never disable signature validation; it doesn't affect claim types."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-009",
+      "topic": "authentication-authorization",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "A user's account is compromised. Which measures help cut off access that relies on JWT access tokens? (Select all that apply)",
+      "options": [
+        "Keep access tokens short-lived and revoke the user's refresh tokens",
+        "Check a denylist of token ids (`jti`) or a per-user 'valid after' timestamp on each request",
+        "Delete the token from the API's in-memory token cache",
+        "Set the token's `exp` claim to the past from the server"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Self-contained JWTs stay valid until expiry, so you limit their lifetime and revoke the server-side refresh tokens. For immediate cut-off, add a fast lookup (e.g. Redis) of revoked token ids or a per-user timestamp, at the cost of a check per request.",
+      "optionNotes": [
+        null,
+        null,
+        "APIs don't store issued tokens; validation is stateless.",
+        "An issued token can't be modified; changing it breaks the signature."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-authentication-authorization-010",
+      "topic": "authentication-authorization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Where is the safest place for an Angular SPA to keep tokens?",
+      "options": [
+        "`localStorage`, because it survives page reloads",
+        "`sessionStorage`, because it is cleared when the tab closes",
+        "Access token in memory and refresh token in an HttpOnly Secure cookie (or a BFF holding tokens server-side)",
+        "A cookie readable by JavaScript so interceptors can attach it"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Anything readable by JavaScript can be stolen by an XSS payload. Keeping the access token in memory limits exposure, and an HttpOnly cookie or the BFF pattern keeps long-lived credentials out of reach of scripts.",
+      "optionNotes": [
+        "Readable by any script on the page, so XSS can exfiltrate it.",
+        "Same XSS exposure as localStorage.",
+        null,
+        "A JS-readable cookie has the same XSS problem."
+      ],
+      "readMore": "/aspnet/authentication-authorization/"
+    },
+    {
+      "id": "aspnet-error-handling-001",
+      "topic": "error-handling",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is `ProblemDetails`?",
+      "options": [
+        "A standard JSON error format (RFC 9457) with fields like type, title, status, detail and instance",
+        "A logging provider for unhandled exceptions",
+        "An exception type thrown by model validation",
+        "A middleware that retries failed requests"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "ProblemDetails is the HTTP API error format from RFC 9457 (which replaced RFC 7807). `AddProblemDetails()` makes the exception handler, status code pages and `[ApiController]` produce it consistently.",
+      "optionNotes": [
+        null,
+        "It is a response format, not a logger.",
+        "Validation produces ValidationProblemDetails responses, not exceptions.",
+        "It has nothing to do with retries."
+      ],
+      "readMore": "/aspnet/error-handling/"
+    },
+    {
+      "id": "aspnet-error-handling-002",
+      "topic": "error-handling",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In which environment does `WebApplication` enable the developer exception page automatically?",
+      "options": [
+        "All environments",
+        "Production only",
+        "Development only",
+        "Never; it must always be added manually"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The developer exception page shows stack traces and request details, so `WebApplication` adds it only when the environment is Development. Production should use `UseExceptionHandler` with generic responses.",
+      "optionNotes": [
+        "It would leak internals in production.",
+        "The opposite of what's safe.",
+        null,
+        "Since .NET 6 WebApplication adds it automatically in Development."
+      ],
+      "readMore": "/aspnet/error-handling/"
+    },
+    {
+      "id": "aspnet-error-handling-003",
+      "topic": "error-handling",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Two handlers are registered with `AddExceptionHandler<DomainExceptionHandler>()` then `AddExceptionHandler<GlobalExceptionHandler>()`. How are they used?",
+      "options": [
+        "Only the last registered handler runs",
+        "Both always run, and the last response written wins",
+        "They run in parallel and the fastest one wins",
+        "They run in registration order until one's `TryHandleAsync` returns true"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The exception handler middleware calls each `IExceptionHandler` in registration order. Returning `true` means handled and stops the chain; returning `false` passes the exception to the next. So specific handlers go first and a catch-all last.",
+      "optionNotes": [
+        "All registered handlers are considered.",
+        "The chain stops at the first handler returning true.",
+        "They are called sequentially.",
+        null
+      ],
+      "readMore": "/aspnet/error-handling/"
+    },
+    {
+      "id": "aspnet-error-handling-004",
+      "topic": "error-handling",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An `IExceptionHandler` takes `AppDbContext` in its constructor to record errors, and the app fails at startup in Development. Why?",
+      "options": [
+        "Exception handlers can't use DI",
+        "Exception handlers are registered as singletons, so a scoped DbContext is a captive dependency",
+        "DbContext can't be used inside exception handling",
+        "The handler must be registered after `UseExceptionHandler()`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`AddExceptionHandler<T>()` registers the handler as a singleton. Scope validation rejects a scoped dependency in its constructor. Resolve scoped services from `httpContext.RequestServices` inside `TryHandleAsync` instead.",
+      "optionNotes": [
+        "They support constructor injection of singletons.",
+        null,
+        "It can be used if resolved from the request scope.",
+        "Services are registered before Build(), not relative to middleware."
+      ],
+      "readMore": "/aspnet/error-handling/"
+    },
+    {
+      "id": "aspnet-error-handling-005",
+      "topic": "error-handling",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Error alerts fire constantly with `OperationCanceledException` from EF Core queries, logged as 500s. Users report nothing wrong. What is the best change?",
+      "options": [
+        "Stop passing the CancellationToken to EF Core queries",
+        "Increase the SQL command timeout for these queries",
+        "Treat client-aborted cancellations as non-errors and log them low",
+        "Retry the cancelled query automatically with Polly"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "These are clients disconnecting (navigating away, closing tabs), which cancels the request token. That's expected behaviour, not a server failure. Detect it in the global handler and log at Debug/Information without a 500 alert.",
+      "optionNotes": [
+        "That wastes database work after the client has left.",
+        "The query isn't timing out; the client cancelled.",
+        null,
+        "Retrying work nobody is waiting for makes no sense."
+      ],
+      "readMore": "/aspnet/error-handling/"
+    },
+    {
+      "id": "aspnet-error-handling-006",
+      "topic": "error-handling",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An endpoint streams a large CSV and throws halfway through. What does the client see?",
+      "options": [
+        "A truncated response: headers and 200 were already sent, so the handler can't rewrite it and the connection is aborted",
+        "A clean 500 ProblemDetails replacing the partial CSV",
+        "The exception handler retries the endpoint from the start",
+        "A 200 with the full CSV, since the error is only logged"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Once `Response.HasStarted` is true, the status code and headers are on the wire. The exception handler middleware logs and rethrows instead of writing ProblemDetails, and the server aborts the connection, so the client gets a cut-off response.",
+      "optionNotes": [
+        null,
+        "The status can't change after headers are sent.",
+        "There's no automatic retry.",
+        "The remaining data is never produced."
+      ],
+      "readMore": "/aspnet/error-handling/"
+    },
+    {
+      "id": "aspnet-error-handling-007",
+      "topic": "error-handling",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "With `builder.Services.AddProblemDetails()` registered, which of these produce ProblemDetails-shaped error bodies? (Select all that apply)",
+      "options": [
+        "`app.UseExceptionHandler()` for unhandled exceptions",
+        "`app.UseStatusCodePages()` for empty 404/405 responses",
+        "`[ApiController]` automatic 400 responses for invalid models",
+        "The console logging provider when it logs an exception"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "The exception handler and status code pages use `IProblemDetailsService` to write bodies, and `[ApiController]` returns `ValidationProblemDetails`. Logging providers write logs, not HTTP responses.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "Logging doesn't shape HTTP responses."
+      ],
+      "readMore": "/aspnet/error-handling/"
+    },
+    {
+      "id": "aspnet-error-handling-008",
+      "topic": "error-handling",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What should a production 500 response from your API contain?",
+      "options": [
+        "The exception message and stack trace so clients can debug",
+        "The inner SQL exception text to explain the failure",
+        "An empty body to hide everything",
+        "A generic title plus a trace id the client can quote to support"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Stack traces and infrastructure messages leak table names, versions and paths. A generic message keeps internals hidden, and a trace id links the client's report to the full exception in logs or Application Insights.",
+      "optionNotes": [
+        "Leaks internals to attackers.",
+        "Exposes schema and database details.",
+        "Hides too much: no consistent format and nothing to correlate.",
+        null
+      ],
+      "readMore": "/aspnet/error-handling/"
+    }
+  ]
+}

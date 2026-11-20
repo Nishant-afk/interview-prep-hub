@@ -1,0 +1,168 @@
+---
+title: Questions to Ask the Interviewer
+description: "Good questions to ask engineers, managers and HR, how to tailor them, and the red flags to listen for in the answers."
+sidebar:
+  order: 5
+importance: medium
+difficulty: easy
+estimatedMinutes: 15
+tags: [behavioral, questions, red-flags, culture]
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Why it matters in interviews
+
+*"Do you have any questions for us?"* comes at the end of nearly every round. It is not a formality:
+
+- **Interest and preparation.** A thoughtful, specific question shows you researched the company and are thinking about doing the job, not just getting an offer.
+- **Seniority signal.** At 3-4 years, asking about code review culture, on-call and how decisions get made sounds like an engineer who has worked in a real team.
+- **Your evaluation.** You are choosing where to spend the next few years. This is your only chance to hear the team's reality before you accept.
+- **Last impression.** Ending with "No, I think you covered everything" wastes the final two minutes.
+
+Ask **2-3 questions** per round, tailored to who is in front of you. Do not ask what is answered on the careers page.
+
+## The framework
+
+1. **Prepare 3 per interviewer type** (below), plus 1-2 specific to the company from your research.
+2. **Listen during the interview** and ask a follow-up on something they mentioned. This is the strongest type of question.
+3. **Ask open questions** ("how", "what", "tell me about"), not yes/no.
+4. **Save compensation and leave policy for HR**, not the engineer or hiring manager.
+
+### Template for a researched question
+
+```text
+"I read [blog post / release notes / news item] about [specific thing].
+How has that affected [the team's work / the architecture / priorities]?"
+
+"You mentioned [something from the interview]. How does the team handle [related challenge]?"
+```
+
+## Questions by interviewer type
+
+### Engineer / technical interviewer
+
+| Question | What you learn |
+|---|---|
+| "What does a typical week look like for a developer on this team?" | Meetings vs coding, support load |
+| "How does code get from a PR to production? How often do you deploy?" | CI/CD maturity, release pain |
+| "How are code reviews done, and how long does a typical PR wait?" | Engineering culture, bottlenecks |
+| "What does the test setup look like: unit, integration, e2e?" | Quality culture, how scary releases are |
+| "What is the biggest piece of tech debt right now, and is there a plan for it?" | Honesty, whether debt is managed |
+| "How is on-call handled, and how often are you paged?" | Work-life balance, system stability |
+| "Which .NET and Angular versions are you on, and how do upgrades happen?" | Whether you will work on modern code |
+| "What did you work on last that you were proud of?" | Their enthusiasm, what good work looks like here |
+
+### Hiring manager / engineering manager
+
+| Question | What you learn |
+|---|---|
+| "What would success look like in this role after 3 and 6 months?" | Expectations, whether the role is well defined |
+| "What are the team's biggest challenges this year?" | Real problems you would work on |
+| "How are priorities decided between product, engineering and tech debt?" | Who has influence, how much is firefighting |
+| "How do people grow from this level to the next? Can you give an example?" | Real promotion path versus vague promises |
+| "How is the team structured, and who would I work with most?" | Team size, seniority mix, mentorship |
+| "How do you give feedback, and how often are 1:1s?" | Management style |
+| "Why is this position open?" | New headcount (growth) versus backfill (find out why the person left) |
+
+### HR / recruiter
+
+| Question | What you learn |
+|---|---|
+| "What are the next steps and the timeline for a decision?" | Process clarity, when to follow up |
+| "How is the compensation structured: fixed, variable, ESOPs, joining bonus?" | Offer components (see [salary & offers](../salary-negotiation/)) |
+| "What is the work arrangement: remote, hybrid, office days, location flexibility?" | Practical fit |
+| "How is the variable pay calculated, and what was the actual payout last year?" | Whether variable is real money |
+| "What is the appraisal cycle, and when would I be eligible for my first one?" | First hike timing |
+| "For service companies: how are project allocations decided, and what is the bench policy?" | Risk of unwanted projects or bench time |
+| "Is there a notice period buyout or joining bonus to cover it?" | Practical joining arrangements |
+
+## Sample set for one interview loop
+
+<Aside type="tip" title="Sample: adapt to your target company">
+For a fictional product company hiring a .NET + Angular SDE-2 for an order platform.
+</Aside>
+
+```text
+Round 1 (engineer):
+  "You mentioned the order service is moving to event-driven processing.
+   How are you handling message ordering and duplicate events today?"
+  "How long does it take from merging a PR to it running in production?"
+
+Round 2 (hiring manager):
+  "What would make someone in this role clearly successful in the first six months?"
+  "What's the biggest challenge the team faces this year?"
+
+Round 3 (HR):
+  "What are the next steps and when can I expect a decision?"
+  "How is variable pay calculated, and what has the typical payout been?"
+```
+
+## Red flags to listen for
+
+| What you hear | What it may mean |
+|---|---|
+| "We're like a family" + "we all pitch in late when needed" | Long hours are normal |
+| Vague answer to "how do you deploy?" or "manual deployments every few weeks" | Painful, risky releases |
+| No tests, or "QA handles testing" | You will fix regressions in production |
+| Can't describe what success looks like | Unclear role, moving goalposts |
+| The role has been backfilled several times recently | Retention or management problem |
+| Interviewer is dismissive, distracted or late without apology | Possibly the culture you would join |
+| "We use the latest tech" but cannot name versions | Buzzwords over reality |
+| HR won't explain variable pay or says "it depends" without numbers | Variable may rarely pay out |
+| Constant "it's a fast-paced environment" with frequent priority changes | Firefighting culture |
+
+One red flag is not a dealbreaker. Use them to decide what to ask in later rounds, or to ask to speak with a team member before accepting.
+
+## Do / Don't
+
+| Do | Don't |
+|---|---|
+| Ask follow-ups on something said in the interview | Ask questions answered on their website |
+| Match the question to the interviewer's role | Ask the engineer about salary or leave policy |
+| Ask open "how" and "what" questions | Ask yes/no questions |
+| Write down the answers right after the round | Forget what each round told you |
+| Keep it to 2-3 questions when time is short | Run 10 minutes over the slot |
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+- **"No questions."** Signals low interest. Always have at least one.
+- **Salary and leave in the technical round.** Wrong audience; it suggests misplaced priorities.
+- **"Did I pass?" / "How did I do?"** Puts the interviewer on the spot. Ask about next steps instead.
+- **Questions that sound like complaints** ("Do you expect people to work weekends?"). Ask neutrally: "How is on-call and release timing handled?"
+- **Showing off.** A question designed to display your knowledge rather than learn something comes across as arrogant.
+</Aside>
+
+## Follow-up situations
+
+<details>
+<summary>The interviewer gives a vague or evasive answer</summary>
+
+Ask once more, politely and more specifically: "Could you give me an example from the last release?" If it is still vague, note it as a possible red flag and check it with another person in a later round.
+</details>
+
+<details>
+<summary>They ask "What else would you like to know about us?" and you have run out</summary>
+
+Use a personal question: "What do you enjoy most about working here?" or "What made you join?" People like answering these, and the answer tells you a lot.
+</details>
+
+<details>
+<summary>There are only two minutes left</summary>
+
+Ask one high-value question: "What would success in this role look like in six months?" for a manager, or "What's the biggest technical challenge right now?" for an engineer.
+</details>
+
+<details>
+<summary>All your prepared questions were answered during the interview</summary>
+
+Say so, and show you were listening: "You've covered most of what I wanted to ask, especially about the deployment process. One thing I'd like to know more about is..."
+</details>
+
+## Related
+
+- [Common HR questions](../hr-questions/)
+- [Salary, notice period & offers](../salary-negotiation/)
+- [Interview day checklist](../interview-day-checklist/)
+- [CI/CD pipelines](../../testing-devops/ci-cd/)

@@ -1,0 +1,1225 @@
+{
+  "section": "data",
+  "version": 1,
+  "questions": [
+    {
+      "id": "data-sql-joins-queries-001",
+      "topic": "sql-joins-queries",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In SQL Server's logical query processing order, which of these clauses is evaluated first?",
+      "options": ["SELECT", "HAVING", "WHERE", "GROUP BY"],
+      "answer": [2],
+      "explanation": "The logical order is FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, DISTINCT, ORDER BY, TOP. That is why aggregates can't be used in WHERE and SELECT aliases can't be used in WHERE.",
+      "optionNotes": ["SELECT is evaluated after WHERE, GROUP BY and HAVING.", "HAVING runs after GROUP BY.", null, "GROUP BY runs after WHERE."],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-002",
+      "topic": "sql-joins-queries",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Departments has DeptId 10, 20 and 30. Employees: Asha (10, 90000), Ravi (10, 70000), Meera (20, 80000), John (NULL, 50000). How many rows does this query return?",
+      "code": "SELECT d.DeptName, e.Name\nFROM Departments d\nLEFT JOIN Employees e ON e.DeptId = d.DeptId\nWHERE e.Salary > 60000;",
+      "codeLang": "sql",
+      "options": ["4", "3", "5", "2"],
+      "answer": [1],
+      "explanation": "The LEFT JOIN produces Asha, Ravi, Meera and a row for department 30 with NULL employee columns. The WHERE filter on e.Salary is UNKNOWN for that NULL row, so it is removed, leaving 3 rows. Moving the condition into ON would keep department 30.",
+      "optionNotes": ["4 would be correct if the salary filter were in the ON clause.", null, "John has no department and is not on the preserved side of this LEFT JOIN.", "All three matched employees earn more than 60000."],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-003",
+      "topic": "sql-joins-queries",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Departments has DeptId 10, 20, 30. The Employees.DeptId column contains 10, 10, 20 and NULL. What does this query return?",
+      "code": "SELECT DeptId FROM Departments\nWHERE DeptId NOT IN (SELECT DeptId FROM Employees);",
+      "codeLang": "sql",
+      "options": ["30", "10, 20 and 30", "An error because the subquery returns NULL", "No rows"],
+      "answer": [3],
+      "explanation": "`30 NOT IN (10, 20, NULL)` expands to `30 <> 10 AND 30 <> 20 AND 30 <> NULL`. The last comparison is UNKNOWN, so the predicate is never TRUE and no rows are returned. NOT EXISTS would correctly return 30.",
+      "optionNotes": ["That is what NOT EXISTS returns, not NOT IN.", "NOT IN would never return 10 or 20, which are in the list.", "NULLs in the list are legal; they just make the predicate UNKNOWN.", null],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-004",
+      "topic": "sql-joins-queries",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the difference between UNION and UNION ALL?",
+      "options": [
+        "UNION ALL keeps duplicate rows and skips the de-duplication step",
+        "UNION ALL matches columns by name instead of position",
+        "UNION keeps duplicates; UNION ALL removes them",
+        "UNION can only combine two queries; UNION ALL can combine many"
+      ],
+      "answer": [0],
+      "explanation": "UNION removes duplicate rows across the inputs, which needs a sort or hash step. UNION ALL simply appends the results, so it is cheaper. Both match columns by position.",
+      "optionNotes": [null, "Both set operators match columns by position.", "It is the other way round.", "Both can chain any number of queries."],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-005",
+      "topic": "sql-joins-queries",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Employees.DeptId contains the values 10, 10, 20 and NULL (4 rows). What does this return?",
+      "code": "SELECT COUNT(*), COUNT(DeptId), COUNT(DISTINCT DeptId)\nFROM Employees;",
+      "codeLang": "sql",
+      "options": ["4, 4, 3", "3, 3, 2", "4, 3, 2", "4, 3, 3"],
+      "answer": [2],
+      "explanation": "COUNT(*) counts rows (4). COUNT(column) ignores NULLs (3). COUNT(DISTINCT column) counts distinct non-NULL values: 10 and 20, so 2.",
+      "optionNotes": ["COUNT(DeptId) does not count the NULL.", "COUNT(*) counts every row, including the one with NULL.", null, "NULL is not counted as a distinct value."],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-006",
+      "topic": "sql-joins-queries",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which statement about this query is correct?",
+      "code": "SELECT Name, Salary * 12 AS Annual\nFROM Employees\nWHERE Annual > 1000000\nORDER BY Annual DESC;",
+      "codeLang": "sql",
+      "options": [
+        "It runs: aliases can be used anywhere in the same query",
+        "It fails on ORDER BY Annual, because ORDER BY cannot reference aliases",
+        "It runs, but the WHERE clause is silently ignored",
+        "It fails on WHERE Annual, because WHERE is evaluated before SELECT defines the alias"
+      ],
+      "answer": [3],
+      "explanation": "Logically WHERE is evaluated before SELECT, so the alias `Annual` does not exist yet and SQL Server raises an invalid column name error. ORDER BY runs after SELECT and may use the alias. Repeat the expression or use a CTE / CROSS APPLY.",
+      "optionNotes": ["Aliases are not visible in WHERE, GROUP BY or HAVING.", "ORDER BY is the one clause that can reference SELECT aliases.", "SQL Server never silently ignores a clause; it raises an error.", null],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-007",
+      "topic": "sql-joins-queries",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements are true? (Select all that apply)",
+      "options": [
+        "NOT EXISTS is not affected by NULLs in the subquery's column the way NOT IN is",
+        "Joining to a table on a non-unique key can return more rows than the outer table has",
+        "IN with a subquery is always slower than EXISTS in SQL Server",
+        "A non-recursive CTE is materialised once and reused by every reference"
+      ],
+      "answer": [0, 1],
+      "explanation": "NOT EXISTS only checks whether a matching row exists, so NULLs do not break it. A one-to-many join repeats the outer row per match. IN and EXISTS usually compile to the same semi-join plan, and SQL Server expands CTEs inline rather than materialising them.",
+      "optionNotes": [null, null, "The optimizer usually produces the same semi-join plan for both.", "SQL Server expands a CTE inline; two references can mean two evaluations."],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-008",
+      "topic": "sql-joins-queries",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A recursive CTE walks an employee hierarchy, but bad data contains a cycle (A manages B and B manages A). No OPTION is specified. What happens?",
+      "options": [
+        "The query runs until the client command timeout",
+        "SQL Server detects the cycle and silently stops recursing",
+        "The statement fails with an error once the default recursion limit of 100 is exceeded",
+        "Each row is returned twice and then the recursion stops"
+      ],
+      "answer": [2],
+      "explanation": "SQL Server does not detect cycles. The default MAXRECURSION is 100; exceeding it terminates the statement with an error. You can raise or remove the limit with OPTION (MAXRECURSION n), or guard against cycles by tracking a path.",
+      "optionNotes": ["The default limit stops it long before a typical timeout.", "There is no automatic cycle detection.", null, "Nothing limits each row to two visits."],
+      "readMore": "/data/sql-joins-queries/"
+    },
+    {
+      "id": "data-sql-joins-queries-009",
+      "topic": "sql-joins-queries",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Orders has one row (Id 1, Total 100). OrderLines has two rows for OrderId 1. What does this return?",
+      "code": "SELECT SUM(o.Total) AS Revenue\nFROM Orders o\nJOIN OrderLines l ON l.OrderId = o.Id;",
+      "codeLang": "sql",
+      "options": ["100", "200", "NULL", "An error, because Total is not in GROUP BY"],
+      "answer": [1],
+      "explanation": "The join repeats the order row once per order line, so Total 100 appears twice and SUM returns 200. Aggregate before joining, or don't join to the child table when you only need parent-level amounts.",
+      "optionNotes": ["The join duplicates the order row.", null, "There are matching rows, so the SUM is not NULL.", "An aggregate-only SELECT without GROUP BY is valid."],
+      "readMore": "/data/sql-joins-queries/"
+    },
+
+    {
+      "id": "data-window-functions-001",
+      "topic": "window-functions",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Salaries ordered descending are 100, 90, 90, 80. Which function numbers them 1, 2, 2, 3?",
+      "options": ["ROW_NUMBER()", "RANK()", "NTILE(3)", "DENSE_RANK()"],
+      "answer": [3],
+      "explanation": "DENSE_RANK gives tied rows the same rank and continues without gaps. RANK would give 1, 2, 2, 4 and ROW_NUMBER would give 1, 2, 3, 4.",
+      "optionNotes": ["ROW_NUMBER never repeats numbers.", "RANK leaves a gap after ties: 1, 2, 2, 4.", "NTILE(3) splits 4 rows into buckets 1, 1, 2, 3 regardless of ties.", null],
+      "readMore": "/data/window-functions/"
+    },
+    {
+      "id": "data-window-functions-002",
+      "topic": "window-functions",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The Score column holds 100, 90, 90, 80. What values does the Rnk column contain, in descending score order?",
+      "code": "SELECT Score, RANK() OVER (ORDER BY Score DESC) AS Rnk\nFROM Results;",
+      "codeLang": "sql",
+      "options": ["1, 2, 2, 3", "1, 2, 2, 4", "1, 2, 3, 4", "1, 1, 2, 3"],
+      "answer": [1],
+      "explanation": "RANK gives ties the same value and then skips: the two 90s share rank 2, and 80 gets rank 4 because three rows precede it.",
+      "optionNotes": ["That is DENSE_RANK.", null, "That is ROW_NUMBER.", "Only the two 90s tie, not 100 and 90."],
+      "readMore": "/data/window-functions/"
+    },
+    {
+      "id": "data-window-functions-003",
+      "topic": "window-functions",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "DailySales rows (Day, Amount): (1, 10), (2, 20), (2, 30), (3, 40). What running totals does this query produce, in Day order?",
+      "code": "SELECT Day, Amount,\n       SUM(Amount) OVER (ORDER BY Day) AS RunningTotal\nFROM DailySales;",
+      "codeLang": "sql",
+      "options": ["10, 30, 60, 100", "10, 20, 30, 40", "10, 60, 60, 100", "100, 100, 100, 100"],
+      "answer": [2],
+      "explanation": "With ORDER BY and no explicit frame, the default is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW. Both Day 2 rows are peers and are included together, so both show 60. Use ROWS UNBOUNDED PRECEDING (plus a tie-breaker) for a row-by-row running total.",
+      "optionNotes": ["That is the ROWS frame result, not the default RANGE frame.", "That would be the Amount itself, with no accumulation.", null, "That is SUM() OVER () with no ORDER BY."],
+      "readMore": "/data/window-functions/"
+    },
+    {
+      "id": "data-window-functions-004",
+      "topic": "window-functions",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why does `WHERE ROW_NUMBER() OVER (ORDER BY Id) <= 10` fail?",
+      "options": [
+        "ROW_NUMBER requires a PARTITION BY clause",
+        "Window functions are evaluated in the SELECT phase, after WHERE",
+        "ROW_NUMBER can only be used inside a stored procedure",
+        "Comparison operators can't be applied to window functions"
+      ],
+      "answer": [1],
+      "explanation": "Window functions are computed during the SELECT step of logical processing, after WHERE, GROUP BY and HAVING. Compute the row number in a CTE or derived table and filter in the outer query.",
+      "optionNotes": ["PARTITION BY is optional.", null, "They work in any query.", "You can compare them freely in the outer query."],
+      "readMore": "/data/window-functions/"
+    },
+    {
+      "id": "data-window-functions-005",
+      "topic": "window-functions",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "MonthlySales amounts in month order are 100, 150, 120. What does the Prev column contain?",
+      "code": "SELECT Month, Amount,\n       LAG(Amount, 1, 0) OVER (ORDER BY Month) AS Prev\nFROM MonthlySales;",
+      "codeLang": "sql",
+      "options": ["NULL, 100, 150", "150, 120, 0", "0, 100, 150", "0, 0, 100"],
+      "answer": [2],
+      "explanation": "LAG(Amount, 1, 0) returns the previous row's Amount, or the default 0 when there is no previous row. So the first month gets 0, then 100, then 150.",
+      "optionNotes": ["NULL would appear only without the default argument.", "That is LEAD with a default of 0.", null, "The offset is 1, not 2."],
+      "readMore": "/data/window-functions/"
+    },
+    {
+      "id": "data-window-functions-006",
+      "topic": "window-functions",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does `LAST_VALUE(Amount) OVER (ORDER BY Month)` return for each row?",
+      "options": [
+        "The Amount of the latest month in the whole table",
+        "NULL, because LAST_VALUE needs PARTITION BY",
+        "The Amount of the previous month",
+        "The current row's own Amount"
+      ],
+      "answer": [3],
+      "explanation": "The default frame with ORDER BY ends at the current row (and its peers), so the 'last' value in the frame is the current row. Specify ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING, or use FIRST_VALUE with the order reversed.",
+      "optionNotes": ["That needs a frame extending to UNBOUNDED FOLLOWING.", "PARTITION BY is optional.", "That is LAG.", null],
+      "readMore": "/data/window-functions/"
+    },
+    {
+      "id": "data-window-functions-007",
+      "topic": "window-functions",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about window functions in SQL Server are true? (Select all that apply)",
+      "options": [
+        "SUM(Salary) OVER (PARTITION BY Dept) returns the department total on every row",
+        "Window functions reduce the number of rows returned, like GROUP BY",
+        "ROW_NUMBER over a non-unique ORDER BY can number tied rows differently between executions",
+        "A RANGE frame such as RANGE BETWEEN 3 PRECEDING AND CURRENT ROW is supported"
+      ],
+      "answer": [0, 2],
+      "explanation": "Without ORDER BY, the window is the whole partition, so each row sees its partition total. Window functions never collapse rows. ROW_NUMBER with ties is non-deterministic unless you add a unique tie-breaker. SQL Server only supports UNBOUNDED and CURRENT ROW as RANGE boundaries.",
+      "optionNotes": [null, "They keep every row; that is the key difference from GROUP BY.", null, "Numeric offsets work only with ROWS in SQL Server."],
+      "readMore": "/data/window-functions/"
+    },
+    {
+      "id": "data-window-functions-008",
+      "topic": "window-functions",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`NTILE(3) OVER (ORDER BY Score)` is applied to 7 rows. How many rows land in buckets 1, 2 and 3?",
+      "options": ["2, 2, 3", "3, 3, 1", "2, 3, 2", "3, 2, 2"],
+      "answer": [3],
+      "explanation": "7 / 3 = 2 with remainder 1. NTILE gives the extra rows to the earliest buckets, so bucket 1 gets 3 rows and buckets 2 and 3 get 2 each.",
+      "optionNotes": ["Extra rows go to the first buckets, not the last.", "Bucket sizes never differ by more than one.", "The extra row goes to bucket 1, not bucket 2.", null],
+      "readMore": "/data/window-functions/"
+    },
+
+    {
+      "id": "data-indexes-001",
+      "topic": "indexes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How many clustered indexes can a SQL Server table have?",
+      "options": ["One", "Up to 16", "One per column", "Unlimited, but only one can be the primary key"],
+      "answer": [0],
+      "explanation": "The clustered index's leaf level is the table's data, stored in key order, and data can be physically ordered only one way. A table without a clustered index is a heap.",
+      "optionNotes": [null, "16 is unrelated; there can only be one clustered index.", "Indexes are not tied to one per column.", "A second clustered index is impossible regardless of keys."],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-002",
+      "topic": "indexes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "On a table with a clustered index, what does each leaf row of a non-clustered index contain?",
+      "options": [
+        "The entire data row",
+        "Only the index key columns",
+        "The index key, the clustering key as row locator, and any INCLUDE columns",
+        "The index key and a physical file offset of the row"
+      ],
+      "answer": [2],
+      "explanation": "Non-clustered index leaf rows hold the key, any included columns, and the clustering key, which is used to find the full row via a key lookup. A physical RID is used only when the table is a heap.",
+      "optionNotes": ["Only the clustered index leaf level holds the full row.", "It also needs a locator to reach the row.", null, "A RID (file/page/slot) is used only for heaps."],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-003",
+      "topic": "indexes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "There is an index on `Orders (CustomerId, OrderDate)`. Which predicate can NOT use an index seek on it?",
+      "options": [
+        "WHERE CustomerId = 42",
+        "WHERE CustomerId = 42 AND OrderDate >= '2026-10-01'",
+        "WHERE CustomerId IN (7, 42)",
+        "WHERE OrderDate >= '2026-10-01'"
+      ],
+      "answer": [3],
+      "explanation": "A composite index is sorted by its leading column first. Without a predicate on CustomerId, the matching OrderDate values are spread across the whole index, so at best SQL Server scans it.",
+      "optionNotes": ["Equality on the leading column is the ideal seek.", "Seek on both columns: equality then range.", "Each IN value becomes its own seek range.", null],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-004",
+      "topic": "indexes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A query `SELECT OrderId, OrderDate, Total FROM Orders WHERE CustomerId = @c` uses an index on (CustomerId) and the plan shows thousands of Key Lookups. What is the most direct fix?",
+      "options": [
+        "Rebuild the clustered index",
+        "Add OrderDate and Total as INCLUDE columns on the CustomerId index",
+        "Add WITH (NOLOCK) to the query",
+        "Create separate single-column indexes on OrderDate and Total"
+      ],
+      "answer": [1],
+      "explanation": "The key lookups fetch OrderDate and Total from the clustered index for each row. Including them in the non-clustered index makes it covering (OrderId comes along as the clustering key), so the lookups disappear.",
+      "optionNotes": ["Fragmentation is not what causes the lookups.", null, "Locking hints don't change which columns the index holds.", "Separate indexes don't help a CustomerId seek return those columns."],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-005",
+      "topic": "indexes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is true about INCLUDE columns in a non-clustered index?",
+      "options": [
+        "They are stored at every level of the B-tree and can be used for seeks",
+        "They define the sort order of the index after the key columns",
+        "They must be unique",
+        "Stored only at the leaf level; they cover queries but can't drive a seek"
+      ],
+      "answer": [3],
+      "explanation": "Included columns are carried in leaf rows only. They let the index cover a query without widening the upper levels, but they are not sorted and can't be used to seek or to avoid a sort.",
+      "optionNotes": ["That describes key columns.", "Included columns are not part of the sort order.", "Uniqueness applies to keys, not included columns.", null],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-006",
+      "topic": "indexes",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why is a `uniqueidentifier` populated with `NEWID()` usually a poor clustered index key?",
+      "options": [
+        "Random values split pages all over the B-tree, and the wide key bloats every non-clustered index",
+        "uniqueidentifier columns can't be part of an index",
+        "NEWID() values are not guaranteed to be unique in SQL Server",
+        "Clustered indexes require an integer key"
+      ],
+      "answer": [0],
+      "explanation": "New random GUIDs land all over the B-tree, splitting full pages and leaving them half empty. Because the clustering key is the row locator in every non-clustered index, a wide key also enlarges all of them. Use an identity or NEWSEQUENTIALID() for the clustered key.",
+      "optionNotes": [null, "GUID columns can be indexed.", "Uniqueness isn't the issue.", "Any indexable type can be a clustered key."],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-007",
+      "topic": "indexes",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are real costs of adding another non-clustered index to a busy table? (Select all that apply)",
+      "options": [
+        "INSERT and DELETE statements must also maintain the new index",
+        "Extra storage and memory for the index pages",
+        "Every SELECT on the table becomes slower, even ones that don't use the index",
+        "UPDATE statements that change an indexed column must also update the index"
+      ],
+      "answer": [0, 1, 3],
+      "explanation": "Indexes are paid for on writes: every insert and delete touches every non-clustered index, and updates touch indexes containing the changed columns. They also consume storage, buffer pool memory and maintenance time. Reads that don't use the index aren't slowed by it.",
+      "optionNotes": [null, null, "Queries that don't use the index are unaffected (apart from slightly more optimizer choices).", null],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-008",
+      "topic": "indexes",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You create `CREATE INDEX IX_Open ON Orders (OrderDate) WHERE Status = 'Open'`. A cached, parameterised query `WHERE Status = @status AND OrderDate > @d` never uses it. Why?",
+      "options": [
+        "Filtered indexes can only be used by stored procedures",
+        "Filtered indexes only work with equality on the key column",
+        "The cached plan must be valid for any @status value, so the optimizer can't rely on the filter",
+        "The index needs Status as a key column to be used at all"
+      ],
+      "answer": [2],
+      "explanation": "A plan built for a parameter must return correct results for every possible value, and for @status = 'Closed' the filtered index would miss rows. Use a literal, OPTION (RECOMPILE), or a separate query path for the 'Open' case.",
+      "optionNotes": ["Any query can use a filtered index when it matches the filter.", "Range predicates on the key are fine.", null, "The filter column doesn't have to be a key; the problem is the parameter."],
+      "readMore": "/data/indexes/"
+    },
+    {
+      "id": "data-indexes-009",
+      "topic": "indexes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In SQL Server, how many NULL values can a column with a regular (non-filtered) UNIQUE constraint contain?",
+      "options": ["None", "One", "Unlimited", "One per data page"],
+      "answer": [1],
+      "explanation": "SQL Server treats NULLs as equal for unique indexes, so only one NULL is allowed. For 'unique when present', create a filtered unique index with WHERE Column IS NOT NULL.",
+      "optionNotes": ["NULLs are allowed, just not more than one.", null, "That is the behaviour of a filtered unique index on IS NOT NULL.", "Uniqueness is enforced across the whole index."],
+      "readMore": "/data/indexes/"
+    },
+
+    {
+      "id": "data-execution-plans-001",
+      "topic": "execution-plans",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Orders has an index on OrderDate. Which predicate is SARGable (can seek on that index)?",
+      "options": [
+        "WHERE YEAR(OrderDate) = 2026",
+        "WHERE DATEADD(day, 1, OrderDate) > '2026-01-01'",
+        "WHERE OrderDate >= '2026-01-01' AND OrderDate < '2027-01-01'",
+        "WHERE CONVERT(varchar(10), OrderDate, 120) LIKE '2026%'"
+      ],
+      "answer": [2],
+      "explanation": "A predicate is SARGable when the indexed column is left bare. Wrapping the column in YEAR, DATEADD or CONVERT forces evaluation for every row. The half-open date range expresses the same filter and can seek.",
+      "optionNotes": ["The function on the column prevents a seek.", "The expression is applied to the column.", null, "Converting the column to a string prevents a seek."],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-002",
+      "topic": "execution-plans",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A plan for an EF Core query shows `CONVERT_IMPLICIT` on the indexed `AccountCode varchar(20)` column and an index scan. What is the best fix?",
+      "options": [
+        "Add WITH (FORCESEEK) to every query",
+        "Map the column as non-Unicode (IsUnicode(false)) so parameters match",
+        "Change the database collation",
+        "Update statistics on the table"
+      ],
+      "answer": [1],
+      "explanation": ".NET strings are sent as nvarchar by default. nvarchar has higher precedence, so SQL Server converts the varchar column, which can prevent an efficient seek. Matching the parameter type to the column removes the conversion.",
+      "optionNotes": ["Hints mask the type mismatch and may still be inefficient.", null, "A collation change is disruptive and doesn't address the type mismatch.", "Statistics don't remove a type conversion."],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-003",
+      "topic": "execution-plans",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an actual execution plan, an Index Seek shows Estimated Rows = 1 and Actual Rows = 48,000, feeding a Nested Loops join with Key Lookups. What does this most likely indicate?",
+      "options": [
+        "A bad row estimate (stale statistics or a sniffed parameter)",
+        "The index is fragmented",
+        "The server has too little memory",
+        "Nested Loops is always the wrong join type"
+      ],
+      "answer": [0],
+      "explanation": "A large gap between estimated and actual rows means the optimizer chose operators for the wrong data size. Seek plus lookups is cheap for 1 row but expensive for 48,000. Check statistics, parameter sniffing and predicate SARGability.",
+      "optionNotes": [null, "Fragmentation doesn't change row estimates.", "Memory affects grants and spills, not this estimate.", "Nested Loops is ideal for small outer inputs."],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-004",
+      "topic": "execution-plans",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A stored procedure is fast for small customers but very slow for one customer with 1.8 million orders, depending on which customer ran first after a restart. Which is a targeted fix?",
+      "options": [
+        "Add WITH (NOLOCK) to the query",
+        "Run DBCC FREEPROCCACHE every night",
+        "Add OPTION (RECOMPILE) to the problematic statement",
+        "Raise MAXDOP for the server"
+      ],
+      "answer": [2],
+      "explanation": "This is parameter sniffing: the cached plan is compiled for the first parameter value. OPTION (RECOMPILE) builds a plan for each execution's actual value. Alternatives: OPTIMIZE FOR, Query Store plan forcing, PSP optimization in SQL Server 2022, or an index that suits all values.",
+      "optionNotes": ["Locking hints don't change the plan shape.", "Clearing the cache only re-rolls the dice on which value is sniffed next.", null, "Parallelism doesn't fix a plan built for the wrong row count."],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-005",
+      "topic": "execution-plans",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A query is slow from the ASP.NET Core app but fast when you paste it into SSMS with the same parameter. What is the most common explanation?",
+      "options": [
+        "SSMS uses a faster network protocol than ADO.NET",
+        "SSMS caches query results between executions",
+        "Different SET options (ARITHABORT) give the app a separate, sniffed cached plan",
+        "The app runs queries under SERIALIZABLE isolation by default"
+      ],
+      "answer": [2],
+      "explanation": "SSMS defaults to ARITHABORT ON and ADO.NET to OFF. SET options are part of the plan cache key, so they get separate plans. The app's cached plan was sniffed for a different value; SSMS gets one tailored to your test value.",
+      "optionNotes": ["Protocol differences don't explain large plan-level differences.", "SQL Server does not cache result sets.", null, "ADO.NET defaults to READ COMMITTED."],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-006",
+      "topic": "execution-plans",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How should you generally read a graphical execution plan in SSMS?",
+      "options": [
+        "Left to right, starting at the SELECT operator",
+        "Right to left, following data flowing from the leaf operators towards SELECT",
+        "Bottom to top only",
+        "In order of highest cost percentage"
+      ],
+      "answer": [1],
+      "explanation": "Data flows from the right-most operators (scans, seeks) to the left, ending at SELECT. Arrow thickness shows row counts. Cost percentages are estimates, so they guide but do not define the reading order.",
+      "optionNotes": ["The SELECT is where data ends up, not where it starts.", null, "Join inputs are read top to bottom, but overall flow is right to left.", "Costs are estimates and can mislead."],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-007",
+      "topic": "execution-plans",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The execution plan shows a green 'Missing Index' suggestion. What is the best practice?",
+      "options": [
+        "Create it immediately; the optimizer knows best",
+        "Ignore it; suggestions are always wrong",
+        "Create it with every column of the table in INCLUDE",
+        "Treat it as a hint: compare with existing indexes, consolidate with other suggestions and weigh write cost"
+      ],
+      "answer": [3],
+      "explanation": "The suggestion is based on a single query and ignores existing indexes, write overhead and other workloads. Often an existing index can be extended instead of adding a near-duplicate.",
+      "optionNotes": ["Blindly applying suggestions leads to overlapping indexes.", "They are often a useful clue.", "That duplicates the table and multiplies write cost.", null],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-008",
+      "topic": "execution-plans",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Assume an index exists on each referenced column. Which predicates prevent an efficient index seek? (Select all that apply)",
+      "options": [
+        "WHERE YEAR(OrderDate) = 2026",
+        "WHERE LastName LIKE '%son'",
+        "WHERE LastName LIKE 'And%'",
+        "WHERE CustomerId = @CustomerId (both int)"
+      ],
+      "answer": [0, 1],
+      "explanation": "A function on the column and a leading wildcard both force every row to be examined. A trailing wildcard LIKE 'And%' becomes a range seek, and a type-matched equality is the ideal seek.",
+      "optionNotes": [null, null, "A prefix LIKE is SARGable.", "Matching types with equality seeks normally."],
+      "readMore": "/data/execution-plans/"
+    },
+    {
+      "id": "data-execution-plans-009",
+      "topic": "execution-plans",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is Query Store primarily used for?",
+      "options": [
+        "Caching query results for faster repeated reads",
+        "Storing stored procedure source code in version control",
+        "Persisting query plans and runtime statistics to find regressions and force a known good plan",
+        "Replicating queries to read replicas"
+      ],
+      "answer": [2],
+      "explanation": "Query Store records plans and runtime metrics over time inside the database. It shows when a query regressed after a plan change and lets you force the previous plan. It is on by default in Azure SQL Database.",
+      "optionNotes": ["SQL Server does not cache result sets this way.", "It stores plans and stats, not source control.", null, "Replication is a different feature."],
+      "readMore": "/data/execution-plans/"
+    },
+
+    {
+      "id": "data-transactions-isolation-001",
+      "topic": "transactions-isolation",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the default transaction isolation level in SQL Server?",
+      "options": ["READ UNCOMMITTED", "READ COMMITTED", "REPEATABLE READ", "SERIALIZABLE"],
+      "answer": [1],
+      "explanation": "READ COMMITTED is the default. In SQL Server it uses short-lived shared locks unless READ_COMMITTED_SNAPSHOT is on (the default in Azure SQL Database), in which case it reads row versions.",
+      "optionNotes": ["That must be requested explicitly (or via NOLOCK).", null, "That holds shared locks until commit and is not the default.", "That is the strictest level, not the default."],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-002",
+      "topic": "transactions-isolation",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which isolation level prevents dirty and non-repeatable reads but still allows phantom rows?",
+      "options": ["READ COMMITTED", "SNAPSHOT", "SERIALIZABLE", "REPEATABLE READ"],
+      "answer": [3],
+      "explanation": "REPEATABLE READ holds shared locks on rows it has read until the transaction ends, so those rows can't change. It doesn't lock ranges, so new rows can be inserted into a range it queried (phantoms).",
+      "optionNotes": ["READ COMMITTED allows non-repeatable reads.", "SNAPSHOT reads a consistent version, so it also prevents phantoms.", "SERIALIZABLE prevents phantoms with key-range locks.", null],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-003",
+      "topic": "transactions-isolation",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Two transactions deadlock in SQL Server. What happens?",
+      "options": [
+        "Both wait until the lock timeout expires",
+        "SQL Server chooses one as the victim, rolls it back and returns error 1205 to it",
+        "Both transactions are rolled back",
+        "The transaction that started first is always killed"
+      ],
+      "answer": [1],
+      "explanation": "The lock monitor detects the cycle and picks a victim, based on DEADLOCK_PRIORITY and then the cost of rolling back. The victim gets error 1205 and should be retried by the application; the other transaction continues.",
+      "optionNotes": ["Deadlocks are detected and resolved automatically; waiting would never end.", null, "Only one victim is chosen.", "Start time isn't the criterion."],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-004",
+      "topic": "transactions-isolation",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is the key difference between READ_COMMITTED_SNAPSHOT (RCSI) and SNAPSHOT isolation?",
+      "options": [
+        "RCSI uses locks; SNAPSHOT uses row versions",
+        "RCSI allows dirty reads; SNAPSHOT doesn't",
+        "RCSI is consistent per statement; SNAPSHOT per transaction, with update conflicts",
+        "SNAPSHOT is enabled by default in SQL Server; RCSI must be enabled per database"
+      ],
+      "answer": [2],
+      "explanation": "Both read committed row versions. RCSI changes READ COMMITTED transparently and is consistent per statement. SNAPSHOT must be requested, is consistent as of the transaction start, and raises error 3960 if it tries to update a row changed by another transaction since it started.",
+      "optionNotes": ["Both use row versioning.", "Neither allows dirty reads.", null, "Both are off by default in SQL Server; Azure SQL Database enables RCSI by default."],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-005",
+      "topic": "transactions-isolation",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about `WITH (NOLOCK)` are true? (Select all that apply)",
+      "options": [
+        "It can return data from a transaction that is later rolled back",
+        "During page splits it can read the same row twice or skip rows",
+        "It takes no locks of any kind, not even schema stability locks",
+        "It returns exactly the same results as READ COMMITTED, only faster"
+      ],
+      "answer": [0, 1],
+      "explanation": "NOLOCK is READ UNCOMMITTED for that table: dirty reads are possible, and allocation-order scans can double-read or miss rows while pages move. It still takes Sch-S locks. If blocking is the problem, RCSI gives non-blocking reads of committed data.",
+      "optionNotes": [null, null, "It still takes a schema stability (Sch-S) lock.", "Results can differ, and be wrong."],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-006",
+      "topic": "transactions-isolation",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "After this batch runs, is the inserted row in the table?",
+      "code": "BEGIN TRAN;            -- outer\n  BEGIN TRAN;          -- inner\n    INSERT dbo.Logs (Msg) VALUES ('hello');\n  COMMIT;              -- inner commit\nROLLBACK;              -- outer rollback",
+      "codeLang": "sql",
+      "options": [
+        "Yes, the inner COMMIT made it durable",
+        "Yes, but only until the next checkpoint",
+        "No, the ROLLBACK undoes everything since the outermost BEGIN TRAN",
+        "The batch fails because transactions can't be nested"
+      ],
+      "answer": [2],
+      "explanation": "Nested BEGIN TRAN only increments @@TRANCOUNT. The inner COMMIT decrements it from 2 to 1 and commits nothing. ROLLBACK rolls back the entire transaction. Use SAVE TRANSACTION for partial rollback.",
+      "optionNotes": ["Only the outermost COMMIT makes changes durable.", "Checkpoints are unrelated to transaction outcome.", null, "Nesting is allowed syntactically; it just doesn't create real inner transactions."],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-007",
+      "topic": "transactions-isolation",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In ACID, which property guarantees that committed changes survive a server crash?",
+      "options": ["Atomicity", "Consistency", "Isolation", "Durability"],
+      "answer": [3],
+      "explanation": "Durability is provided by write-ahead logging: the log records are hardened to disk before the commit is acknowledged, so recovery can redo committed work after a crash.",
+      "optionNotes": ["Atomicity is all-or-nothing.", "Consistency means constraints hold.", "Isolation is about concurrent transactions not interfering.", null],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-008",
+      "topic": "transactions-isolation",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Under READ COMMITTED with locking (RCSI off): Session 1 runs BEGIN TRAN and reads Balance = 500. Session 2 then runs an auto-commit UPDATE setting Balance = 300. Session 1 reads the balance again before committing. What does it see?",
+      "options": [
+        "500, because session 1's transaction is still open",
+        "Session 2 is blocked until session 1 commits, so 500",
+        "Error 3960 (update conflict)",
+        "300"
+      ],
+      "answer": [3],
+      "explanation": "Under locking READ COMMITTED, the shared lock is released as soon as the row is read, so session 2's update proceeds and commits. Session 1's second read sees 300: a non-repeatable read. REPEATABLE READ would have blocked session 2.",
+      "optionNotes": ["An open transaction alone doesn't keep read locks at this level.", "That is REPEATABLE READ behaviour.", "Update conflicts are a SNAPSHOT isolation error for writers.", null],
+      "readMore": "/data/transactions-isolation/"
+    },
+    {
+      "id": "data-transactions-isolation-009",
+      "topic": "transactions-isolation",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Code reads stock with `SELECT Qty ... WHERE Id = @id`, checks `Qty > 0` in C#, then runs `UPDATE ... SET Qty = @newQty`. Under load stock goes negative or sales are lost. What is the most robust fix?",
+      "options": [
+        "Wrap both statements in a READ COMMITTED transaction",
+        "One conditional UPDATE (WHERE Qty >= 1) and check the row count",
+        "Add WITH (NOLOCK) to the SELECT",
+        "Cache the stock value in Redis"
+      ],
+      "answer": [1],
+      "explanation": "The read-modify-write race lets two sessions read the same value and both write. A single conditional UPDATE reads and modifies under one exclusive lock, and zero affected rows means out of stock. Alternatives are UPDLOCK on the read or optimistic concurrency with rowversion.",
+      "optionNotes": ["READ COMMITTED releases the read lock immediately, so the race remains.", null, "That makes the read even less reliable.", "Moving the race to a cache doesn't remove it."],
+      "readMore": "/data/transactions-isolation/"
+    },
+
+    {
+      "id": "data-stored-procs-views-001",
+      "topic": "stored-procs-views",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which object can be used directly inside a SELECT, WHERE or JOIN?",
+      "options": ["Stored procedure", "Trigger", "User-defined function", "SQL Agent job"],
+      "answer": [2],
+      "explanation": "Scalar functions can be used in expressions and table-valued functions in the FROM clause. Procedures are executed with EXEC and triggers fire automatically on DML.",
+      "optionNotes": ["Procedures are called with EXEC, not inside queries.", "Triggers can't be called at all; they fire on events.", null, "Jobs schedule work; they are not query objects."],
+      "readMore": "/data/stored-procs-views/"
+    },
+    {
+      "id": "data-stored-procs-views-002",
+      "topic": "stored-procs-views",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An AFTER UPDATE trigger contains `SELECT @id = OrderId FROM inserted;` and then inserts one audit row for @id. A single UPDATE statement changes 10 orders. How many audit rows are written?",
+      "options": ["10", "1", "0", "The UPDATE fails because triggers can't handle multiple rows"],
+      "answer": [1],
+      "explanation": "Triggers fire once per statement, and `inserted` holds all 10 rows. Assigning to a variable keeps just one value, so only one audit row is written. Write triggers set-based: INSERT ... SELECT ... FROM inserted JOIN deleted.",
+      "optionNotes": ["The trigger fires once, not once per row.", null, "The variable still gets one value, so one row is inserted.", "Multi-row triggers are fine; this code just ignores rows."],
+      "readMore": "/data/stored-procs-views/"
+    },
+    {
+      "id": "data-stored-procs-views-003",
+      "topic": "stored-procs-views",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which statement about temp tables (#t) and table variables (@t) is true?",
+      "options": [
+        "Table variables are held only in memory, while temp tables are written to tempdb",
+        "Temp tables have column statistics; table variables do not",
+        "Temp tables are not affected by ROLLBACK",
+        "Table variables are visible to stored procedures called from the current one"
+      ],
+      "answer": [1],
+      "explanation": "Temp tables get statistics, so the optimizer can estimate row counts for joins on them. Table variables have no column statistics. Both live in tempdb, table variable data survives a ROLLBACK, and only temp tables are visible to nested procedures.",
+      "optionNotes": ["Both use tempdb.", null, "It's the table variable whose data survives a rollback.", "Table variables are scoped to the batch or procedure."],
+      "readMore": "/data/stored-procs-views/"
+    },
+    {
+      "id": "data-stored-procs-views-004",
+      "topic": "stored-procs-views",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why is an inline table-valued function usually faster than an equivalent multi-statement table-valued function?",
+      "options": [
+        "Inline TVFs are compiled to native code",
+        "Inline TVFs cache their results between calls",
+        "Multi-statement TVFs cannot use indexes on base tables",
+        "It is expanded into the calling query, so real statistics and estimates are used"
+      ],
+      "answer": [3],
+      "explanation": "An inline TVF is a single SELECT that is merged into the outer query plan. A multi-statement TVF is a black box returning a table variable; the optimizer uses a fixed estimate (100 rows with the modern estimator), though SQL Server 2017+ interleaved execution can correct it.",
+      "optionNotes": ["Only natively compiled modules for In-Memory OLTP are native code.", "Functions don't cache results.", "Statements inside it can use indexes; the problem is the opaque result.", null],
+      "readMore": "/data/stored-procs-views/"
+    },
+    {
+      "id": "data-stored-procs-views-005",
+      "topic": "stored-procs-views",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Does creating a regular (non-indexed) view make queries against it faster?",
+      "options": [
+        "Yes, the view stores its result set",
+        "No, the view's definition is expanded into the query; it stores no data",
+        "Yes, views always get their own clustered index",
+        "Only the first execution is faster"
+      ],
+      "answer": [1],
+      "explanation": "A plain view is a saved SELECT. The optimizer substitutes its definition into the query, so performance equals the underlying query. Only an indexed view stores and maintains data.",
+      "optionNotes": ["That describes an indexed view.", null, "You must create an index explicitly, which makes it an indexed view.", "Plans are cached for queries, not specially for views."],
+      "readMore": "/data/stored-procs-views/"
+    },
+    {
+      "id": "data-stored-procs-views-006",
+      "topic": "stored-procs-views",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are requirements for creating an indexed view in SQL Server? (Select all that apply)",
+      "options": [
+        "The view is created WITH SCHEMABINDING",
+        "The first index on the view is a unique clustered index",
+        "The view uses SELECT * so new columns are picked up",
+        "The view uses LEFT OUTER JOINs"
+      ],
+      "answer": [0, 1],
+      "explanation": "An indexed view must be schema-bound (with two-part table names) and materialised by a unique clustered index. SELECT * and outer joins are among the many disallowed constructs.",
+      "optionNotes": [null, null, "SELECT * is not allowed in a schema-bound indexed view.", "Outer joins are not allowed in indexed views."],
+      "readMore": "/data/stored-procs-views/"
+    },
+    {
+      "id": "data-stored-procs-views-007",
+      "topic": "stored-procs-views",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Customers: Asha (2 orders) and Ravi (no orders). dbo.OrdersForCustomer is an inline TVF returning a customer's orders. How many rows does this return?",
+      "code": "SELECT c.Name, o.OrderId\nFROM dbo.Customers c\nCROSS APPLY dbo.OrdersForCustomer(c.CustomerId) o;",
+      "codeLang": "sql",
+      "options": ["3", "4", "2", "1"],
+      "answer": [2],
+      "explanation": "CROSS APPLY behaves like an inner join: customers for whom the function returns no rows are dropped. Asha contributes 2 rows, Ravi none. OUTER APPLY would return 3 rows, with Ravi's OrderId NULL.",
+      "optionNotes": ["That is the OUTER APPLY result.", "There are only 2 orders in total.", null, "Each of Asha's orders produces a row."],
+      "readMore": "/data/stored-procs-views/"
+    },
+    {
+      "id": "data-stored-procs-views-008",
+      "topic": "stored-procs-views",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A procedure must filter by a user-supplied status and sort by a user-chosen column name. What is the safe dynamic SQL approach?",
+      "options": [
+        "Concatenate both values into the string and run it with EXEC()",
+        "Pass both the status and the column name as sp_executesql parameters",
+        "Pass the status as an sp_executesql parameter; validate the column name against a whitelist and wrap it with QUOTENAME",
+        "Escape single quotes with REPLACE and use EXEC()"
+      ],
+      "answer": [2],
+      "explanation": "Values should always be parameters, which prevents injection and allows plan reuse. Identifiers can't be parameterised, so they must be validated against known columns and quoted with QUOTENAME before concatenation.",
+      "optionNotes": ["Concatenating user input is SQL injection.", "Parameters can't be used for identifiers like column names in ORDER BY.", null, "Manual escaping is fragile and still blocks plan reuse."],
+      "readMore": "/data/stored-procs-views/"
+    },
+
+    {
+      "id": "data-normalization-001",
+      "topic": "normalization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A Products table has a column `Tags` containing values like 'red,large,sale'. Which normal form does this violate?",
+      "options": ["First normal form (1NF)", "Second normal form (2NF)", "Third normal form (3NF)", "BCNF only"],
+      "answer": [0],
+      "explanation": "1NF requires atomic values and no repeating groups. A comma-separated list packs many values in one column; model it as a separate ProductTags table instead.",
+      "optionNotes": [null, "2NF is about partial dependencies on a composite key.", "3NF is about transitive dependencies.", "It fails already at 1NF."],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-002",
+      "topic": "normalization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "OrderLines(OrderId, ProductId, ProductName, Qty) has the primary key (OrderId, ProductId). Which normal form is violated?",
+      "options": ["1NF", "2NF", "3NF only", "None, the table is fully normalised"],
+      "answer": [1],
+      "explanation": "ProductName depends only on ProductId, which is part of the composite key. That partial dependency violates 2NF; move ProductName to a Products table.",
+      "optionNotes": ["All values are atomic.", null, "The problem is a partial dependency, which 2NF covers.", "ProductName is repeated on every line for that product."],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-003",
+      "topic": "normalization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Orders(OrderId PK, OrderDate, CustomerId, CustomerCity). What is the problem?",
+      "options": [
+        "A partial dependency, violating 2NF",
+        "A repeating group, violating 1NF",
+        "A transitive dependency (OrderId → CustomerId → CustomerCity), violating 3NF",
+        "No problem, because every column depends on OrderId"
+      ],
+      "answer": [2],
+      "explanation": "CustomerCity depends on CustomerId, a non-key column, so it depends on the key only transitively. Move it to Customers; otherwise a customer's city must be updated on every order row.",
+      "optionNotes": ["The key is a single column, so partial dependency is impossible.", "Values are atomic.", null, "It depends on OrderId only through CustomerId."],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-004",
+      "topic": "normalization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is a surrogate key?",
+      "options": [
+        "A key made of two or more columns",
+        "A generated value with no business meaning, such as an IDENTITY column",
+        "A column that references the primary key of another table",
+        "A candidate key not chosen as the primary key"
+      ],
+      "answer": [1],
+      "explanation": "A surrogate key is system-generated and meaningless, so it never changes and keeps joins narrow. Combine it with a UNIQUE constraint on the natural key to enforce business uniqueness.",
+      "optionNotes": ["That is a composite key.", null, "That is a foreign key.", "That is an alternate key."],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-005",
+      "topic": "normalization",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Enrolment(Student, Course, Instructor) has key (Student, Course), and each instructor teaches exactly one course (Instructor → Course). Which is true?",
+      "options": [
+        "It is in BCNF",
+        "It violates 2NF",
+        "It is in 3NF but not BCNF",
+        "It violates 1NF"
+      ],
+      "answer": [2],
+      "explanation": "Instructor determines Course but is not a candidate key, so BCNF fails. 3NF is satisfied because Course is part of a candidate key (a prime attribute). Decomposing into (Student, Instructor) and (Instructor, Course) reaches BCNF.",
+      "optionNotes": ["BCNF requires every determinant to be a candidate key; Instructor isn't.", "Instructor depends on the whole key (Student, Course), so there is no partial dependency.", null, "All values are atomic."],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-006",
+      "topic": "normalization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How do you model a many-to-many relationship between Students and Courses in a relational database?",
+      "options": [
+        "Add a CourseIds column with a comma-separated list to Students",
+        "Add StudentId to Courses and CourseId to Students",
+        "Store both in one table with a Type column",
+        "Create a junction table StudentCourses(StudentId, CourseId) with foreign keys to both"
+      ],
+      "answer": [3],
+      "explanation": "A junction table holds one row per pair, usually with a composite primary key, and can carry attributes of the relationship such as EnrolledOn.",
+      "optionNotes": ["That violates 1NF and can't be enforced with foreign keys.", "A single FK column on each side only models one-to-many.", "That mixes two entities and loses the relationship.", null],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-007",
+      "topic": "normalization",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are valid reasons to denormalize? (Select all that apply)",
+      "options": [
+        "A read-heavy dashboard whose joins are a measured bottleneck",
+        "Keeping the unit price on an order line as a snapshot at order time",
+        "To avoid creating foreign key constraints",
+        "To reduce total storage space"
+      ],
+      "answer": [0, 1],
+      "explanation": "Denormalization trades write complexity and redundancy for faster reads, and is justified by measured read needs or by facts that are genuinely different, like a historical price. It increases storage and is not a reason to drop integrity constraints.",
+      "optionNotes": [null, null, "Skipping constraints is a separate (bad) decision, not denormalization.", "Redundant copies increase storage."],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-008",
+      "topic": "normalization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which statement about PRIMARY KEY and UNIQUE constraints in SQL Server is true?",
+      "options": [
+        "A table can have several UNIQUE constraints but only one PRIMARY KEY",
+        "A PRIMARY KEY column can contain one NULL",
+        "A UNIQUE constraint does not create an index",
+        "A table can have one UNIQUE constraint and many primary keys"
+      ],
+      "answer": [0],
+      "explanation": "There is one primary key per table, and its columns are NOT NULL. A table can have many unique constraints, each backed by a unique index and allowing a single NULL.",
+      "optionNotes": [null, "Primary key columns can't be NULL.", "Each UNIQUE constraint is enforced by a unique index.", "It is the other way round."],
+      "readMore": "/data/normalization/"
+    },
+    {
+      "id": "data-normalization-009",
+      "topic": "normalization",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You add `CustomerId INT REFERENCES dbo.Customers(CustomerId)` to Orders in a hand-written SQL Server script. Deleting a customer later becomes slow on a large Orders table. Why?",
+      "options": [
+        "Foreign keys disable the clustered index",
+        "SQL Server does not automatically index the referencing column, so each delete must scan Orders to check for child rows",
+        "Foreign keys force SERIALIZABLE isolation for every delete",
+        "The foreign key is validated only by a nightly job"
+      ],
+      "answer": [1],
+      "explanation": "A foreign key creates no index on the child column. To verify that no Orders reference the deleted customer, SQL Server must search Orders.CustomerId, which is a scan without an index. Index FK columns (EF Core does this by convention).",
+      "optionNotes": ["Foreign keys don't affect existing indexes.", null, "Foreign keys don't change the session's isolation level.", "Foreign keys are checked on every modification."],
+      "readMore": "/data/normalization/"
+    },
+
+    {
+      "id": "data-sql-interview-problems-001",
+      "topic": "sql-interview-problems",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Salaries are 90000, 85000, 70000, 70000, 60000, 50000. What does this return?",
+      "code": "SELECT Salary\nFROM (SELECT Salary, RANK() OVER (ORDER BY Salary DESC) AS rnk\n      FROM Employees) r\nWHERE rnk = 4;",
+      "codeLang": "sql",
+      "options": ["60000", "70000", "No rows", "Two rows of 70000"],
+      "answer": [2],
+      "explanation": "RANK assigns 1, 2, 3, 3, 5, 6: the two 70000s share rank 3 and the next rank is 5, so rank 4 doesn't exist. Use DENSE_RANK (1, 2, 3, 3, 4, 5) to get the 4th highest distinct salary, 60000.",
+      "optionNotes": ["60000 has RANK 5; it would be the DENSE_RANK 4 answer.", "70000 has rank 3.", null, "The 70000 rows have rank 3, not 4."],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-002",
+      "topic": "sql-interview-problems",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Salaries are 90000, 85000, 70000, 70000, 60000. What does this return?",
+      "code": "SELECT DISTINCT Salary\nFROM Employees\nORDER BY Salary DESC\nOFFSET 2 ROWS FETCH NEXT 1 ROW ONLY;",
+      "codeLang": "sql",
+      "options": ["85000", "70000", "60000", "No rows"],
+      "answer": [1],
+      "explanation": "DISTINCT gives 90000, 85000, 70000, 60000. Skipping two rows lands on 70000, the third highest distinct salary.",
+      "optionNotes": ["That is OFFSET 1.", null, "That would need OFFSET 3.", "There are four distinct values, so a third one exists."],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-003",
+      "topic": "sql-interview-problems",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which query lists email addresses that appear more than once in Customers?",
+      "options": [
+        "SELECT Email FROM Customers WHERE COUNT(*) > 1 GROUP BY Email",
+        "SELECT DISTINCT Email FROM Customers",
+        "SELECT Email FROM Customers GROUP BY Email HAVING COUNT(*) > 1",
+        "SELECT Email, COUNT(*) FROM Customers ORDER BY COUNT(*) DESC"
+      ],
+      "answer": [2],
+      "explanation": "Group by the business key and keep groups with more than one row using HAVING. Aggregates can't be used in WHERE.",
+      "optionNotes": ["Aggregates are not allowed in WHERE, and WHERE must precede GROUP BY.", "That lists every email once, duplicated or not.", null, "Email isn't grouped, so this is invalid."],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-004",
+      "topic": "sql-interview-problems",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Customers rows (Id, Email): (1, a@x), (2, r@x), (3, a@x), (4, a@x), (5, r@x). How many rows does this delete?",
+      "code": "WITH d AS (\n  SELECT Id, ROW_NUMBER() OVER (PARTITION BY Email ORDER BY Id) AS rn\n  FROM Customers\n)\nDELETE FROM d WHERE rn > 1;",
+      "codeLang": "sql",
+      "options": ["2", "5", "0, deleting through a CTE is not allowed", "3"],
+      "answer": [3],
+      "explanation": "a@x rows get rn 1, 2, 3 (Ids 1, 3, 4) and r@x rows get rn 1, 2 (Ids 2, 5). Rows with rn > 1 are Ids 3, 4 and 5, so 3 rows are deleted and Ids 1 and 2 remain.",
+      "optionNotes": ["That counts duplicated emails, not extra rows.", "rn = 1 rows are kept.", "A CTE over a single base table is deletable.", null],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-005",
+      "topic": "sql-interview-problems",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A user logged in on Oct 1, 2, 3, 5, 6 and 9 (one row per date). Using the 'date minus ROW_NUMBER' gaps-and-islands technique, how many islands (streaks) are returned?",
+      "options": ["2", "3", "4", "6"],
+      "answer": [1],
+      "explanation": "Subtracting row numbers 1-6 gives group keys Sep 30, Sep 30, Sep 30, Oct 1, Oct 1, Oct 3. That is three groups: Oct 1-3, Oct 5-6, and Oct 9 alone.",
+      "optionNotes": ["The single day Oct 9 is also an island.", null, "Oct 5 and 6 are consecutive, so they form one island.", "That would be one island per row."],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-006",
+      "topic": "sql-interview-problems",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Employees (Id, Name, Salary, ManagerId): (1, Asha, 90000, NULL), (2, Ravi, 95000, 1), (3, Kiran, 60000, 2). What does this return?",
+      "code": "SELECT e.Name\nFROM Employees e\nJOIN Employees m ON m.Id = e.ManagerId\nWHERE e.Salary > m.Salary;",
+      "codeLang": "sql",
+      "options": ["Ravi", "Asha", "Ravi and Kiran", "No rows"],
+      "answer": [0],
+      "explanation": "Self join each employee to their manager. Ravi (95000) earns more than Asha (90000). Kiran (60000) earns less than Ravi. Asha has no manager, so the inner join drops her.",
+      "optionNotes": [null, "Asha has no manager row to compare against.", "Kiran earns less than Ravi.", "Ravi does out-earn his manager."],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-007",
+      "topic": "sql-interview-problems",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You need exactly 2 employees per department (the highest paid), even when salaries tie. Which function should rank the rows?",
+      "options": ["RANK()", "DENSE_RANK()", "NTILE(2)", "ROW_NUMBER()"],
+      "answer": [3],
+      "explanation": "ROW_NUMBER gives unique numbers, so filtering rn <= 2 returns exactly two rows per partition. RANK and DENSE_RANK can return more when there are ties. Add a tie-breaker to the ORDER BY for deterministic results.",
+      "optionNotes": ["Ties share a rank, so more than 2 rows can qualify.", "Ties share a rank, so more than 2 rows can qualify.", "NTILE splits rows into halves, not top 2.", null],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-008",
+      "topic": "sql-interview-problems",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Sales has columns (Id, Region, Quarter, Amount) with 5 rows for 2 regions. This PIVOT returns 5 rows instead of 2. Why?",
+      "code": "SELECT *\nFROM Sales\nPIVOT (SUM(Amount) FOR Quarter IN ([Q1], [Q2])) p;",
+      "codeLang": "sql",
+      "options": [
+        "PIVOT doesn't support SUM",
+        "PIVOT groups by every other source column, including the unique Id",
+        "SELECT * disables aggregation in PIVOT",
+        "The IN list must contain every distinct Quarter value or PIVOT returns raw rows"
+      ],
+      "answer": [1],
+      "explanation": "PIVOT groups by all source columns not mentioned in the aggregate or FOR clause. Id is unique per row, so nothing collapses. Feed PIVOT a derived table with only Region, Quarter and Amount.",
+      "optionNotes": ["SUM is the most common PIVOT aggregate.", null, "SELECT * on the output is fine; the issue is the input columns.", "Values not listed are simply ignored."],
+      "readMore": "/data/sql-interview-problems/"
+    },
+    {
+      "id": "data-sql-interview-problems-009",
+      "topic": "sql-interview-problems",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Transactions(AccountId, TxnDate, Amount) has unique dates per account. Which expressions produce a correct running balance per account? (Select all that apply)",
+      "options": [
+        "SUM(Amount) OVER (PARTITION BY AccountId ORDER BY TxnDate ROWS UNBOUNDED PRECEDING)",
+        "A correlated subquery summing Amount for the same account where TxnDate <= the current row's TxnDate",
+        "SUM(Amount) with GROUP BY AccountId",
+        "Amount + LAG(Amount) OVER (PARTITION BY AccountId ORDER BY TxnDate)"
+      ],
+      "answer": [0, 1],
+      "explanation": "The window aggregate computes the running total in one pass; the correlated subquery gives the same result in O(n²). GROUP BY returns one total per account, and Amount + LAG only adds the previous row, not all earlier rows.",
+      "optionNotes": [null, null, "That collapses each account to a single total.", "It adds just one previous row (and is NULL on the first)."],
+      "readMore": "/data/sql-interview-problems/"
+    },
+
+    {
+      "id": "data-sql-vs-nosql-001",
+      "topic": "sql-vs-nosql",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Redis is primarily which kind of NoSQL store?",
+      "options": ["Graph database", "Wide-column store", "In-memory key-value store with data structures", "Document database with joins"],
+      "answer": [2],
+      "explanation": "Redis keeps data in memory and looks it up by key, with rich value types (strings, hashes, lists, sets, sorted sets). It is used for caching, sessions, counters and leaderboards. On Azure it is Azure Cache for Redis / Azure Managed Redis (AWS: ElastiCache).",
+      "optionNotes": ["Graph databases model nodes and edges.", "That describes Cassandra.", null, "Redis isn't a document database and has no joins."],
+      "readMore": "/data/sql-vs-nosql/"
+    },
+    {
+      "id": "data-sql-vs-nosql-002",
+      "topic": "sql-vs-nosql",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the default consistency level of an Azure Cosmos DB account?",
+      "options": ["Strong", "Eventual", "Bounded Staleness", "Session"],
+      "answer": [3],
+      "explanation": "Session consistency is the default: within a client session you read your own writes and see them in order, at lower latency and cost than Strong.",
+      "optionNotes": ["Strong must be chosen explicitly and costs more.", "Eventual is the weakest level, not the default.", "Bounded Staleness must be chosen explicitly.", null],
+      "readMore": "/data/sql-vs-nosql/"
+    },
+    {
+      "id": "data-sql-vs-nosql-003",
+      "topic": "sql-vs-nosql",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An orders container in Cosmos DB is almost always queried as 'orders for customer X'. Which partition key is best?",
+      "options": ["/status", "/customerId", "/orderDate", "/country"],
+      "answer": [1],
+      "explanation": "customerId has high cardinality, spreads load evenly and appears in the main query, so most queries hit a single partition. Status and country have few values (hot partitions), and dates concentrate today's writes in one partition.",
+      "optionNotes": ["Few distinct values creates hot partitions.", null, "Time-based keys put all current writes in one partition.", "Low cardinality and skewed traffic."],
+      "readMore": "/data/sql-vs-nosql/"
+    },
+    {
+      "id": "data-sql-vs-nosql-004",
+      "topic": "sql-vs-nosql",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which workload is the best fit for a graph database?",
+      "options": [
+        "Storing user session tokens",
+        "Recording high-volume IoT sensor readings",
+        "Finding friends-of-friends and recommendation paths several hops deep",
+        "Monthly financial reporting with aggregates"
+      ],
+      "answer": [2],
+      "explanation": "Graph databases store relationships as first-class edges, so traversing many hops is efficient, unlike chains of self joins. Options include Cosmos DB for Apache Gremlin and Neo4j (AWS: Neptune).",
+      "optionNotes": ["A key-value store like Redis fits sessions.", "Wide-column or time-series stores fit sensor data.", null, "Relational or warehouse databases suit reporting."],
+      "readMore": "/data/sql-vs-nosql/"
+    },
+    {
+      "id": "data-sql-vs-nosql-005",
+      "topic": "sql-vs-nosql",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In Cosmos DB, which operation is typically the cheapest in Request Units?",
+      "options": [
+        "A point read of a 1 KB item by id and partition key",
+        "A query filtering on an indexed property across all partitions",
+        "A query with ORDER BY within one partition",
+        "Inserting a new 1 KB item"
+      ],
+      "answer": [0],
+      "explanation": "A point read with id and partition key goes straight to one item and costs about 1 RU for a 1 KB item. Queries pay for the query engine and index lookups, cross-partition queries fan out, and writes cost several RUs because they update indexes.",
+      "optionNotes": [null, "Cross-partition queries fan out and cost more.", "Even single-partition queries cost more than a point read.", "Writes cost more than reads because of indexing and replication."],
+      "readMore": "/data/sql-vs-nosql/"
+    },
+    {
+      "id": "data-sql-vs-nosql-006",
+      "topic": "sql-vs-nosql",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a document database, how should you store comments on blog posts that can go viral and receive tens of thousands of comments?",
+      "options": [
+        "Embed all comments in an array inside the post document",
+        "Store comments as separate items referencing the post id, partitioned for the read pattern",
+        "Store comments in the post's title field as JSON text",
+        "Duplicate every comment into each user's document"
+      ],
+      "answer": [1],
+      "explanation": "Embedding suits bounded, owned data read together. An unbounded array grows the document towards size limits and makes every update rewrite the whole post. Separate items (perhaps with the latest few comments embedded) scale better.",
+      "optionNotes": ["Unbounded arrays hit item size limits (2 MB in Cosmos DB) and make writes expensive.", null, "That is both unqueryable and bounded by item size.", "Massive duplication with no benefit for this access pattern."],
+      "readMore": "/data/sql-vs-nosql/"
+    },
+    {
+      "id": "data-sql-vs-nosql-007",
+      "topic": "sql-vs-nosql",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which requirements point towards a relational database such as Azure SQL? (Select all that apply)",
+      "options": [
+        "Transactions that update several related entities atomically",
+        "Ad-hoc reporting queries with joins that aren't known in advance",
+        "Simple key lookups at massive global scale with multi-region writes",
+        "Every item has a different, unpredictable set of attributes"
+      ],
+      "answer": [0, 1],
+      "explanation": "Relational databases shine at multi-entity ACID transactions and flexible ad-hoc querying. Massive key-based access with global writes, and highly variable per-item schemas, are classic reasons to consider a document or key-value store.",
+      "optionNotes": [null, null, "That favours Cosmos DB or DynamoDB.", "That favours a document database (or JSON columns for a few fields)."],
+      "readMore": "/data/sql-vs-nosql/"
+    },
+    {
+      "id": "data-sql-vs-nosql-008",
+      "topic": "sql-vs-nosql",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Your API starts receiving HTTP 429 responses from Cosmos DB during peak hours. What do they mean?",
+      "options": [
+        "The item was not found",
+        "The partition key value is invalid",
+        "Requests exceeded the provisioned RU/s and were throttled; retry later",
+        "The account's consistency level was downgraded"
+      ],
+      "answer": [2],
+      "explanation": "429 means the request rate is too large for the RU/s available (overall or on a hot partition). The SDK retries automatically a few times using the retry-after hint. Fixes: autoscale or more RU/s, a better partition key, cheaper queries.",
+      "optionNotes": ["That is 404.", "Invalid requests return 400.", null, "Consistency changes don't produce 429s."],
+      "readMore": "/data/sql-vs-nosql/"
+    }
+  ]
+}

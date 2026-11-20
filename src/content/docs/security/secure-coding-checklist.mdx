@@ -1,0 +1,292 @@
+---
+title: Secure Coding Checklist
+description: Security headers, input validation, output encoding, least privilege, PII in logs, dependency scanning, rate limiting and audit logging for ASP.NET Core and Angular.
+sidebar:
+  order: 6
+importance: medium
+difficulty: easy
+estimatedMinutes: 25
+tags: [checklist, headers, csp, validation, logging, rate-limiting, dependencies]
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import QuizBlock from '~/components/QuizBlock.astro';
+
+## Why it matters in interviews
+
+*"How would you secure this API?"* is an open question, and interviewers score **structure**. Walking through a checklist (transport, identity, input, output, data, dependencies, abuse, observability) shows you think in layers instead of naming one feature. This page is that checklist with the .NET and Angular code for each item.
+
+## Core idea
+
+### The "secure this API" answer in one breath
+
+1. **Transport**: HTTPS only, HSTS, TLS 1.2+.
+2. **Identity**: OIDC/OAuth with a proper IdP, short-lived tokens, MFA for admins.
+3. **Authorization**: deny by default, policies, ownership checks on every resource.
+4. **Input**: validate type, length, range and format at the boundary; DTOs, not entities.
+5. **Output**: encode for the context, generic errors, no stack traces, security headers.
+6. **Data**: parameterised queries, encryption at rest, secrets in Key Vault, least-privilege DB login.
+7. **Abuse**: rate limiting, request size limits, timeouts, lockout.
+8. **Supply chain**: dependency scanning, pinned versions, signed builds.
+9. **Observability**: security event logs without PII, audit trail, alerts.
+
+### Security headers
+
+| Header | Value (typical) | Protects against |
+|---|---|---|
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` (via `UseHsts`) | SSL stripping / downgrade |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'nonce-...'; object-src 'none'; frame-ancestors 'none'` | XSS impact, clickjacking, data exfiltration |
+| `X-Content-Type-Options` | `nosniff` | MIME sniffing (JSON treated as HTML/script) |
+| `X-Frame-Options` | `DENY` (legacy; CSP `frame-ancestors` supersedes) | Clickjacking |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` or `no-referrer` | Leaking URLs and tokens in Referer |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Abuse of browser features |
+| `Cache-Control` | `no-store` on sensitive responses | Sensitive data in shared caches |
+
+`X-XSS-Protection` is obsolete; modern browsers ignore it, so don't rely on it. For an Angular app the CSP is set where `index.html` is served (nginx, Static Web Apps config, CDN, or the BFF), not by the JSON API.
+
+### Input validation vs output encoding
+
+- **Validation** (on input) rejects data that is not what you expect: allowlists, lengths, ranges, formats. It reduces attack surface but is **not** an XSS or SQLi fix on its own; a valid name like `O'Brien` still contains a quote.
+- **Encoding** (on output) makes data safe for the **destination context**: HTML body, HTML attribute, JavaScript, URL, SQL (parameters), shell. Angular and Razor encode HTML automatically.
+- **Client-side validation** (Angular reactive forms) is for UX only. The server must validate again.
+- Bind **DTOs** with only the fields a client may set. Binding EF entities directly allows **mass assignment** (`"isAdmin": true`).
+
+### Least privilege
+
+Apply it everywhere: the SQL login the app uses (`db_datareader`/`db_datawriter` or specific `EXECUTE` grants, never `sa`/`db_owner`; migrations run with a separate identity), managed identity RBAC roles scoped to one vault or storage container, OAuth scopes the client requests, admin endpoints on a separate policy, containers running as **non-root** with read-only file systems.
+
+### Logging: useful but not leaky
+
+Log **security events**: sign-in success and failure, lockouts, permission denials (403s), password and MFA changes, admin actions, validation failures in bulk, token reuse detection. Never log passwords, tokens, API keys, full card numbers, or unnecessary PII (emails, phone numbers, addresses, national ids). Prefer user ids, and mask or hash identifiers when correlation is needed. .NET 8+ has `Microsoft.Extensions.Compliance.Redaction` for classifying and redacting sensitive fields in logs.
+
+An **audit log** differs from diagnostic logs: it records *who did what to which resource when* for business and compliance, is append-only (tamper-evident), retained longer, and queried by people, not just alerting.
+
+### Dependency and code scanning
+
+| Tool | What it catches |
+|---|---|
+| NuGet audit (on `dotnet restore`), `dotnet list package --vulnerable --include-transitive` | Known CVEs in NuGet packages, including transitive ones |
+| `npm audit`, `ng update` | Known CVEs in npm packages, outdated Angular |
+| Dependabot / Renovate | Automated update PRs |
+| GitHub Advanced Security / CodeQL, SonarQube, Roslyn security analyzers | SAST: injection, weak crypto, hard-coded secrets in code |
+| Secret scanning (GitHub push protection, gitleaks) | Keys committed to Git |
+| Container scanning (Trivy, Defender for Cloud; AWS: Inspector/ECR scanning) | Vulnerable OS packages in images |
+| DAST (OWASP ZAP) | Runtime issues: headers, XSS, misconfigurations |
+
+### Rate limiting and resource limits
+
+ASP.NET Core (.NET 7+) has built-in rate limiting middleware: fixed window, sliding window, token bucket and concurrency limiters, partitioned per user, IP or API key, returning **429**. Apply strict limits to login, password reset, OTP and expensive endpoints. Behind a proxy, configure forwarded headers so the limiter sees the real client IP. Also cap request body size (Kestrel's 30 MB default, lower per endpoint), set timeouts, and paginate with a max page size. At scale, rate-limit at the gateway too (Azure API Management or Front Door; AWS: API Gateway or WAF).
+
+## Code
+
+### Security headers
+
+<Tabs syncKey="lang">
+  <TabItem label="ASP.NET Core (C#)">
+
+```csharp
+if (!app.Environment.IsDevelopment()) app.UseHsts(); // Strict-Transport-Security
+app.UseHttpsRedirection();
+app.Use(async (ctx, next) =>
+{
+    var h = ctx.Response.Headers;
+    h.XContentTypeOptions = "nosniff";
+    h.XFrameOptions = "DENY";
+    h["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    h.ContentSecurityPolicy = "default-src 'none'; frame-ancestors 'none'"; // JSON API
+    await next();
+});
+```
+
+  </TabItem>
+  <TabItem label="Angular (TS)">
+
+```ts
+// The server generates a fresh nonce per response, puts it in the CSP header
+// (script-src 'self' 'nonce-RANDOM'), and in index.html:
+//   <app-root ngCspNonce="RANDOM"></app-root>
+// Angular then applies the nonce to the inline styles it creates.
+// Alternative: provide the nonce in code.
+export const appConfig: ApplicationConfig = {
+  providers: [
+    { provide: CSP_NONCE, useValue: (globalThis as { cspNonce?: string }).cspNonce ?? null },
+  ],
+};
+```
+
+  </TabItem>
+</Tabs>
+
+### Input validation and mass assignment
+
+<Tabs syncKey="lang">
+  <TabItem label="Vulnerable (C#)">
+
+```csharp
+// Binds the EF entity: the client can send {"isAdmin": true, "id": "..."}.
+app.MapPost("/users", async (UserEntity user, AppDb db) =>
+{
+    db.Add(user);
+    await db.SaveChangesAsync();
+    return Results.Created();
+});
+```
+
+  </TabItem>
+  <TabItem label="Fixed (C#)">
+
+```csharp
+public record CreateUserRequest(
+    [Required, EmailAddress, StringLength(256)] string Email,
+    [Required, StringLength(100, MinimumLength = 2)] string DisplayName,
+    [Range(13, 120)] int Age);
+
+builder.Services.AddValidation(); // .NET 10: validates DataAnnotations on minimal API params
+
+app.MapPost("/users", async (CreateUserRequest req, AppDb db) =>
+{
+    var user = new UserEntity { Id = Guid.NewGuid().ToString(), Email = req.Email }; // only allowed fields
+    db.Add(user);
+    await db.SaveChangesAsync();
+    return Results.Created($"/users/{user.Id}", new { user.Id });
+});
+// Controllers with [ApiController] return 400 ProblemDetails automatically; FluentValidation also works.
+```
+
+  </TabItem>
+  <TabItem label="Angular (TS)">
+
+```ts
+// UX only: helps honest users; an attacker skips it with curl.
+readonly form = inject(FormBuilder).nonNullable.group({
+  email: ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
+  displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+});
+```
+
+  </TabItem>
+</Tabs>
+
+### Logging without PII
+
+<Tabs syncKey="lang">
+  <TabItem label="Vulnerable (C#)">
+
+```csharp
+log.LogWarning("Login failed for {Email} with password {Password}", req.Email, req.Password);
+log.LogInformation("Created user {@User}", user); // destructures every property
+```
+
+  </TabItem>
+  <TabItem label="Fixed (C#)">
+
+```csharp
+log.LogWarning("Login failed for user {UserId} from {ClientIp}", userId, ctx.Connection.RemoteIpAddress);
+// Security events with stable names make alerting easy:
+// e.g. alert when "Login failed" for one account exceeds 20 in 5 minutes.
+```
+
+  </TabItem>
+</Tabs>
+
+### Rate limiting login
+
+```csharp
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy("login", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1) }));
+});
+
+app.UseForwardedHeaders(); // real client IP behind a proxy (set KnownProxies / KnownNetworks)
+app.UseRateLimiter();
+app.MapPost("/auth/login", (LoginRequest req) => Results.Ok()).RequireRateLimiting("login");
+```
+
+### Dependency scanning in CI
+
+```bash
+dotnet list package --vulnerable --include-transitive   # .NET
+npm audit --audit-level=high                            # Angular, fail the build on high/critical
+```
+
+## Interview Q&A
+
+<details>
+<summary>How would you secure a new ASP.NET Core API end to end?</summary>
+
+Go layer by layer: HTTPS + HSTS; authentication via OIDC (Entra ID) with JWT bearer validation of issuer, audience and lifetime; a fallback policy requiring authentication plus policies and ownership checks; DTO validation; parameterised data access with a least-privilege login; secrets in Key Vault via managed identity; security headers and generic ProblemDetails errors; rate limiting; dependency scanning in CI; structured security logs with alerts. Then mention testing: authorization integration tests and a ZAP scan.
+</details>
+
+<details>
+<summary>Input validation or output encoding: which prevents XSS?</summary>
+
+**Output encoding** is the actual fix, because safety depends on where the data is rendered (HTML, attribute, JS, URL). Validation helps by rejecting obviously bad input and limiting size, but valid input can still be dangerous in some context. Do both, plus CSP.
+</details>
+
+<details>
+<summary>What is Content Security Policy, and how does it help an Angular app?</summary>
+
+A response header telling the browser which sources of script, style, images, frames and connections are allowed. With `script-src 'self'` and no `'unsafe-inline'`, injected inline scripts don't run even if an XSS bug exists, and `connect-src` limits where data can be sent. Angular supports nonces for its inline styles (`ngCspNonce` / `CSP_NONCE`) and Trusted Types.
+</details>
+
+<details>
+<summary>What should and shouldn't go into logs?</summary>
+
+Should: security events (logins, failures, lockouts, 403s, admin actions, config changes) with user id, IP, correlation id and timestamp. Shouldn't: passwords, tokens, cookies, API keys, connection strings, card data, and personal data you don't need. Logs are copied to many systems and kept for a long time, and under GDPR they're personal data too.
+</details>
+
+<details>
+<summary>What is mass assignment (over-posting), and how do you prevent it?</summary>
+
+The model binder fills every property the client sends, so binding an entity lets a client set `IsAdmin`, `Price` or `OwnerId`. Prevent it with **request DTOs** that contain only client-settable fields and explicit mapping to the entity. Avoid `[Bind]` lists in APIs; they are easy to forget.
+</details>
+
+<details>
+<summary>Why rate-limit login separately from the rest of the API?</summary>
+
+Login, password reset and OTP endpoints are targets for **credential stuffing** and brute force, so they need much stricter limits (per IP **and** per account), plus Identity lockout and possibly CAPTCHA. A global limit high enough for normal traffic would barely slow an attacker. Return 429 with `Retry-After`.
+</details>
+
+<details>
+<summary>How do you keep third-party packages safe?</summary>
+
+Lock versions (`package-lock.json`, central package management), enable NuGet audit and `npm audit` in CI with a failure threshold, Dependabot/Renovate for updates, review new dependencies (maintenance, popularity, licence), generate an SBOM, and scan container images. Watch for typosquatting and compromised maintainer accounts, which is why OWASP 2025 talks about supply chain, not just "outdated".
+</details>
+
+<details>
+<summary>What does least privilege mean for a typical .NET app in Azure?</summary>
+
+The app's managed identity gets only the roles it needs on specific resources (e.g. *Key Vault Secrets User* on one vault, *Storage Blob Data Reader* on one container). The SQL user can read/write the needed tables but not alter schema; migrations run in the pipeline with a different identity. Users and OAuth clients get the minimum scopes/roles, and the container runs as non-root.
+</details>
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+
+- Relying on **Angular form validators** as security.
+- A CSP with `'unsafe-inline'` and `'unsafe-eval'`, which removes most of its value.
+- Logging **request bodies** or whole objects (`{@User}`) and leaking passwords or PII.
+- Rate limiting by IP **behind a proxy** without forwarded headers: every user shares one bucket.
+- Running the app's database login as **`db_owner`/`sa`**.
+- Dependency scans that only look at **direct** packages, or warnings nobody acts on.
+- Swagger UI, health details and metrics endpoints **public in production**.
+
+</Aside>
+
+## Related
+
+- [OWASP Top 10](../owasp-top-10/)
+- [SQLi, XSS, CSRF, CORS & SSRF](../web-attacks/)
+- [Rate Limiting & Health Checks](../../aspnet/rate-limiting-health-checks/)
+- [Logging & Observability](../../aspnet/logging-observability/)
+- [Angular Security](../../angular/security/)
+
+## Quick quiz
+
+<QuizBlock section="security" topic="secure-coding-checklist" />

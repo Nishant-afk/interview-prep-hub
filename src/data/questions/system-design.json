@@ -1,0 +1,1696 @@
+{
+  "section": "system-design",
+  "version": 1,
+  "questions": [
+    {
+      "id": "system-design-interview-framework-001",
+      "topic": "interview-framework",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "The interviewer says \"Design a ride-sharing app.\" What should you do first?",
+      "options": [
+        "Draw the high-level architecture with a load balancer and microservices",
+        "Pick the database so the data model is settled early",
+        "Clarify the core features and non-functional requirements such as scale and latency",
+        "Write the API contracts for every feature you can think of"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Requirements come first: pick 3-4 core features, park the rest, and ask about users, read/write ratio, latency, consistency and availability. Every later choice is justified against these.",
+      "optionNotes": [
+        "Drawing before clarifying risks solving the wrong problem.",
+        "The database choice depends on access patterns you have not gathered yet.",
+        null,
+        "APIs come after scoping, and only for the core features."
+      ],
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-002",
+      "topic": "interview-framework",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Roughly how many requests per second is 1 million requests per day, on average?",
+      "options": [
+        "~1 req/s",
+        "~12 req/s",
+        "~120 req/s",
+        "~1,200 req/s"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A day has 86,400 seconds, about 10^5. 10^6 / 86,400 ≈ 11.6, so about 12 req/s on average. Peak is typically 2-5x higher.",
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-003",
+      "topic": "interview-framework",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A service has 10M daily active users who each make about 30 requests per day. Assuming peak is 3x the average, what peak load should you design for?",
+      "options": [
+        "~1,000 req/s",
+        "~3,500 req/s",
+        "~10,000 req/s",
+        "~100,000 req/s"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "10M x 30 = 300M requests/day. Divided by ~86,400 s that is ~3,500 req/s average; 3x peak gives ~10,000 req/s.",
+      "optionNotes": [
+        "Too low by an order of magnitude.",
+        "That is the average, not the peak.",
+        null,
+        "This would be a 30x peak factor."
+      ],
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-004",
+      "topic": "interview-framework",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "20M users each create 5 records per day, about 2 KB each. Roughly how much new storage per year?",
+      "options": [
+        "~7 TB",
+        "~73 TB",
+        "~730 TB",
+        "~7 PB"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "20M x 5 = 100M records/day x 2 KB = 200 GB/day. 200 GB x 365 ≈ 73 TB/year (before replication and indexes).",
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-005",
+      "topic": "interview-framework",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Your estimates show ~300 req/s at peak, a 20:1 read/write ratio and ~50 GB of data after three years. What is the best conclusion to state?",
+      "options": [
+        "Shard the database from day one to be ready for growth",
+        "Use a NoSQL store because SQL cannot handle 300 req/s",
+        "Split into microservices so each one has less load",
+        "A single primary database with a cache (and maybe a replica) is enough for now"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Estimates exist to drive decisions. This load and data size fit one well-indexed relational database; read-heaviness suggests a cache. Mention when you would add replicas or shard, but do not build it now.",
+      "optionNotes": [
+        "Premature sharding adds major complexity with no requirement behind it.",
+        "300 req/s is well within what a single SQL database can serve.",
+        "Microservices do not address database load and add distribution costs.",
+        null
+      ],
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-006",
+      "topic": "interview-framework",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these are non-functional requirements? (Select all that apply)",
+      "options": [
+        "p99 latency for reading the feed under 200 ms",
+        "99.9% monthly availability",
+        "Users can share a post via a link",
+        "Data must be retained for 7 years"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Latency, availability and retention describe qualities and constraints of the system. Sharing a post is a feature, so it is functional.",
+      "optionNotes": [
+        null,
+        null,
+        "A user-visible capability is a functional requirement.",
+        null
+      ],
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-007",
+      "topic": "interview-framework",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Midway through your design, the interviewer asks \"What happens when a celebrity with 50M followers posts?\" What is the best response?",
+      "options": [
+        "Say it is an edge case and continue with the planned walkthrough",
+        "Treat it as a hint and deep-dive the fan-out and hot-key problem it creates",
+        "Restart the design with a different database",
+        "Answer that autoscaling will absorb it"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Interviewer questions usually point at what they want to score. Address it directly: fan-out cost, hot keys, and options like a hybrid push/pull feed.",
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-008",
+      "topic": "interview-framework",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The main query is \"orders for user X, newest first\", and the orders table may need sharding later. Which data-model decision fits best?",
+      "options": [
+        "Index on `created_at` only, shard by order status",
+        "Index on `(created_at, user_id)`, shard by `created_at` month",
+        "Index on `(user_id, created_at DESC)`, shard by `user_id`",
+        "No index, rely on a cache in front of the table"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The composite index matches the filter then the sort, so the query is a seek plus an ordered range. Sharding by user keeps each user's orders on one shard, so the main query hits a single shard.",
+      "optionNotes": [
+        "Status has low cardinality and creates hot shards.",
+        "Leading with `created_at` does not help filter by user, and date sharding makes the newest shard hot.",
+        null,
+        "Cache misses would still scan the table."
+      ],
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-interview-framework-009",
+      "topic": "interview-framework",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Requirements: global users, p99 read latency under 100 ms, read/write ratio 100:1, ~5 GB of new data per day. Which deep dive is most valuable to propose?",
+      "options": [
+        "Sharding the write path across many database primaries",
+        "Caching, CDN and read replicas close to users",
+        "Exactly-once processing in the message broker",
+        "Choosing a leader election algorithm for the database"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Global, latency-sensitive and extremely read-heavy points at serving reads near users: CDN for static content, caches and regional read replicas. 5 GB/day of writes does not justify write sharding.",
+      "readMore": "/system-design/interview-framework/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-001",
+      "topic": "scaling-fundamentals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does it mean for an API tier to be stateless?",
+      "options": [
+        "It never reads from a database",
+        "It does not use HTTP cookies",
+        "Each instance keeps its own session data in memory",
+        "Any instance can serve any request because no request depends on in-process state"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "State that must survive between requests (sessions, files, shared cache) lives outside the process, in Redis, blob storage or the database. Then the load balancer can route each request anywhere.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-002",
+      "topic": "scaling-fundamentals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You need to route `/api/*` to the API and `/images/*` to a different backend. Which component can do this?",
+      "options": [
+        "An L4 load balancer such as Azure Load Balancer (AWS: NLB)",
+        "An L7 load balancer such as Application Gateway (AWS: ALB)",
+        "DNS with a low TTL",
+        "A database read replica"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Path-based routing needs to understand HTTP, which is L7. An L4 balancer only sees IPs, ports and TCP/UDP connections.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-003",
+      "topic": "scaling-fundamentals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which operation is the fastest?",
+      "options": [
+        "A Redis GET in the same region",
+        "A main memory reference",
+        "An SSD random read",
+        "A round trip between continents"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Main memory is ~100 ns. An SSD random read is ~0.1 ms, a same-region Redis call is dominated by the ~0.5-1 ms network round trip, and a cross-continent round trip is ~100+ ms.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-004",
+      "topic": "scaling-fundamentals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "After scaling an ASP.NET Core app with cookie authentication from 1 to 3 instances, users are randomly logged out. What is the most likely cause?",
+      "options": [
+        "Data Protection keys are stored per instance, so cookies from one instance cannot be decrypted by another",
+        "The load balancer is using round robin instead of least connections",
+        "Cookies cannot be used behind a load balancer",
+        "The database connection pool is exhausted"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Auth cookies are encrypted with Data Protection keys. With per-instance keys, a request landing on another instance fails to decrypt the cookie. Persist keys to a shared store (Redis, Blob, DB) with the same application name.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-005",
+      "topic": "scaling-fundamentals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which load-balancing algorithm suits a chat service where clients hold long-lived WebSocket connections?",
+      "options": [
+        "Round robin",
+        "Random",
+        "Least connections",
+        "Weighted round robin by CPU size"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Connections last a long time and vary in number per instance, so routing new ones to the instance with the fewest open connections keeps load even. Round robin can leave instances unevenly loaded.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-006",
+      "topic": "scaling-fundamentals",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "You want to scale an API out from 1 to 10 instances. Which changes are required? (Select all that apply)",
+      "options": [
+        "Move in-memory session state to a shared store or to tokens",
+        "Save uploaded files to blob storage instead of the local disk",
+        "Remove a read-only in-memory list of countries loaded at startup",
+        "Share ASP.NET Core Data Protection keys across instances"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Anything that must be the same for every instance (sessions, files, encryption keys) must be externalised. Immutable reference data loaded at startup is identical on every instance, so it can stay in memory.",
+      "optionNotes": [
+        null,
+        null,
+        "Read-only data that every instance loads identically does not break horizontal scaling.",
+        null
+      ],
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-007",
+      "topic": "scaling-fundamentals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Autoscaling is configured on CPU, but the first minutes of a scheduled flash sale still return errors. What is the best fix?",
+      "options": [
+        "Lower the CPU threshold from 70% to 65%",
+        "Pre-scale before the sale (scheduled scaling or a higher minimum instance count)",
+        "Switch the load balancer from L7 to L4",
+        "Disable health checks during the sale"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Reactive autoscaling lags: instances take minutes to start and warm up. For a known event, scale out in advance. Queue-based load levelling and rate limiting help further.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-008",
+      "topic": "scaling-fundamentals",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The API is scaled from 4 to 40 instances during peak. Soon after, database calls start timing out even though API CPU is low. What broke first?",
+      "options": [
+        "The load balancer ran out of available IP addresses for the new instances",
+        "The CDN stopped caching responses once the instance count changed",
+        "Kestrel's thread pool on each new instance was configured too small",
+        "40 connection pools together overwhelmed the database with connections and queries"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The database does not scale with the app tier. 10x instances can mean 10x connections and concurrent queries against one primary. Cap pool sizes, add caching and read replicas, and treat the DB as the bottleneck to scale.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-scaling-fundamentals-009",
+      "topic": "scaling-fundamentals",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Regional failover uses DNS with a 60-second TTL. After region A fails, some users keep hitting it for much longer. Why, and what avoids it?",
+      "options": [
+        "Resolvers and clients can cache past the TTL; an anycast entry point like Front Door avoids it",
+        "DNS TTLs are really measured in minutes, not seconds; set the TTL to 1 so it is honoured",
+        "Region A's load balancer still reports healthy, so it must be restarted manually",
+        "Browsers never re-resolve DNS during a session, so users must clear their cache"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "DNS failover depends on every cache honouring the TTL, and some hold answers longer. A global anycast proxy (Azure Front Door, AWS CloudFront / Global Accelerator) keeps the same address and switches backends on health probes.",
+      "readMore": "/system-design/scaling-fundamentals/"
+    },
+    {
+      "id": "system-design-caching-001",
+      "topic": "caching",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In the cache-aside pattern, who loads data into the cache on a miss?",
+      "options": [
+        "The cache server loads it from the database automatically",
+        "The database pushes changes to the cache",
+        "The application reads the database and writes the value into the cache",
+        "A nightly batch job preloads every key"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "In cache-aside the application talks to both stores: check cache, on miss read the DB, then populate the cache. Read-through is the variant where a cache layer does the loading.",
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-002",
+      "topic": "caching",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which Redis data structure best fits a game leaderboard that needs the top 100 scores?",
+      "options": [
+        "List",
+        "Sorted set",
+        "Hash",
+        "HyperLogLog"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A sorted set keeps members ordered by score with O(log n) updates, and range queries like top 100 are cheap.",
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-003",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With cache-aside, why is it usually better to delete the cache key after a DB update than to write the new value into the cache?",
+      "options": [
+        "Deleting is the only operation Redis supports atomically",
+        "Writing values to Redis is much slower than deleting them",
+        "Deleting removes the need for a TTL",
+        "Concurrent writers can set cache values in a different order than the DB commits, leaving a stale value"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Two updates can commit in one order and reach the cache in the other. Deleting forces the next read to load whatever the DB holds. Keep a TTL anyway as a safety net.",
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-004",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A nightly job warms 200,000 keys with a 24-hour TTL. Every night at the same time the database spikes as keys expire together. What is the simplest fix?",
+      "options": [
+        "Add random jitter to each key's TTL",
+        "Increase the TTL to 48 hours",
+        "Switch the eviction policy to LFU",
+        "Move the cache to a bigger Redis instance"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Keys written together expire together, causing synchronised misses. Jitter spreads expiry over time. A longer TTL only moves the spike.",
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-005",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the main risk of the write-behind (write-back) pattern?",
+      "options": [
+        "Reads are always slower than with cache-aside",
+        "Unflushed writes are lost if the cache fails first",
+        "Every write blocks until the database commits",
+        "It cannot be used with Redis as the cache store"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Write-behind acknowledges after updating the cache and flushes asynchronously. Fast, but anything not yet flushed is lost on a cache failure, so it suits counters and analytics, not orders.",
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-006",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which techniques mitigate a cache stampede on a hot key? (Select all that apply)",
+      "options": [
+        "Request coalescing so one caller loads the value while others wait",
+        "Serving the stale value while one request refreshes it",
+        "Shortening the TTL to one second",
+        "Adding jitter to TTLs so keys do not expire together"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Coalescing, stale-while-revalidate and jitter all prevent many concurrent misses from hitting the DB. A shorter TTL makes expiries, and therefore stampedes, more frequent.",
+      "optionNotes": [
+        null,
+        null,
+        "More frequent expiry causes more misses, not fewer.",
+        null
+      ],
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-007",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A Redis instance used purely as a cache hits its memory limit and writes start failing with errors. Which setting is the likely cause?",
+      "options": [
+        "`maxmemory-policy` is `allkeys-lru`",
+        "`maxmemory-policy` is `allkeys-lfu`",
+        "Persistence (AOF) is turned off",
+        "`maxmemory-policy` is `noeviction`, Redis's default"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "With `noeviction`, Redis returns errors on writes when memory is full. For a pure cache, `allkeys-lru` or `allkeys-lfu` evicts old keys instead.",
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-008",
+      "topic": "caching",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "During a flash sale one product key receives about half of all reads, and the Redis shard holding it is at 100% CPU while other shards are idle. What is the most effective fix?",
+      "options": [
+        "Add more Redis shards so the keys get redistributed across them",
+        "Switch the eviction policy from LRU to LFU for that shard",
+        "Short-TTL in-process L1 cache, and/or copies of the key on several shards",
+        "Increase the key's TTL so it is evicted and reloaded less often"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A single key lives on one shard, so adding shards does not spread it. Serving it from memory in each instance for a few seconds, or storing copies under several keys on different shards, removes the single hot spot.",
+      "optionNotes": [
+        "The hot key still maps to exactly one shard.",
+        "Eviction is not the problem; request volume on one key is.",
+        null,
+        "TTL does not change how often the key is read."
+      ],
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-caching-009",
+      "topic": "caching",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "With cache-aside and delete-on-write: request R misses and reads the old row; writer W updates the row and deletes the key; then R writes the old row into the cache. What happens, and what limits the damage?",
+      "options": [
+        "Nothing; W's delete runs last and clears it",
+        "Redis rejects R's write because the key was recently deleted",
+        "The DB transaction rolls back R's read",
+        "The cache holds the stale value until it expires, so a TTL on every key bounds the staleness"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "This is the known cache-aside race: the stale set lands after the delete. A TTL caps how long it survives; versioned keys or a short delayed second delete reduce it further.",
+      "readMore": "/system-design/caching/"
+    },
+    {
+      "id": "system-design-databases-at-scale-001",
+      "topic": "databases-at-scale",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "According to CAP, what must a distributed data store choose between when a network partition occurs?",
+      "options": [
+        "Consistency and availability",
+        "Latency and throughput",
+        "Consistency and partition tolerance",
+        "Durability and availability"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Partitions happen in real networks, so partition tolerance is not optional. During one, a node either refuses requests it cannot confirm (consistent) or answers with possibly stale data (available).",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-002",
+      "topic": "databases-at-scale",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What do read replicas primarily improve?",
+      "options": [
+        "Write throughput",
+        "Read throughput, by spreading reads across copies",
+        "Storage capacity for a single table",
+        "Strong consistency for all reads"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "All writes still go to the primary. Replicas add read capacity (and a failover target), usually with some replication lag.",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-003",
+      "topic": "databases-at-scale",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the default consistency level of Azure Cosmos DB?",
+      "options": [
+        "Strong",
+        "Bounded staleness",
+        "Session",
+        "Eventual"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Session is the default: within a client session you read your own writes and reads never go backwards, which fits most user-facing apps without the cost of global strong consistency.",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-004",
+      "topic": "databases-at-scale",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A user saves their profile, the page reloads, and the old name is shown. Reads go to an asynchronous read replica. What is the best fix?",
+      "options": [
+        "Turn off the replica and accept the read load",
+        "Add a cache in front of the replica",
+        "Increase the replica's hardware size",
+        "Read the user's own data from the primary for a short window after they write (read-your-writes)"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Replication lag means the replica has not applied the write yet. Routing a user's reads to the primary right after their write gives read-your-writes while other reads still use replicas.",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-005",
+      "topic": "databases-at-scale",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "For a multi-tenant B2B SaaS where almost every query is scoped to one tenant, which shard key is best?",
+      "options": [
+        "`created_at`",
+        "`tenant_id`",
+        "`country`",
+        "`status`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Sharding by tenant keeps each tenant's data together, so most queries hit one shard. Dates create a hot newest shard, and country or status have too few values and skew badly.",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-006",
+      "topic": "databases-at-scale",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A cache cluster grows from 4 to 5 nodes. With consistent hashing, roughly what fraction of keys moves?",
+      "options": [
+        "~20%",
+        "~50%",
+        "~80%",
+        "100%"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Only keys between the new node and its predecessor move, about 1/N of the keys (1/5 here). With `hash % N`, about 80% would move.",
+      "optionNotes": [
+        null,
+        "Too high for consistent hashing.",
+        "That is what `hash % N` would cause.",
+        "Only a naive rehash of everything moves all keys."
+      ],
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-007",
+      "topic": "databases-at-scale",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why do consistent hashing rings use virtual nodes?",
+      "options": [
+        "To encrypt keys before placing them on the ring",
+        "To allow keys to be stored on several nodes for durability",
+        "To spread each server across many ring positions, evening out load and redistribution",
+        "To make lookups O(1) instead of O(log n)"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "With one position per server, segments are uneven and a failed server dumps all its keys on one neighbour. Many virtual positions per server balance load and spread a failed server's keys across all others.",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-008",
+      "topic": "databases-at-scale",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "PACELC says that even with no partition (\"else\"), a system trades latency against consistency. Which example illustrates the \"EC\" choice?",
+      "options": [
+        "Returning cached data when the database is unreachable",
+        "Waiting for a synchronous replica to acknowledge before confirming each write",
+        "Serving reads from the nearest async replica",
+        "Accepting writes in two regions and resolving conflicts later"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Synchronous replication makes every write wait for a replica, paying latency in normal operation to keep replicas consistent. The other options favour latency or availability.",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-009",
+      "topic": "databases-at-scale",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which problems does sharding a relational database introduce? (Select all that apply)",
+      "options": [
+        "Joins and transactions across shards are no longer handled by the database",
+        "Rebalancing data when adding shards is operationally hard",
+        "Single-row lookups by shard key become slower",
+        "Globally unique constraints and auto-increment IDs need a different scheme"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Sharding moves cross-shard joins, transactions, uniqueness and ID generation into the application and makes rebalancing a project. Lookups by shard key stay fast: they route to one smaller shard.",
+      "optionNotes": [
+        null,
+        null,
+        "Routing by shard key goes to one shard, usually with less data than before.",
+        null
+      ],
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-databases-at-scale-010",
+      "topic": "databases-at-scale",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A leaderless store has N = 3 replicas. Which write/read quorum settings ensure a read overlaps the latest acknowledged write?",
+      "options": [
+        "W = 1, R = 1",
+        "W = 1, R = 2",
+        "W = 2, R = 1",
+        "W = 2, R = 2"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Reads are guaranteed to include at least one replica holding the latest write when R + W > N. Only W = 2, R = 2 gives 4 > 3; the others sum to 2 or 3.",
+      "readMore": "/system-design/databases-at-scale/"
+    },
+    {
+      "id": "system-design-messaging-basics-001",
+      "topic": "messaging-basics",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "An `OrderPlaced` event must be processed independently by the email, analytics and inventory services. Which messaging model fits?",
+      "options": [
+        "One queue that all three services read from",
+        "A topic with one subscription per service",
+        "Three synchronous HTTP calls from the order service",
+        "A shared database table that each service polls"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A topic gives every subscription its own copy. With a single queue, services would compete and each message would reach only one of them.",
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-messaging-basics-002",
+      "topic": "messaging-basics",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does \"load levelling\" with a queue mean?",
+      "options": [
+        "Spikes fill the queue and consumers process them at a steady rate the backend can handle",
+        "The queue distributes HTTP requests evenly across API instances",
+        "Messages are compressed to reduce network load",
+        "The broker automatically scales the database"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The queue absorbs bursts so downstream systems see a smoother load. If producers are faster on average, the backlog still grows, so consumer capacity must match the average rate.",
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-messaging-basics-003",
+      "topic": "messaging-basics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`POST /orders` sends the confirmation email inline. When the email provider is slow, order requests time out. What is the best change?",
+      "options": [
+        "Increase the HTTP timeout to 2 minutes",
+        "Retry the email call up to 5 times inside the request",
+        "Save the order, publish an event, and let a worker send the email",
+        "Run the email call with `Task.Run` and return immediately"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The email is not needed for the response, so it belongs behind a durable queue. The order succeeds even if the provider is down, and the worker retries. `Task.Run` fire-and-forget loses work on restarts and errors.",
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-messaging-basics-004",
+      "topic": "messaging-basics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A queue's backlog grows steadily all day and never drains overnight. What does this tell you?",
+      "options": [
+        "The broker is losing messages",
+        "Consumers are processing slower than producers publish, on average",
+        "The queue has reached its maximum message size",
+        "Producers are sending duplicate messages"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A queue smooths bursts but cannot fix a sustained rate mismatch. Scale consumers, remove their bottleneck (slow DB, poison messages being retried), batch, or reduce producer volume.",
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-messaging-basics-005",
+      "topic": "messaging-basics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Customers occasionally receive the same notification email twice. The broker provides at-least-once delivery. What is the right fix?",
+      "options": [
+        "Switch the broker to exactly-once mode for all queues",
+        "Disable retries in the consumer",
+        "Reduce the number of consumer instances to one",
+        "Make the consumer idempotent, e.g. record processed message IDs and skip duplicates"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "At-least-once delivery means redelivery after timeouts or crashes is normal. Idempotent consumers make duplicates harmless; disabling retries risks losing messages.",
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-messaging-basics-006",
+      "topic": "messaging-basics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You need to ingest millions of telemetry events per second and let several consumers replay the last 24 hours. Which Azure service fits best?",
+      "options": [
+        "Azure Event Hubs (AWS: Kinesis Data Streams / MSK)",
+        "Azure Storage Queues (AWS: SQS)",
+        "Azure Service Bus queues (AWS: SQS)",
+        "Azure Event Grid (AWS: EventBridge)"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Event Hubs is a partitioned, append-only log built for high-throughput streaming; consumers track their own offsets and can replay within retention. Queues remove messages once processed.",
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-messaging-basics-007",
+      "topic": "messaging-basics",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What happens when a producer writes to a full bounded `Channel<T>` created with `BoundedChannelFullMode.Wait`?",
+      "code": "var ch = Channel.CreateBounded<Job>(new BoundedChannelOptions(1_000)\n{\n    FullMode = BoundedChannelFullMode.Wait\n});\nawait ch.Writer.WriteAsync(job, ct);",
+      "codeLang": "csharp",
+      "options": [
+        "The oldest item is dropped to make room",
+        "`WriteAsync` throws `InvalidOperationException`",
+        "The await does not complete until a consumer frees space, slowing the producer (back-pressure)",
+        "The channel grows beyond its capacity temporarily"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`Wait` makes `WriteAsync` asynchronously wait for space. Producers slow to the consumers' pace instead of growing memory. `DropOldest`, `DropNewest` and `DropWrite` are the dropping modes.",
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-messaging-basics-008",
+      "topic": "messaging-basics",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "In a checkout flow, which steps are good candidates to move behind a queue? (Select all that apply)",
+      "options": [
+        "Sending the order confirmation email",
+        "Checking the payment authorisation result before showing \"Order confirmed\"",
+        "Updating analytics and recommendation data",
+        "Generating the invoice PDF"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "Work the user does not need in the response, or that depends on slow third parties, goes async. The payment result decides what the user sees, so it stays in the synchronous path.",
+      "optionNotes": [
+        null,
+        "The response depends on it, so it must be synchronous (or the UI must show a pending state).",
+        null,
+        null
+      ],
+      "readMore": "/system-design/messaging-basics/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-001",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which response should a rate-limited request receive?",
+      "options": [
+        "403 Forbidden",
+        "503 Service Unavailable with no headers",
+        "400 Bad Request",
+        "429 Too Many Requests with a `Retry-After` header"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "429 is the status for rate limiting, and `Retry-After` tells the client when to try again so it can back off instead of hammering the API.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-002",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which rate-limiting algorithm allows short bursts up to a maximum while enforcing an average rate?",
+      "options": [
+        "Leaky bucket",
+        "Token bucket",
+        "Fixed window counter",
+        "Sliding window log"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Tokens accumulate up to the bucket capacity and refill at a fixed rate, so a client can spend saved tokens in a burst. Leaky bucket smooths output to a constant rate instead.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-003",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A fixed-window limiter allows 100 requests per minute. What is the most a client can send within about one second?",
+      "options": [
+        "100",
+        "About 2",
+        "200",
+        "Unlimited"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The client sends 100 at the end of one window (e.g. 12:00:59) and 100 at the start of the next (12:01:00). Sliding window algorithms remove this boundary burst.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-004",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An infinite-scroll feed gets new posts constantly, and users report duplicate posts while scrolling. Which pagination fixes this?",
+      "options": [
+        "Cursor (keyset) pagination using the last seen sort key",
+        "Offset pagination with a larger page size",
+        "Page-number pagination with a total count",
+        "Returning the whole feed in one response"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "With offsets, new items at the top shift every row down, so the next page repeats items. A cursor continues after the last seen item regardless of inserts, and is an index seek.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-005",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A mobile app's `POST /payments` times out and the app retries. Sometimes customers are charged twice. What is the standard fix?",
+      "options": [
+        "Change the endpoint from `POST /payments` to `PUT /payments`",
+        "Disable automatic retries in the mobile client",
+        "Increase the server timeout so the client never gives up",
+        "Client sends an `Idempotency-Key`; server replays the stored result"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The first request succeeded but the response was lost. With an idempotency key, the retry is recognised and gets the stored response instead of a second charge.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-006",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Two internal .NET services exchange many small messages and need low latency, strict contracts and server streaming. Which protocol fits best?",
+      "options": [
+        "GraphQL",
+        "REST with JSON",
+        "gRPC",
+        "Server-Sent Events"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "gRPC uses HTTP/2 and binary Protobuf with generated clients and supports streaming, which suits internal service-to-service calls. REST stays the default at the public edge.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-007",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A sliding window counter has a limit of 100 per minute. The previous minute had 60 requests, the current minute has 50 so far, and we are 30% into the current minute. Is the next request allowed?",
+      "options": [
+        "Allowed: estimate is 92",
+        "Rejected: estimate is 110",
+        "Allowed: estimate is 68",
+        "Rejected: estimate is 104"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "estimate = previous x (1 - 0.3) + current = 60 x 0.7 + 50 = 92, which is under 100. The previous window still overlaps 70% of the sliding window.",
+      "optionNotes": [
+        null,
+        "That simply adds both windows.",
+        "That weights the previous window by 0.3 instead of 0.7.",
+        null
+      ],
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-008",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An API uses ASP.NET Core's built-in token bucket limiter at 100 requests/minute per user, and runs as 10 instances behind a round-robin load balancer. What effective limit does a user get?",
+      "options": [
+        "Exactly 100/minute; the limiter state is shared automatically",
+        "Up to about 1,000/minute, because each instance keeps its own in-memory buckets",
+        "About 10/minute, because the limit is divided across instances",
+        "It depends on the user's IP address only"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The built-in limiters are in-memory per process. For a global limit, keep counters in Redis with atomic updates, or enforce it at the API gateway.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-009",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Redis-based limiter does `GET count`, checks `count < limit` in C#, then calls `INCR`. Under load, users exceed the limit. Why?",
+      "options": [
+        "Redis `INCR` is not atomic when several clients call it at once",
+        "The key's TTL is reset on every `GET`, so the window never closes",
+        "Concurrent requests read the same count before incrementing; make it atomic",
+        "The Redis client library caches stale values locally between calls"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Check-then-act across separate calls is a race. `INCR` first and compare the returned value, or run the whole check in a Lua script so Redis executes it atomically.",
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-api-design-rate-limiting-010",
+      "topic": "api-design-rate-limiting",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which are sound practices for implementing idempotency keys on `POST /payments`? (Select all that apply)",
+      "options": [
+        "Enforce uniqueness of the key (per client) in the store",
+        "Generate a new key on the server for every incoming request",
+        "Store a hash of the request body and reject a reused key with a different body",
+        "Return the stored response when a completed key is retried"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "The client generates one key per logical operation and reuses it on retries; the server enforces uniqueness, detects mismatched bodies and replays the original response.",
+      "optionNotes": [
+        null,
+        "A server-generated key differs on every retry, so duplicates would never be detected.",
+        null,
+        null
+      ],
+      "readMore": "/system-design/api-design-rate-limiting/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-001",
+      "topic": "storage-files-cdn",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Where should user-uploaded images be stored in a scalable web app?",
+      "options": [
+        "In a `varbinary(max)` column next to the user row",
+        "On the local disk of the API server that received the upload",
+        "In blob storage, with metadata (owner, path, size) in the database",
+        "In Redis so they load quickly"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Object storage is cheap, durable and serves files over HTTPS; the database keeps queryable metadata. Local disks break horizontal scaling, and large binaries bloat the database.",
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-002",
+      "topic": "storage-files-cdn",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the AWS S3 equivalent of an Azure Blob SAS (Shared Access Signature) URL?",
+      "options": [
+        "A pre-signed URL",
+        "An IAM user access key",
+        "An S3 bucket policy",
+        "A CloudFront origin"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Both are time-limited URLs that grant a specific operation on a specific object without sharing account credentials.",
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-003",
+      "topic": "storage-files-cdn",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular app uploads videos of up to 500 MB. The API currently receives the bytes and forwards them to Blob Storage, and it struggles under load. What is the best design?",
+      "options": [
+        "Increase the API's request size limit and add instances",
+        "Store videos in the database instead",
+        "Compress videos in the browser before posting them to the API",
+        "The API issues a short-lived write SAS and the browser uploads directly to Blob Storage"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The API only authorises and records metadata; the bytes go straight to storage, which is built for that bandwidth. Upload completion is detected via a storage event or a client callback.",
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-004",
+      "topic": "storage-files-cdn",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`logo.png` is served through a CDN with `Cache-Control: max-age=31536000`. You replace the logo. What is the most reliable way for users to get the new one?",
+      "options": [
+        "Wait for the CDN to notice the file changed",
+        "Publish it under a new versioned name (e.g. `logo.3f9a2c.png`) and update references",
+        "Reduce `max-age` to 60 seconds on the old file",
+        "Ask users to clear their browser cache"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A new URL is never cached anywhere, so every layer fetches it fresh, and immutable old URLs can stay cached. Purging the CDN helps for emergencies but does not clear browser caches.",
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-005",
+      "topic": "storage-files-cdn",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Users on unreliable mobile networks upload 4 GB files and often fail near the end. What approach fixes this?",
+      "options": [
+        "Upload in blocks/parts, retry only failed ones, then commit the list",
+        "Increase the SAS expiry to 24 hours so slow uploads can finish",
+        "Upload through the API instead so it can retry on the server side",
+        "Zip the file in the browser before uploading it in one request"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Chunked uploads make failures cheap: only the failed block is resent, blocks can go in parallel, and the client can resume by tracking which blocks succeeded.",
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-006",
+      "topic": "storage-files-cdn",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which measures make an upload SAS safer? (Select all that apply)",
+      "options": [
+        "Expire it after a few minutes",
+        "Scope it to a single, server-generated blob name",
+        "Grant only create/write permission",
+        "Sign it with the account key and make it valid for a year so clients can reuse it"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "Short expiry, narrow scope and minimal permissions limit what a leaked URL allows. Prefer a user delegation SAS signed via Entra ID over account-key SAS.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "A long-lived account-key SAS is close to handing out the storage key."
+      ],
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-007",
+      "topic": "storage-files-cdn",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A thumbnail worker triggered by BlobCreated events sometimes processes the same upload twice, creating duplicate thumbnail records. What is the best fix?",
+      "options": [
+        "Switch to a broker that guarantees exactly-once delivery",
+        "Make the worker idempotent: deterministic output names and an upsert keyed by the source blob",
+        "Process events on a single worker instance",
+        "Delete the original after the first processing attempt"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Event delivery is at-least-once, so duplicates are expected. Deterministic names overwrite the same thumbnails and an upsert keeps one metadata row, so reprocessing is harmless.",
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-storage-files-cdn-008",
+      "topic": "storage-files-cdn",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The Angular app uploads to a SAS URL with `HttpClient`. A security review finds the user's API bearer token in requests to the storage account. What is the cause and fix?",
+      "options": [
+        "The SAS embeds the bearer token; generate it without user claims",
+        "Blob Storage requires bearer tokens; this is expected",
+        "The functional auth interceptor adds the token to every request; limit it to the API's own origin",
+        "CORS forwards headers from the API to storage; disable CORS"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "An interceptor that attaches the token to all outgoing requests leaks it to third-party origins. Check the request URL and only add the header for your API's base URL.",
+      "readMore": "/system-design/storage-files-cdn/"
+    },
+    {
+      "id": "system-design-auth-in-design-001",
+      "topic": "auth-in-design",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which OAuth 2.0 flow should an Angular SPA use to sign users in via Entra ID?",
+      "options": [
+        "Implicit flow",
+        "Client credentials flow",
+        "Resource owner password credentials flow",
+        "Authorization code flow with PKCE"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "SPAs are public clients that cannot keep a secret. Authorization code with PKCE is the recommended flow; implicit is deprecated and client credentials has no user.",
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-auth-in-design-002",
+      "topic": "auth-in-design",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A background worker on Azure needs to read secrets from Key Vault. How should it authenticate?",
+      "options": [
+        "With a managed identity granted access to the vault",
+        "With a client secret stored in appsettings.json",
+        "With the storage account key",
+        "With an admin user's password in an environment variable"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A managed identity gives the workload an Entra identity with no stored secret. The AWS equivalent is an IAM role attached to the compute.",
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-auth-in-design-003",
+      "topic": "auth-in-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API uses JWT access tokens. A user is disabled and must lose access quickly. What is the usual design?",
+      "options": [
+        "Delete the token from the database",
+        "Short-lived access tokens plus revoking the user's refresh token at the identity provider",
+        "Change the API's signing key for all users",
+        "JWTs cannot be revoked, so nothing can be done"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Access tokens stay valid until expiry, so keep them short (minutes) and revoke refresh tokens; access ends at the next refresh. For immediate cut-off, add a denylist check, which costs a lookup per request.",
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-auth-in-design-004",
+      "topic": "auth-in-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Azure API Management validates JWTs with a `validate-jwt` policy. Should the backend services validate tokens too?",
+      "options": [
+        "No, it doubles latency for no benefit",
+        "Only in development environments",
+        "Yes, for defence in depth and for fine-grained checks like resource ownership",
+        "No, as long as the services are in a VNet"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The gateway does coarse checks. Services must still validate tokens and enforce authorisation, otherwise any path that bypasses the gateway is fully trusted. Local JWT validation is cheap.",
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-auth-in-design-005",
+      "topic": "auth-in-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How does an ASP.NET Core API validate Entra ID access tokens without calling Entra ID on every request?",
+      "options": [
+        "It sends each token to the introspection endpoint and caches the answer",
+        "It fetches the issuer's public signing keys from OIDC metadata and verifies signatures locally",
+        "It decrypts the token with a shared secret configured in appsettings",
+        "It trusts any token that has not expired"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The JWT bearer handler downloads the OIDC discovery document and JWKS keys, caches them, and validates signature, issuer, audience and lifetime locally.",
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-auth-in-design-006",
+      "topic": "auth-in-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A legacy API stores sessions in process memory. It must now run on 12 instances without sticky sessions. Which change works?",
+      "options": [
+        "Increase the session timeout",
+        "Use IP-hash load balancing instead",
+        "Move sessions to a shared store such as Redis, or switch to token-based auth",
+        "Run the session middleware before routing"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Any instance must be able to read the session, so it must live outside the process (Redis) or be carried by the client as a signed token. IP hash is sticky sessions by another name.",
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-auth-in-design-007",
+      "topic": "auth-in-design",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A pen test shows the Orders API accepts a valid token that was issued for the Catalog API in the same tenant. What validation is missing?",
+      "options": [
+        "Audience validation",
+        "Signature validation",
+        "Lifetime validation",
+        "Issuer validation"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The token is genuine, unexpired and from the right issuer, but it was minted for a different resource. Checking that `aud` matches this API rejects it.",
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-auth-in-design-008",
+      "topic": "auth-in-design",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which practices reduce long-lived secrets in an Azure-hosted .NET system? (Select all that apply)",
+      "options": [
+        "Connecting to Azure SQL with Entra authentication via the app's managed identity",
+        "Using AKS workload identity so pods get tokens without stored credentials",
+        "Putting the storage account key in appsettings.Production.json",
+        "Using Key Vault references in App Service settings for secrets that still exist"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Identity-based access removes secrets entirely, and Key Vault centralises the rest with rotation and auditing. A storage key in a config file is exactly the long-lived secret to avoid.",
+      "optionNotes": [
+        null,
+        null,
+        "A long-lived key in config is the anti-pattern.",
+        null
+      ],
+      "readMore": "/system-design/auth-in-design/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-001",
+      "topic": "azure-aws-mapping",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the closest AWS equivalent of Azure Service Bus queues and topics?",
+      "options": [
+        "Kinesis Data Streams",
+        "SQS and SNS",
+        "Step Functions",
+        "ElastiCache"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Service Bus queues map to SQS and Service Bus topics to SNS (often SNS fanning out to SQS queues). Kinesis is the streaming counterpart of Event Hubs.",
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-002",
+      "topic": "azure-aws-mapping",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which Azure service is the counterpart of AWS Lambda?",
+      "options": [
+        "Azure App Service",
+        "Azure Batch",
+        "Azure Functions",
+        "Azure Container Registry"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Both are event-driven, serverless compute with triggers such as queues, HTTP, timers and storage events.",
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-003",
+      "topic": "azure-aws-mapping",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A design on AWS uses DynamoDB. Which Azure service plays the same role?",
+      "options": [
+        "Azure SQL Database",
+        "Azure Managed Redis",
+        "Azure Table Storage only",
+        "Azure Cosmos DB"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Cosmos DB is Azure's globally distributed, horizontally partitioned NoSQL database, the usual counterpart of DynamoDB.",
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-004",
+      "topic": "azure-aws-mapping",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A small team has one containerised ASP.NET Core API plus a queue worker. They want autoscaling (including on queue length) without operating Kubernetes. What fits best?",
+      "options": [
+        "AKS with a self-managed ingress controller",
+        "Azure Container Apps (AWS: ECS on Fargate)",
+        "Virtual Machines with a custom deployment script",
+        "Azure Batch"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Container Apps runs containers with KEDA-based scale rules (HTTP, queue length) and no cluster to manage. AKS adds operational overhead that a single API does not justify.",
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-005",
+      "topic": "azure-aws-mapping",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You need to run a function whenever a file lands in Blob Storage, with push delivery and no polling. Which Azure service routes that event?",
+      "options": [
+        "Event Grid (AWS: EventBridge / S3 event notifications)",
+        "Event Hubs (AWS: Kinesis)",
+        "Azure Monitor alerts (AWS: CloudWatch alarms)",
+        "API Management (AWS: API Gateway)"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Event Grid delivers discrete events such as BlobCreated to handlers like Functions, webhooks or queues. Event Hubs is for high-volume streams, not resource events.",
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-006",
+      "topic": "azure-aws-mapping",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which Azure-to-AWS mappings are correct? (Select all that apply)",
+      "options": [
+        "Key Vault ↔ Secrets Manager (and KMS for keys)",
+        "Azure Front Door ↔ CloudFront",
+        "Application Gateway ↔ Network Load Balancer",
+        "AKS ↔ EKS"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Application Gateway is an L7 load balancer, so its counterpart is the Application Load Balancer. Azure Load Balancer (L4) maps to the NLB.",
+      "optionNotes": [
+        null,
+        null,
+        "Application Gateway is L7 and maps to ALB; NLB is L4.",
+        null
+      ],
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-007",
+      "topic": "azure-aws-mapping",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The same .NET API is moved from Azure App Service (using a managed identity) to AWS ECS on Fargate. How should it get credentials for S3 and Secrets Manager?",
+      "options": [
+        "Create an IAM user and store its access keys as environment variables",
+        "Keep using `DefaultAzureCredential`",
+        "Attach an IAM task role to the ECS task; the AWS SDK picks up temporary credentials automatically",
+        "Put the credentials in a Secrets Manager secret and read it at startup with no credentials"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The IAM task role is the managed identity equivalent: temporary, rotated credentials provided by the platform, with no stored keys. Reading Secrets Manager itself requires credentials, which the role provides.",
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-azure-aws-mapping-008",
+      "topic": "azure-aws-mapping",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "For multi-region failover of an HTTP API, why might you choose Azure Front Door over Traffic Manager?",
+      "options": [
+        "Traffic Manager cannot health-probe endpoints, so it never fails over",
+        "Front Door is the only Azure option that supports more than two regions",
+        "Traffic Manager terminates TLS for every request, which adds latency",
+        "Front Door's anycast edge switches backends on health probes, not DNS caches"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Traffic Manager is DNS-based: clients keep using cached answers until TTLs expire. Front Door is an L7 reverse proxy at the edge, so failover happens behind a stable entry point, and it adds WAF and caching.",
+      "readMore": "/system-design/azure-aws-mapping/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-001",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "About how much downtime per year does 99.9% availability allow?",
+      "options": [
+        "~53 minutes",
+        "~8.8 hours",
+        "~3.7 days",
+        "~5 minutes"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "0.1% of 8,760 hours ≈ 8.76 hours. 99.99% allows about 53 minutes, and 99.999% about 5 minutes.",
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-002",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Order status changes a few times per hour, and users check it occasionally. Which update mechanism is the simplest good fit?",
+      "options": [
+        "WebSockets held open for every user",
+        "Polling every 30-60 seconds while the page is open",
+        "Server-Sent Events with a dedicated server per user",
+        "Long-lived gRPC streams from the browser"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "With infrequent changes, polling is simple, stateless and cache-friendly. Persistent connections pay off when updates are frequent or must be instant.",
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-003",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A request synchronously depends on 5 services, each 99.9% available. Roughly what availability can the request achieve at best?",
+      "options": [
+        "99.9%",
+        "99.99%",
+        "~99.5%",
+        "~95%"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Availabilities multiply: 0.999^5 ≈ 0.995. Every synchronous hop lowers availability and adds latency, which argues for fewer hops, caching and async messaging.",
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-004",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a news feed, most users have a few hundred followers but some have tens of millions. Which feed strategy fits?",
+      "options": [
+        "Hybrid: fan-out on write for normal users, merge celebrity posts at read time",
+        "Fan-out on write for everyone",
+        "Fan-out on read for everyone",
+        "Email digests instead of a feed"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Fan-out on write makes reads fast but a celebrity post would mean millions of writes. Fan-out on read for everyone makes every feed load expensive. The hybrid takes the best of both.",
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-005",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A dashboard joins six normalised tables on every page load and is the main DB bottleneck. Writes are rare. What is the best approach?",
+      "options": [
+        "Denormalise all tables permanently and drop the normalised schema",
+        "Add an index to every column",
+        "Move everything to a NoSQL store",
+        "Keep the normalised source of truth and maintain a denormalised read model for the dashboard"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A read model (materialised view, summary table or cache) makes the hot read cheap while integrity stays in the normalised tables. The cost is some lag and extra update logic.",
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-006",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How should work be delivered to a pool of background workers so they are never given more than they can handle?",
+      "options": [
+        "Push: the producer calls each worker's HTTP endpoint in turn",
+        "Pull: workers fetch from a queue when they have capacity",
+        "Broadcast every job to all workers",
+        "Assign jobs by hashing the job ID to a worker"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Pulling gives natural back-pressure: a busy worker simply does not fetch, and adding workers increases throughput. Push needs the sender to track every worker's capacity.",
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-007",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "During a network partition, which operations should favour consistency over availability? (Select all that apply)",
+      "options": [
+        "Debiting an account balance during a transfer",
+        "Booking the last seat on a flight",
+        "Incrementing the like count on a post",
+        "Decrementing stock for the final unit at checkout"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Where a wrong answer means double-spending or overselling, refusing the request is better than proceeding on stale data. A like count can be briefly wrong and reconciled later.",
+      "optionNotes": [
+        null,
+        null,
+        "Approximate, eventually consistent counts are fine here.",
+        null
+      ],
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    },
+    {
+      "id": "system-design-tradeoffs-cheatsheet-008",
+      "topic": "tradeoffs-cheatsheet",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An ingestion service switches from inserting each event immediately to batching 500 events or 200 ms, whichever comes first. What is the trade-off?",
+      "options": [
+        "More throughput, but up to ~200 ms added latency and a crash-loss window",
+        "Lower throughput overall, but lower latency for each individual event",
+        "No real trade-off: both latency and throughput improve with batching",
+        "Lower throughput, because each batch holds locks on the table longer"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Batching amortises round trips and per-statement overhead, raising throughput, but each event waits for its batch, and buffered events are lost on a crash unless a durable queue sits in front.",
+      "readMore": "/system-design/tradeoffs-cheatsheet/"
+    }
+  ]
+}

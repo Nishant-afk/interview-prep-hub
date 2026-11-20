@@ -2,7 +2,7 @@
 
 Canonical list of every topic page: **slug** (file name and URL), **title**, and **scope**.
 Cross-links between pages must use only these slugs. Order = `sidebar.order`.
-Pages marked ✅ are written. Source of truth for scope details: [PLAN.md §5](PLAN.md).
+All pages below are written (2026-11-02). Source of truth for scope details: [PLAN.md §5](PLAN.md).
 
 Question file per section: `src/data/questions/<section>.json`. Large sections may split into
 `<section>.<part>.json` (same `"section"` value inside).

@@ -1,0 +1,184 @@
+---
+title: Interview Day Checklist
+description: "Online and onsite setup, coding round habits, design round habits, behavioral round reminders and a post-interview notes template."
+sidebar:
+  order: 7
+importance: medium
+difficulty: easy
+estimatedMinutes: 15
+noProgress: true
+tags: [behavioral, checklist, coding-round, system-design, interview-day]
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Why it matters in interviews
+
+On the day, interviewers judge more than correct answers. They watch **how you work**: whether you clarify before coding, think aloud, test your code, manage time and stay calm when stuck. Candidates with similar knowledge get different results because of these habits. Avoidable problems (a broken mic, a late start, freezing on a bug) use up the time and composure you need for the actual questions.
+
+Use this page as a checklist the evening before and the hour before each round.
+
+## The night before
+
+```text
+[ ] Confirm time (and time zone), meeting link / address, interviewer names, round type
+[ ] Re-read the job description and your notes on the company
+[ ] Re-read your resume: every line is fair game
+[ ] Rehearse aloud: tell-me-about-yourself (90 s) and project walkthrough (5 min)
+[ ] Skim your STAR story bank titles and metrics
+[ ] Skim the relevant cheat sheets (C#, ASP.NET Core, Angular, SQL)
+[ ] Charge laptop, headphones; keep a charger at the desk
+[ ] Prepare 2-3 questions per interviewer type
+[ ] Sleep. Last-minute cramming of new topics does more harm than good
+```
+
+## Online interview setup
+
+| Item | Check |
+|---|---|
+| Internet | Stable connection plus a mobile hotspot as backup |
+| Audio | Wired or tested headphones with mic; test in the actual meeting tool |
+| Video | Camera at eye level, face lit from the front, plain background |
+| Software | Meeting app updated, logged in; screen-sharing permission granted (macOS needs it per app) |
+| Coding environment | IDE ready with a blank console project and an Angular sandbox if relevant; know the shared editor (CoderPad, HackerRank, etc.) |
+| Distractions | Notifications off (Teams, Slack, email, phone), other tabs closed, family/flatmates informed |
+| Desk | Water, pen and paper for diagrams and notes, ID card if asked |
+| Join | 5 minutes early; if the interviewer does not join in 10 minutes, email the recruiter |
+
+## Onsite interview
+
+```text
+[ ] Route and travel time planned with a 30-minute buffer
+[ ] Government ID, printed resume copies, offer/payslip documents if asked
+[ ] Laptop and charger if the round requires it
+[ ] Notebook and pen; whiteboard markers are usually available
+[ ] Formal or smart-casual clothes as appropriate to the company
+[ ] Arrive 15 minutes early; be polite to everyone, including reception
+```
+
+## Coding round habits
+
+1. **Restate the problem** in your own words and confirm input, output and constraints.
+2. **Ask clarifying questions:** input size, empty or null input, duplicates, sorted or not, expected complexity.
+3. **Work through an example** by hand before coding.
+4. **State a brute-force approach** first with its complexity, then improve. A working simple solution beats an unfinished clever one.
+5. **Agree on the approach** with the interviewer before writing code.
+6. **Think aloud** while coding: what you are doing and why. Silence makes it impossible for them to help or give credit.
+7. **Write clean code:** meaningful names, small helper methods, no clever one-liners you cannot explain.
+8. **Test it yourself:** walk through your example, then edge cases (empty, one element, duplicates, large values, negative numbers).
+9. **State time and space complexity** at the end without being asked.
+10. **When stuck,** say what you are considering and ask for a hint. Taking a hint well is a positive signal.
+
+For .NET-specific coding rounds, see the [C# coding round](../../dsa/csharp-coding-round/) page; for front-end tasks, the [Angular live coding](../../dsa/angular-live-coding/) page.
+
+## System design round habits
+
+```text
+[ ] Clarify requirements: functional, non-functional (scale, latency, availability)
+[ ] Estimate scale roughly: users, requests/sec, storage
+[ ] Define the API and data model before drawing boxes
+[ ] Draw a high-level design first, then go deep on 1-2 components
+[ ] Talk trade-offs: SQL vs NoSQL, sync vs async, consistency vs availability
+[ ] Cover failure handling, caching, monitoring
+[ ] Keep the diagram tidy and labelled; manage time (5/10/20/10 min split)
+[ ] Summarise at the end and mention what you would improve with more time
+```
+
+Full approach: [system design interview framework](../../system-design/interview-framework/).
+
+## Behavioral and managerial round reminders
+
+- Answers in STAR form, about 2 minutes each, with "I" not "we".
+- One real metric per story where possible.
+- Positive about past employers, always.
+- Have your [questions to ask](../questions-to-ask/) ready.
+
+## If something goes wrong
+
+| Situation | What to do |
+|---|---|
+| Blank on a concept | "Let me think about this for a moment." Reason from first principles out loud. Partial reasoning earns partial credit |
+| You do not know | Say so honestly, then say how you would find out or what you would try. Do not bluff |
+| Bug you cannot find | Trace with a small input step by step; add prints or a debugger if allowed |
+| Running out of time | Tell the interviewer, describe the remaining steps and the complexity |
+| Technical failure | Rejoin quickly, message the recruiter, offer to continue by phone |
+| A round goes badly | Reset before the next one. Each interviewer usually scores independently |
+
+## Post-interview notes template
+
+Write this within an hour of each round, while you still remember. It is the best preparation for the next company.
+
+```text
+Company / role:        [ ]
+Date / round / type:   [ ]
+Interviewer(s):        [name, role]
+Questions asked:
+  1. [question] - how I answered - [good / weak]
+  2. [ ]
+Coding / design problem: [problem, my approach, where I got stuck]
+What went well:        [ ]
+What to improve:       [ ]
+Topics to revise:      [link to the page in this site]
+Questions I asked + what I learned about the team: [ ]
+Red flags / green flags: [ ]
+Next steps / follow-up date: [ ]
+```
+
+<Aside type="tip" title="Sample entry: replace with your own">
+"Product company X, Round 2 (technical), 45 min. Asked: async/await deadlock, EF Core N+1, design an order search API with paging. Paging answer was good (keyset vs offset). Weak on explaining `IQueryable` vs `IEnumerable` clearly. Revise: EF Core querying. Team deploys weekly, uses .NET 8 and Angular 18. Next round expected within a week."
+</Aside>
+
+## Do / Don't
+
+| Do | Don't |
+|---|---|
+| Test your setup the day before | Install updates an hour before the call |
+| Clarify the problem before coding | Start typing immediately |
+| Think aloud and test your code | Code silently and say "done" |
+| Ask for a hint when stuck for long | Freeze for five minutes |
+| Write notes after every round | Rely on memory across a dozen interviews |
+| Send a short thank-you note if appropriate | Send long follow-up emails re-answering questions |
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+- **Jumping into code** without confirming the problem and approach.
+- **Ignoring the interviewer's hints.** They are trying to help you pass.
+- **Not testing your code** or only testing the happy path.
+- **Looking up answers or using AI tools** during an online round. Interviewers notice eye movement and typing patterns, and many companies treat it as disqualifying.
+- **Letting one bad round** affect the next.
+- **No notes,** so you repeat the same mistakes at the next company.
+</Aside>
+
+## Follow-up questions to expect
+
+<details>
+<summary>"Can you optimise this further?"</summary>
+
+State the current complexity, then consider: a hash map to trade space for time, sorting plus two pointers, avoiding repeated work. If you think it is optimal, say why (e.g. you must read every element at least once).
+</details>
+
+<details>
+<summary>"How would you test this?"</summary>
+
+List test cases by category: normal, edge (empty, single, max size), invalid input, and for APIs also auth, concurrency and failure of dependencies. Mention unit versus integration tests. See [testing strategy](../../testing-devops/testing-strategy/).
+</details>
+
+<details>
+<summary>"What if the input doesn't fit in memory?"</summary>
+
+Talk about streaming or chunked processing, external sorting, or pushing the work to the database. Shows you think beyond the toy problem.
+</details>
+
+<details>
+<summary>"Do you have anything else to add?"</summary>
+
+A chance to cover something you missed: "One thing I'd add to my earlier answer on caching is..." Keep it to 30 seconds.
+</details>
+
+## Related
+
+- [Tell me about yourself](../tell-me-about-yourself/)
+- [Questions to ask the interviewer](../questions-to-ask/)
+- [DSA problem list](../../dsa/problem-list/)
+- [System design interview framework](../../system-design/interview-framework/)

@@ -1,0 +1,275 @@
+---
+title: DRY, KISS, YAGNI & Friends
+description: DRY vs WET and the wrong abstraction, KISS, YAGNI, composition over inheritance, Law of Demeter, separation of concerns and tell-don't-ask, with C# examples.
+sidebar:
+  order: 2
+importance: medium
+difficulty: easy
+estimatedMinutes: 20
+tags: [dry, kiss, yagni, composition, law-of-demeter, separation-of-concerns]
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import QuizBlock from '~/components/QuizBlock.astro';
+
+## Why it matters in interviews
+
+These principles come up as follow-ups to SOLID (*"what other principles do you follow?"*) and in code reviews during machine-coding rounds. Interviewers mostly check **judgement**: do you know when DRY goes too far, when an abstraction is premature, and why composition is usually preferred over inheritance? A balanced answer ("it depends, and here is how I decide") scores better than dogma.
+
+## Core idea
+
+| Principle | Meaning | Over-applied it becomes |
+|---|---|---|
+| **DRY** (Don't Repeat Yourself) | Every piece of **knowledge** has one authoritative place | Coupling unrelated code through a shared "helper" |
+| **KISS** (Keep It Simple) | Prefer the simplest design that works | Never adds structure even when it is needed |
+| **YAGNI** (You Aren't Gonna Need It) | Don't build for imagined future requirements | Ignoring known, near-term requirements |
+| **Composition over inheritance** | Build behaviour by combining objects (has-a) instead of extending base classes (is-a) | Forwarding boilerplate where a simple base class was fine |
+| **Law of Demeter** | Talk only to your immediate collaborators | Wrapper methods for every nested property |
+| **Separation of concerns** | Each module handles one concern (UI, business, data) | Too many layers for a small app |
+| **Tell, don't ask** | Tell an object to do something instead of pulling its data and deciding for it | Behaviour forced into entities that don't own it |
+
+### DRY vs WET, and the wrong abstraction
+
+DRY is about **knowledge**, not identical-looking text. Two validation rules that look the same today but belong to different business concepts (a customer's age limit and a driver's age limit) are **not** duplication. Merging them couples two things that will change independently.
+
+WET ("Write Everything Twice") is the counter-rule: tolerate duplication until you see the third occurrence (the **Rule of Three**), then extract. Sandi Metz's line is worth quoting: *"duplication is far cheaper than the wrong abstraction"*. The wrong abstraction grows a boolean parameter per caller until nobody can change it safely.
+
+```csharp
+// The wrong abstraction: one "shared" method serving three different callers.
+public static class PriceHelper
+{
+    public static decimal Calculate(decimal amount, bool isB2B, bool applyGst,
+        bool isRefund, bool roundForInvoice)
+    {
+        // every new caller added a flag; every change risks breaking the others
+        var result = isB2B ? amount * 0.9m : amount;
+        if (applyGst) result *= 1.18m;
+        if (isRefund) result = -result;
+        return roundForInvoice ? Math.Round(result, 2) : result;
+    }
+}
+```
+
+The fix is often to **inline the helper back** into each caller, then extract only what is truly shared (here, the GST rule as one `TaxPolicy`).
+
+Real DRY wins in .NET: one `DbContext` configuration per entity (`IEntityTypeConfiguration<T>`), one `ProblemDetails` error mapper, validation rules in one FluentValidation class reused by API and background jobs, and shared DTO contracts generated from OpenAPI instead of hand-copied in Angular.
+
+### KISS and YAGNI
+
+KISS asks *"is there a simpler design?"*. YAGNI asks *"do we need this now?"*. Typical YAGNI violations at 3-4 years:
+
+- A generic repository + unit of work + specification layer over EF Core for a 10-table CRUD app.
+- A plugin system "in case" a second payment provider ever arrives.
+- Microservices for a team of four with one deployable.
+- Configuration flags for behaviour nobody has asked to toggle.
+
+YAGNI does **not** mean "ignore design". Known requirements (multi-tenancy is in the contract, a second provider launches next quarter) justify structure now. The trade-off is the **cost of adding it later**: cheap to add later means wait; a database schema or public API that is expensive to change means think ahead.
+
+### Composition over inheritance
+
+Inheritance is the tightest coupling in OOP: a subclass depends on the base class's internals, and you can only have one base class. Composition lets you combine behaviours at runtime and swap them in tests.
+
+<Tabs>
+  <TabItem label="Inheritance">
+
+```csharp
+public class ReportExporter
+{
+    public virtual string Export(Report r) => $"{r.Title}: {r.Rows.Count} rows";
+}
+
+// Each combination needs its own subclass: class explosion.
+public class PdfReportExporter : ReportExporter { }
+public class CompressedPdfReportExporter : PdfReportExporter { }
+public class EncryptedCompressedPdfReportExporter : CompressedPdfReportExporter { }
+```
+
+  </TabItem>
+  <TabItem label="Composition">
+
+```csharp
+public interface IReportFormatter { byte[] Format(Report report); }
+public interface IOutputStep { byte[] Apply(byte[] data); }
+
+public class PdfFormatter : IReportFormatter
+{
+    public byte[] Format(Report report) => System.Text.Encoding.UTF8.GetBytes(report.Title);
+}
+
+public class GzipStep : IOutputStep { public byte[] Apply(byte[] data) => data; }
+public class EncryptStep : IOutputStep { public byte[] Apply(byte[] data) => data; }
+
+// Any formatter, any steps, in any order, chosen at runtime.
+public class ReportExporter(IReportFormatter formatter, IEnumerable<IOutputStep> steps)
+{
+    public byte[] Export(Report report) =>
+        steps.Aggregate(formatter.Format(report), (data, step) => step.Apply(data));
+}
+```
+
+  </TabItem>
+</Tabs>
+
+Inheritance is still right for genuine **is-a** relationships with a stable base: `ControllerBase`, `DbContext`, `BackgroundService`. Use it for framework extension points and composition for your own business variation. In Angular the same advice applies: prefer services, directives and `hostDirectives` over component inheritance.
+
+### Law of Demeter (principle of least knowledge)
+
+A method should only call methods on: itself, its parameters, objects it creates, and its direct fields. "Train wrecks" like `order.Customer.Address.City.Name` couple the caller to the whole object graph.
+
+<Tabs>
+  <TabItem label="Violates">
+
+```csharp
+public class ShippingService
+{
+    public decimal Cost(Order order)
+    {
+        // Knows the shape of Customer, Address and Country.
+        var country = order.Customer.Address.Country.Code;
+        return country == "IN" ? 50m : 500m;
+    }
+}
+```
+
+  </TabItem>
+  <TabItem label="Follows">
+
+```csharp
+public class Order
+{
+    public required Customer Customer { get; init; }
+    public string ShippingCountryCode => Customer.Address.Country.Code;
+}
+
+public class ShippingService
+{
+    public decimal Cost(Order order) => order.ShippingCountryCode == "IN" ? 50m : 500m;
+}
+```
+
+  </TabItem>
+</Tabs>
+
+Fluent APIs and LINQ (`orders.Where(...).Select(...).ToList()`) are **not** violations: each call returns a new object of the same abstraction, you aren't reaching into internals. Plain DTOs and EF projections are data, so `dto.Address.City` is fine there.
+
+### Separation of concerns
+
+Each part of the system deals with one concern. In ASP.NET Core: controllers handle HTTP, services hold business rules, EF Core handles persistence, middleware handles cross-cutting concerns (logging, exceptions, auth). In Angular: components handle presentation, services handle data and state, interceptors handle auth headers and errors. SRP is SoC applied at the class level; layered and [Clean Architecture](../architecture-styles/) apply it at the project level.
+
+### Tell, don't ask
+
+<Tabs>
+  <TabItem label="Ask">
+
+```csharp
+// Caller pulls data out and makes the decision: rules leak everywhere.
+public class WithdrawalService
+{
+    public void Withdraw(Account account, decimal amount)
+    {
+        if (account.Balance >= amount && !account.IsFrozen)
+            account.Balance -= amount;
+        else
+            throw new InvalidOperationException("Cannot withdraw");
+    }
+}
+```
+
+  </TabItem>
+  <TabItem label="Tell">
+
+```csharp
+public class Account
+{
+    public decimal Balance { get; private set; }
+    public bool IsFrozen { get; private set; }
+
+    // The object that owns the data owns the rule.
+    public void Withdraw(decimal amount)
+    {
+        if (IsFrozen || amount > Balance)
+            throw new InvalidOperationException("Cannot withdraw");
+        Balance -= amount;
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+This is the heart of a **rich domain model** (see [DDD tactical patterns](../architecture-styles/)) versus an anemic model where entities are property bags and services hold all logic.
+
+### Other principles worth naming
+
+- **High cohesion, low coupling**: the goal behind most of the above.
+- **Fail fast**: validate at the boundary (guard clauses, `ArgumentNullException.ThrowIfNull`), don't let bad state travel.
+- **Principle of least astonishment**: `GetUser` shouldn't create a user; a `Count` property shouldn't hit the database.
+- **Boy Scout rule**: leave code a little cleaner than you found it.
+
+## Interview Q&A
+
+<details>
+<summary>Is all duplicated code a DRY violation?</summary>
+
+No. DRY targets duplicated **knowledge** (a business rule, a formula, a schema). Code that looks the same but represents different concepts that will change independently should stay separate. Merging it creates the wrong abstraction. Use the Rule of Three before extracting.
+</details>
+
+<details>
+<summary>What is "the wrong abstraction" and how do you get out of one?</summary>
+
+A shared method or base class that was extracted too early and now serves several callers through flags and special cases. Every change risks breaking another caller. The way out: inline it back into the callers, delete the unused branches in each copy, then re-extract only what is truly common.
+</details>
+
+<details>
+<summary>Why prefer composition over inheritance?</summary>
+
+Inheritance couples the subclass to the base class's implementation (the fragile base class problem), allows only one base, and combinations explode into many subclasses. Composition combines small objects behind interfaces, can change at runtime, and is easy to mock. Decorator and Strategy are composition in action.
+</details>
+
+<details>
+<summary>When is inheritance the right choice?</summary>
+
+For a true is-a relationship with a stable base designed for extension: framework extension points (`ControllerBase`, `DbContext`, `BackgroundService`, `DelegatingHandler`), or a template method where the base fixes the algorithm. It's also fine for small, closed hierarchies like `abstract record Shape`.
+</details>
+
+<details>
+<summary>How do YAGNI and OCP not contradict each other?</summary>
+
+OCP says design extension points **where change is likely**. YAGNI says don't build for change you merely **imagine**. Apply OCP once there is evidence: the second payment provider, a known roadmap item, or a part of the code that keeps getting edited. Before that, keep it simple and refactor when the need arrives.
+</details>
+
+<details>
+<summary>Does LINQ method chaining break the Law of Demeter?</summary>
+
+No. Demeter is about reaching through an object's internals (`a.B.C.D.DoThing()`). LINQ and fluent builders return objects of the same abstraction and don't expose anybody's internals. Accessing properties of plain DTOs is also fine because they are data, not behaviour.
+</details>
+
+<details>
+<summary>What is tell-don't-ask, and how does it relate to an anemic domain model?</summary>
+
+Instead of reading an object's state and deciding outside it, you call a method on the object and let it apply its own rules (`account.Withdraw(amount)`). An anemic model does the opposite: entities only have getters/setters and all rules live in services, so invariants can be broken from anywhere.
+</details>
+
+## Pitfalls
+
+<Aside type="caution" title="Common mistakes">
+
+- **Extracting a helper after seeing two similar lines.** Wait for the third case and confirm it's the same knowledge.
+- **Boolean flag parameters** on a shared method, one per caller. A sign of the wrong abstraction.
+- **Deep inheritance trees** (more than 2 levels of your own classes) for reuse. Switch to composition.
+- **Using YAGNI as an excuse** to skip known requirements or basic tests.
+- **Public setters on entities** so every service can change state without rules (breaks tell-don't-ask).
+- **Over-layering a small CRUD app** in the name of separation of concerns.
+
+</Aside>
+
+## Related
+
+- [SOLID Principles](../solid/)
+- [Structural Patterns (Decorator)](../structural-patterns/)
+- [Architecture Styles](../architecture-styles/)
+- [OOP in C#](../../csharp/oop-csharp/)
+
+## Quick quiz
+
+<QuizBlock section="patterns" topic="design-principles" />

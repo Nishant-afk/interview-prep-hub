@@ -1,0 +1,1338 @@
+{
+  "section": "security",
+  "version": 1,
+  "questions": [
+    {
+      "id": "security-owasp-top-10-001",
+      "topic": "owasp-top-10",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which category is ranked **#1** in the OWASP Top 10 (2021)?",
+      "options": [
+        "Injection",
+        "Broken Access Control",
+        "Cryptographic Failures",
+        "Server-Side Request Forgery"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Broken Access Control moved to #1 in 2021 because it was found in the largest share of tested applications. Frameworks can authenticate users, but only your code knows which resources each user may access.",
+      "optionNotes": [
+        "Injection was #1 in 2017 and dropped to #3 in 2021.",
+        null,
+        "Cryptographic Failures is #2 in 2021.",
+        "SSRF is #10 in 2021."
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-002",
+      "topic": "owasp-top-10",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What best describes the OWASP Top 10?",
+      "options": [
+        "A certification standard every web app must pass before release",
+        "A list of the ten most recent critical CVEs",
+        "A ranked awareness list of the most critical web application risk categories",
+        "A free vulnerability scanner for web applications"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The Top 10 is an awareness document built from vulnerability data and a community survey. It groups many CWEs into categories. For a verifiable standard OWASP publishes ASVS; for scanning there is OWASP ZAP.",
+      "optionNotes": [
+        "It is not a standard; ASVS is OWASP's verification standard.",
+        "It lists risk categories, not individual CVEs.",
+        null,
+        "That would be a tool such as OWASP ZAP."
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-003",
+      "topic": "owasp-top-10",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this endpoint vulnerable, and to what?",
+      "code": "app.MapGet(\"/orders/{id:int}\", async (int id, AppDb db) =>\n    await db.Orders.FindAsync(id) is { } order ? Results.Ok(order) : Results.NotFound())\n   .RequireAuthorization();",
+      "codeLang": "csharp",
+      "options": [
+        "SQL injection, because `id` comes from the route",
+        "CSRF, because it doesn't validate an antiforgery token",
+        "Not vulnerable, because `RequireAuthorization()` protects it",
+        "Broken access control (IDOR): any signed-in user can read any order"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The endpoint checks that *someone* is authenticated but never checks that the order belongs to the caller, so changing the id reveals other customers' orders. Filter by owner in the query (or use resource-based authorization) and return a DTO.",
+      "optionNotes": [
+        "`id` is a typed int and `FindAsync` is parameterised.",
+        "It is a GET with no side effects; CSRF targets state-changing requests.",
+        "Authentication is not authorization of this specific resource.",
+        null
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-004",
+      "topic": "owasp-top-10",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In the OWASP Top 10 (2021), which category covers cross-site scripting (XSS)?",
+      "options": [
+        "A03 Injection",
+        "A07 Identification and Authentication Failures",
+        "A05 Security Misconfiguration",
+        "It has its own category, A08 Cross-Site Scripting"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "In 2021 XSS was merged into Injection: it is the injection of HTML/JavaScript into a page, just as SQL injection injects into a query.",
+      "optionNotes": [
+        null,
+        "A07 covers credential stuffing, weak sessions and similar issues.",
+        "Missing CSP is a misconfiguration, but XSS itself is classed as injection.",
+        "XSS had its own category in 2017 (A7) but not in 2021."
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-005",
+      "topic": "owasp-top-10",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular admin route is protected by a `canActivate` guard that checks `isAdmin()`. The `/api/admin/users` endpoint only has `[Authorize]` with no role or policy. What is the problem?",
+      "options": [
+        "None. The guard prevents non-admins from reaching the page that calls the API",
+        "The guard should be `canMatch` so the admin bundle isn't downloaded",
+        "Broken access control: any authenticated user can call the admin API directly",
+        "The API is vulnerable to CSRF because guards don't send tokens"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Route guards run in the user's browser and are UX only; anyone can call the API with curl or DevTools. The API must enforce the admin policy itself, for example `[Authorize(Policy = \"Admin\")]`.",
+      "optionNotes": [
+        "Client-side checks can be bypassed trivially.",
+        "`canMatch` can avoid loading the code, but it is still not a security boundary.",
+        null,
+        "Guards are unrelated to CSRF; the missing server-side role check is the issue."
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-006",
+      "topic": "owasp-top-10",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which practices help with the **Vulnerable and Outdated Components** risk in a .NET + Angular project? (Select all that apply)",
+      "options": [
+        "Running `dotnet list package --vulnerable --include-transitive` (or NuGet audit) in CI",
+        "Enabling Dependabot or Renovate to raise update pull requests",
+        "Minifying and obfuscating the Angular production bundle",
+        "Running `npm audit` with a failure threshold in the pipeline"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Known-vulnerable dependencies are found by scanning (NuGet audit, `npm audit`) and fixed by updating regularly (Dependabot/Renovate). Include transitive packages, since most vulnerable code arrives indirectly.",
+      "optionNotes": [
+        null,
+        null,
+        "Obfuscation hides nothing from attackers and does not patch vulnerable libraries.",
+        null
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-007",
+      "topic": "owasp-top-10",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this error handler a security problem?",
+      "code": "app.UseExceptionHandler(e => e.Run(async ctx =>\n{\n    var ex = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;\n    await ctx.Response.WriteAsync(ex?.ToString() ?? \"\");\n}));",
+      "codeLang": "csharp",
+      "options": [
+        "Yes: it leaks stack traces, SQL and paths to clients (misconfiguration); return generic ProblemDetails and log details",
+        "No: `UseExceptionHandler` only runs in the Development environment",
+        "Yes: it causes SQL injection because the exception message is written raw",
+        "No: exception text is harmless because it contains no user data"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Detailed exceptions reveal framework versions, queries, table names and file paths that help attackers. This is Security Misconfiguration in 2021 (and exceptional-condition handling in 2025). Use `AddProblemDetails()` with `UseExceptionHandler()` and keep details in server logs with a correlation id.",
+      "optionNotes": [
+        null,
+        "It runs in every environment where you register it; the developer exception page is the Development-only one.",
+        "Writing text to the response does not execute SQL.",
+        "Internal details are valuable reconnaissance even without user data."
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-008",
+      "topic": "owasp-top-10",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is the effect of this registration?",
+      "code": "builder.Services.AddAuthorizationBuilder()\n    .SetFallbackPolicy(new AuthorizationPolicyBuilder()\n        .RequireAuthenticatedUser().Build());",
+      "codeLang": "csharp",
+      "options": [
+        "Every endpoint requires an authenticated user, even those marked `[AllowAnonymous]`",
+        "Endpoints with no authorization metadata require an authenticated user; `[AllowAnonymous]` still opts out",
+        "It replaces the policy used by a bare `[Authorize]` attribute only",
+        "It only applies to MVC controllers, not minimal API endpoints"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The fallback policy applies when an endpoint has no `[Authorize]`/`RequireAuthorization` and no `[AllowAnonymous]`. It makes the app fail closed: a forgotten attribute means 401 rather than an open endpoint.",
+      "optionNotes": [
+        "`[AllowAnonymous]` explicitly bypasses it.",
+        null,
+        "That is the *default* policy (`SetDefaultPolicy`), not the fallback.",
+        "It applies to all endpoints routed through the authorization middleware."
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-owasp-top-10-009",
+      "topic": "owasp-top-10",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which statement about the OWASP Top 10:2025 update is accurate?",
+      "options": [
+        "Injection returned to #1 because of LLM prompt injection",
+        "SSRF moved up to #2 as a standalone category",
+        "The logging and monitoring category was removed",
+        "Broken Access Control stays #1 and now absorbs SSRF"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The 2025 update keeps Broken Access Control at #1 and folds SSRF into it. It also broadens outdated components into software supply chain failures and adds a category for mishandling exceptional conditions.",
+      "optionNotes": [
+        "Injection did not return to #1.",
+        "SSRF no longer has its own slot.",
+        "Logging remains, with more emphasis on alerting.",
+        null
+      ],
+      "readMore": "/security/owasp-top-10/"
+    },
+    {
+      "id": "security-authn-authz-tokens-001",
+      "topic": "authn-authz-tokens",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A request has a valid access token, but the user lacks the `Orders.Admin` role required by the endpoint. Which status code should the API return?",
+      "options": [
+        "401 Unauthorized",
+        "403 Forbidden",
+        "400 Bad Request",
+        "500 Internal Server Error"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "401 means the caller is not authenticated (missing or invalid credentials). 403 means the caller is authenticated but not allowed. Returning 404 instead of 403 is acceptable when you don't want to reveal that a resource exists.",
+      "optionNotes": [
+        "The user is authenticated; 401 is for missing or invalid credentials.",
+        null,
+        "The request is well-formed.",
+        "Nothing failed on the server."
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-002",
+      "topic": "authn-authz-tokens",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Who can read the claims in the payload of a typical signed JWT (JWS)?",
+      "options": [
+        "Only the server that holds the signing key",
+        "Only the identity provider, because the payload is encrypted",
+        "Anyone who has the token, because the payload is only base64url-encoded",
+        "Nobody, because the payload is hashed"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A JWS is `header.payload.signature`. The signature protects integrity, but the payload is just base64url-encoded JSON. Never put secrets or sensitive personal data in it. JWE exists for encrypted tokens but is uncommon.",
+      "optionNotes": [
+        "The key is needed to create or verify the signature, not to read the payload.",
+        "Signed JWTs are not encrypted.",
+        null,
+        "Claims are not hashed; they are readable JSON."
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-003",
+      "topic": "authn-authz-tokens",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this Angular interceptor vulnerable, and to what?",
+      "code": "export const authInterceptor: HttpInterceptorFn = (req, next) => {\n  const token = localStorage.getItem('access_token');\n  return next(token\n    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })\n    : req);\n};",
+      "codeLang": "ts",
+      "options": [
+        "CSRF, because the browser attaches the token automatically to cross-site requests",
+        "SQL injection, because the token is sent unencoded",
+        "Not vulnerable, as long as the site uses HTTPS",
+        "Token theft: any XSS can read `localStorage`, and the token is sent to every host, including third parties"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Any script running in the origin can read `localStorage` and exfiltrate the token for use elsewhere. The interceptor also adds the header to every request, leaking the token to other domains. Keep the token in memory (or use a BFF) and attach it only to your own API.",
+      "optionNotes": [
+        "The browser never adds `Authorization` headers automatically; this pattern is not CSRF-prone.",
+        "Tokens in headers have nothing to do with SQL.",
+        "HTTPS protects transport, not storage readable by injected scripts.",
+        null
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-004",
+      "topic": "authn-authz-tokens",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With refresh token rotation, the server receives a refresh token that has **already been used**. What should it do?",
+      "options": [
+        "Revoke the entire token family and require the user to sign in again",
+        "Issue new tokens, since the token hasn't expired yet",
+        "Return the same access token as last time",
+        "Ignore the request but keep the newer refresh token valid"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Reuse means two parties hold the same token: the legitimate client and possibly an attacker. The server can't tell which is which, so it revokes every token descended from the original login (reuse detection), cutting off the attacker.",
+      "optionNotes": [
+        null,
+        "That defeats the purpose of one-time-use refresh tokens.",
+        "Replaying responses still hands an attacker a valid token.",
+        "If the attacker already rotated first, the newer token is theirs."
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-005",
+      "topic": "authn-authz-tokens",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Your identity provider issues tokens for several APIs. Which validation stops a token issued for the *Reports API* from being accepted by the *Orders API*?",
+      "options": [
+        "`ValidateLifetime`",
+        "`ValidateIssuer`",
+        "`ValidateAudience`",
+        "`ValidateIssuerSigningKey`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Both tokens have the same issuer and signing key, and both may be unexpired. Only the `aud` claim says which API the token is for, so the API must validate audience against its own identifier.",
+      "optionNotes": [
+        "Lifetime checks `exp`/`nbf`, not the target API.",
+        "Both tokens come from the same issuer.",
+        null,
+        "The same IdP key signs both tokens."
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-006",
+      "topic": "authn-authz-tokens",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements are true about keeping a token in an `HttpOnly; Secure; SameSite` cookie? (Select all that apply)",
+      "options": [
+        "JavaScript on the page cannot read the token",
+        "An XSS bug can no longer perform actions as the user",
+        "The browser sends it automatically, so CSRF defences are still needed",
+        "It survives a page reload without a silent refresh"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "HttpOnly prevents scripts from reading the cookie, so the token can't be exfiltrated. But cookies are attached automatically, which brings CSRF back (mitigate with SameSite plus antiforgery or a custom header). XSS can still make requests from the page as the user.",
+      "optionNotes": [
+        null,
+        "Injected script can still call your API from the page; the cookie is attached for it.",
+        null,
+        null
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-007",
+      "topic": "authn-authz-tokens",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In the Backend-for-Frontend (BFF) pattern for an Angular SPA, what does the browser hold?",
+      "options": [
+        "Only an HttpOnly session cookie; access and refresh tokens stay on the BFF server",
+        "The access token in memory and the refresh token in `localStorage`",
+        "The ID token in a cookie and the access token in `sessionStorage`",
+        "The client secret, so the SPA can act as a confidential client"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The BFF performs the OAuth flow as a confidential client, keeps tokens server-side and proxies API calls, attaching the access token. The browser only has a session cookie, so XSS cannot steal tokens for use elsewhere.",
+      "optionNotes": [
+        null,
+        "That is the pure SPA model the BFF is meant to replace.",
+        "No tokens reach the browser in a BFF.",
+        "Secrets must never be shipped to the browser."
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-008",
+      "topic": "authn-authz-tokens",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is the RS256-to-HS256 **algorithm confusion** attack against JWT validation?",
+      "options": [
+        "The attacker brute-forces the RSA private key from many captured tokens",
+        "The attacker signs an HS256 token using the server's **public** RSA key as the HMAC secret, and a naive validator accepts it",
+        "The attacker removes the signature and sets `exp` far in the future",
+        "The attacker replays an RS256 token after the key has been rotated"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Libraries that trusted the token's own `alg` header would verify an HS256 signature using the configured key material, which was the public RSA key, known to everyone. Pin `ValidAlgorithms` and use maintained libraries with strongly typed keys.",
+      "optionNotes": [
+        "RSA private keys can't be recovered from signatures.",
+        null,
+        "That is closer to the `alg: none` attack, also prevented by pinning algorithms.",
+        "Rotation plus `kid` lookup handles that; it isn't algorithm confusion."
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-authn-authz-tokens-009",
+      "topic": "authn-authz-tokens",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An admin disables a compromised account. Access tokens are JWTs valid for 60 minutes. What is the most practical way to cut access off **immediately**?",
+      "options": [
+        "Delete the JWT from the token table in the database",
+        "Change the user's password, which invalidates all of their issued JWTs",
+        "Revoke refresh tokens and check a revoked-`jti` or per-user cutoff list on validation",
+        "Rotate the IdP's signing key whenever any single user is disabled"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "JWTs are self-contained, so nothing server-side deletes them. Revoke refresh tokens so no new access tokens are issued, and for immediate effect check a small cache of revoked `jti`s or a per-user cutoff in `OnTokenValidated`. Also shorten access token lifetimes.",
+      "optionNotes": [
+        "JWTs usually aren't stored server-side at all.",
+        "Existing JWTs stay valid until `exp` unless the API checks something.",
+        null,
+        "That logs out every user of every app; far too blunt."
+      ],
+      "readMore": "/security/authn-authz-tokens/"
+    },
+    {
+      "id": "security-oauth-oidc-001",
+      "topic": "oauth-oidc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does OpenID Connect add on top of OAuth 2.0?",
+      "options": [
+        "Encryption of access tokens",
+        "An authentication layer: the ID token, `/userinfo` and discovery",
+        "A replacement for scopes using roles",
+        "Support for service-to-service calls"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "OAuth 2.0 is delegated authorization: it gives clients access tokens for APIs. OIDC standardises user authentication on top of it with the `openid` scope, the ID token, the userinfo endpoint and the discovery document, which is what enables SSO.",
+      "optionNotes": [
+        "OIDC doesn't encrypt access tokens.",
+        null,
+        "Scopes remain; roles are just claims.",
+        "Client credentials is plain OAuth 2.0."
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-002",
+      "topic": "oauth-oidc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which OAuth flow should a new Angular SPA use to sign users in?",
+      "options": [
+        "Implicit flow",
+        "Resource Owner Password Credentials",
+        "Client credentials",
+        "Authorization code with PKCE"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Current guidance (OAuth 2.0 Security BCP, OAuth 2.1 draft) is authorization code + PKCE for all clients, including SPAs. Implicit and ROPC are deprecated, and client credentials has no user.",
+      "optionNotes": [
+        "Deprecated: tokens are exposed in the URL fragment.",
+        "Removed in OAuth 2.1: the app sees the user's password.",
+        "For machine-to-machine calls with no user.",
+        null
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-003",
+      "topic": "oauth-oidc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "During the PKCE token request, what does the authorization server check?",
+      "options": [
+        "That BASE64URL(SHA256(`code_verifier`)) equals the `code_challenge` sent to `/authorize`",
+        "That the `code_verifier` equals the client secret",
+        "That the `state` value matches the `nonce`",
+        "That the `code_challenge` is signed with the client's private key"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The client sent a hash of a random verifier at the start. Only the client instance that knows the verifier can redeem the code, so an intercepted code is useless to an attacker.",
+      "optionNotes": [
+        null,
+        "Public clients have no secret; that is the point of PKCE.",
+        "`state` is checked by the client; `nonce` goes into the ID token.",
+        "PKCE uses hashing, not signatures."
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-004",
+      "topic": "oauth-oidc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "After an OIDC login the Angular app has an ID token and an access token. Which one should it send to the ASP.NET Core API?",
+      "options": [
+        "The ID token, because it identifies the user",
+        "Both, in two separate headers",
+        "The access token, whose audience is the API",
+        "Neither; the API should call `/userinfo` itself"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The ID token is for the client (its `aud` is the client id). The API validates an access token issued for its own audience and checks scopes/roles in it.",
+      "optionNotes": [
+        "Its audience is the client, so the API's audience check should reject it.",
+        "Only the access token belongs in the `Authorization` header.",
+        null,
+        "The API authorizes based on the access token it receives."
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-005",
+      "topic": "oauth-oidc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A nightly job running in Azure Container Apps must call the Orders API. There is no user. What is the best approach?",
+      "options": [
+        "Store a service account's username and password and use the ROPC flow",
+        "Client credentials flow using the container app's managed identity and an app role on the API",
+        "Reuse an admin user's refresh token saved in configuration",
+        "Disable authentication for calls from the internal network"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Client credentials is the machine-to-machine flow. With a managed identity (`DefaultAzureCredential`, scope `api://orders-api/.default`) there is no secret to store or rotate. The API authorizes on the `roles` claim. (AWS: IAM role for the workload.)",
+      "optionNotes": [
+        "ROPC is deprecated and stores a password.",
+        null,
+        "Ties the job to a person and a long-lived secret.",
+        "Network location is not identity (zero trust)."
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-006",
+      "topic": "oauth-oidc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this SPA sign-in redirect a problem?",
+      "code": "GET /authorize?response_type=token\n  &client_id=spa-app\n  &redirect_uri=https://app.contoso.com/callback\n  &scope=openid%20api://orders-api/Orders.Read",
+      "codeLang": "http",
+      "options": [
+        "No, `response_type=token` is the recommended flow for SPAs",
+        "Yes, the scope list must not include `openid` with API scopes",
+        "Yes, the `redirect_uri` must be `http` for SPAs",
+        "Yes, it uses the deprecated implicit flow; tokens arrive in the URL fragment. Use code + PKCE"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`response_type=token` is the implicit flow: the access token is returned in the redirect URL, exposed to history, referrers and scripts, with no PKCE binding or refresh tokens. Use `response_type=code` with a PKCE challenge.",
+      "optionNotes": [
+        "It was the old SPA recommendation, now deprecated.",
+        "Combining `openid` with API scopes is normal.",
+        "Redirect URIs should be HTTPS.",
+        null
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-007",
+      "topic": "oauth-oidc",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are recommended by the OAuth 2.0 Security Best Current Practice and the OAuth 2.1 draft? (Select all that apply)",
+      "options": [
+        "PKCE for all clients using the authorization code flow",
+        "Exact matching of registered redirect URIs",
+        "The password (ROPC) grant for first-party mobile apps",
+        "Rotating or sender-constraining refresh tokens issued to public clients"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "The BCP (RFC 9700) and OAuth 2.1 require PKCE broadly, exact redirect URI matching, and protection of public-client refresh tokens through rotation or sender-constraining (e.g. DPoP). The password grant is removed.",
+      "optionNotes": [
+        null,
+        null,
+        "ROPC is removed in OAuth 2.1 even for first-party apps.",
+        null
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-008",
+      "topic": "oauth-oidc",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What attack does the `state` parameter protect against in the authorization code flow?",
+      "options": [
+        "Replay of an ID token captured from another session",
+        "Interception of the authorization code by a malicious app",
+        "CSRF on the redirect: an attacker making the victim's browser complete a login with the attacker's code",
+        "Brute-forcing of the client secret"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The client stores a random `state` before redirecting and checks it on the callback. Without it, an attacker can feed the victim a callback URL with the attacker's code, logging the victim into the attacker's account (login CSRF).",
+      "optionNotes": [
+        "That is what `nonce` protects against.",
+        "That is what PKCE protects against.",
+        null,
+        "`state` has nothing to do with client authentication."
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-oauth-oidc-009",
+      "topic": "oauth-oidc",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A daemon gets an Entra ID token via client credentials and calls an API endpoint protected by `RequireScope(\"Orders.Read\")`. It gets 403. Why?",
+      "options": [
+        "App-only tokens carry app roles in the `roles` claim, not delegated scopes in `scp`; the API should check an app role",
+        "Client credentials tokens are ID tokens, not access tokens",
+        "The daemon must add the `openid` scope to receive scopes",
+        "Entra ID only issues scopes to confidential clients using PKCE"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Delegated scopes (`scp`) describe what a client can do on behalf of a user. With no user, Entra issues application permissions as `roles`. The API needs a policy that accepts the app role for app-only callers.",
+      "optionNotes": [
+        null,
+        "Client credentials returns an access token.",
+        "`openid` is for user sign-in and doesn't apply to app-only tokens.",
+        "PKCE is unrelated to how permissions appear in the token."
+      ],
+      "readMore": "/security/oauth-oidc/"
+    },
+    {
+      "id": "security-web-attacks-001",
+      "topic": "web-attacks",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the primary defence against SQL injection?",
+      "options": [
+        "Escaping single quotes in user input",
+        "Validating input length",
+        "Parameterised queries, so values are never parsed as SQL",
+        "Using HTTPS between the app and the database"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Parameters send values separately from the SQL text, so input can't change the query structure. EF Core LINQ and `FromSql` interpolation parameterise automatically. Escaping is fragile and validation is only a supplement.",
+      "optionNotes": [
+        "Escaping is easy to get wrong (encodings, numeric contexts).",
+        "Short payloads like `' OR 1=1 --` still fit.",
+        null,
+        "Encryption in transit does nothing about query structure."
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-002",
+      "topic": "web-attacks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this EF Core query vulnerable, and to what?",
+      "code": "var users = await db.Users\n    .FromSqlRaw($\"SELECT * FROM Users WHERE Email = '{email}'\")\n    .ToListAsync(ct);",
+      "codeLang": "csharp",
+      "options": [
+        "Safe: EF Core turns interpolated values into parameters",
+        "Vulnerable to SQL injection: C# builds the string before EF sees it",
+        "Vulnerable to XSS, because the email is returned to the client",
+        "Safe, as long as `email` has an `[EmailAddress]` attribute"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`FromSqlRaw` takes a plain string. The `$` interpolation runs first, pasting `email` into the SQL text. Use `FromSql($\"... {email}\")`, which takes a `FormattableString` and creates a `DbParameter` per hole.",
+      "optionNotes": [
+        "That is true of `FromSql`/`FromSqlInterpolated`, not `FromSqlRaw`.",
+        null,
+        "The issue is the query, not the output.",
+        "Valid email addresses can contain quotes, and validation is not a substitute for parameters."
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-003",
+      "topic": "web-attacks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this query vulnerable to SQL injection?",
+      "code": "var users = await db.Users\n    .FromSql($\"SELECT * FROM Users WHERE Email = {email}\")\n    .ToListAsync(ct);",
+      "codeLang": "csharp",
+      "options": [
+        "Yes, because any raw SQL in EF Core is injectable",
+        "Yes, because the value is not wrapped in quotes",
+        "Only if `email` contains a semicolon",
+        "No: `FromSql` takes a `FormattableString` and sends `email` as a `DbParameter`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`FromSql` (EF Core 7+, previously `FromSqlInterpolated`) receives the format and arguments separately and converts each argument into a parameter. No quotes are needed because the value is never part of the SQL text.",
+      "optionNotes": [
+        "Raw SQL is safe when parameterised.",
+        "Quotes would actually be wrong here; the parameter is typed.",
+        "Parameters can't break out regardless of content.",
+        null
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-004",
+      "topic": "web-attacks",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Who enforces CORS?",
+      "options": [
+        "The browser",
+        "The ASP.NET Core server, by rejecting requests from other origins",
+        "The firewall or API gateway",
+        "The database"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The server only sends `Access-Control-Allow-*` headers; the browser decides whether a script may read the response. curl, Postman and other servers ignore CORS entirely, so it is not an access control for your API.",
+      "optionNotes": [
+        null,
+        "ASP.NET Core's CORS middleware adds headers; it doesn't block non-browser callers.",
+        "Gateways can add CORS headers, but enforcement is in the browser.",
+        "Unrelated."
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-005",
+      "topic": "web-attacks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The API uses cookie authentication. Is this CORS policy a problem?",
+      "code": "builder.Services.AddCors(o => o.AddDefaultPolicy(p => p\n    .SetIsOriginAllowed(_ => true)\n    .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));",
+      "codeLang": "csharp",
+      "options": [
+        "No, CORS only affects preflight requests",
+        "No, because `AllowCredentials` makes browsers check the user's cookie",
+        "Yes: any website can make credentialed requests and read logged-in users' responses",
+        "Yes, but only for PUT and DELETE requests"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The policy reflects whatever `Origin` arrives and allows credentials, so a script on `evil.example` can call your API with the victim's cookies and read the data. Allow exact, configured origins only.",
+      "optionNotes": [
+        "CORS governs reading responses for all cross-origin requests.",
+        "That is precisely what makes it dangerous with every origin allowed.",
+        null,
+        "GET responses are readable too."
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-006",
+      "topic": "web-attacks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular app sends a JWT in the `Authorization: Bearer` header; no auth cookies are used. Does the API need CSRF tokens?",
+      "options": [
+        "Yes, every API that accepts POST requests needs antiforgery tokens",
+        "No: browsers never attach that header automatically to cross-site requests",
+        "Yes, because browsers send JWTs along with every cross-site form post",
+        "No, because the JWT payload is encrypted and can't be forged"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "CSRF relies on the browser automatically attaching credentials (cookies, basic auth). A bearer header must be added by your own script. The trade-off is that the token must be readable by JS, which raises XSS impact.",
+      "optionNotes": [
+        "CSRF protection matters only for ambient credentials like cookies.",
+        null,
+        "HTML forms can't set an `Authorization` header.",
+        "JWTs are usually signed, not encrypted, and that is unrelated to CSRF."
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-007",
+      "topic": "web-attacks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this component vulnerable, and to what? `body` is a user-submitted comment.",
+      "code": "@Component({\n  selector: 'app-comment',\n  template: `<div [innerHTML]=\"html()\"></div>`,\n})\nexport class CommentComponent {\n  private readonly sanitizer = inject(DomSanitizer);\n  readonly body = input.required<string>();\n  readonly html = computed(() => this.sanitizer.bypassSecurityTrustHtml(this.body()));\n}",
+      "codeLang": "ts",
+      "options": [
+        "Not vulnerable, because Angular always sanitizes `[innerHTML]`",
+        "Vulnerable to CSRF, because it renders HTML",
+        "Not vulnerable, because signals escape values",
+        "Stored XSS: `bypassSecurityTrustHtml` disables sanitization of attacker-controlled HTML"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Angular's `[innerHTML]` binding is sanitized only when given a plain string. Wrapping the value with `bypassSecurityTrustHtml` tells Angular it is trusted, so `<img src=x onerror=...>` runs for every viewer. Bind the raw string instead.",
+      "optionNotes": [
+        "Not when you explicitly bypass it.",
+        "Rendering HTML is an XSS concern, not CSRF.",
+        "Signals do no escaping; the template binding does.",
+        null
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-008",
+      "topic": "web-attacks",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An SSRF fix rejects URLs whose host string is `localhost`, `127.0.0.1` or starts with `10.`. Why is that insufficient?",
+      "options": [
+        "Redirects, internal DNS names, DNS rebinding and alternate IP formats bypass it",
+        "SSRF only happens over HTTPS, so checking the host is pointless",
+        "The check should use a compiled regex instead of `StartsWith` calls",
+        "It is fully sufficient as long as the app runs inside a container"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Attackers use `attacker.com` resolving to `169.254.169.254`, a 302 to an internal URL, or forms like `http://2130706433/` or IPv6. Validate the **resolved IP at connect time** (e.g. `SocketsHttpHandler.ConnectCallback`), disable redirects, prefer host allowlists and add egress rules.",
+      "optionNotes": [
+        null,
+        "SSRF works over any scheme the client supports.",
+        "A better string check is still a string check.",
+        "Containers can usually reach metadata endpoints and internal services."
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-009",
+      "topic": "web-attacks",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "An API authenticates with a session cookie. Which measures protect it against CSRF? (Select all that apply)",
+      "options": [
+        "Setting the cookie to `SameSite=Lax` or `Strict`",
+        "Requiring an antiforgery token in a header (e.g. `X-XSRF-TOKEN`) and validating it",
+        "Serving the API only over HTTPS",
+        "Requiring a custom header and allowing only your origin in CORS, so cross-site requests fail preflight"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "SameSite stops browsers sending the cookie on cross-site requests, antiforgery tokens require a secret the attacker can't read, and custom headers force a preflight that your CORS policy rejects. HTTPS protects transport but the forged request is also sent over HTTPS.",
+      "optionNotes": [
+        null,
+        null,
+        "CSRF requests ride on the victim's own HTTPS connection.",
+        null
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-web-attacks-010",
+      "topic": "web-attacks",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The session cookie is `SameSite=Lax`. Which request from `evil.example` will still carry it to `app.example.com`?",
+      "options": [
+        "A `fetch` POST with `credentials: 'include'`",
+        "A top-level GET navigation, such as clicking a link to `https://app.example.com/orders/5/cancel`",
+        "An auto-submitted HTML form POST",
+        "An image request `<img src=\"https://app.example.com/...\">`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Lax sends cookies on top-level navigations with safe methods (GET), so a state-changing GET endpoint is still exploitable. Never change state on GET, and keep antiforgery checks for unsafe methods.",
+      "optionNotes": [
+        "Cross-site subresource requests don't get Lax cookies.",
+        null,
+        "Cross-site POSTs are exactly what Lax blocks.",
+        "Subresource requests don't get Lax cookies."
+      ],
+      "readMore": "/security/web-attacks/"
+    },
+    {
+      "id": "security-crypto-secrets-001",
+      "topic": "crypto-secrets",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A config file stores an API key as Base64. What protection does that give?",
+      "options": [
+        "It is encrypted with a default key",
+        "It is hashed, so it can't be recovered",
+        "It is signed, so tampering is detected",
+        "None: Base64 is an encoding that anyone can reverse"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Encoding changes representation only. Base64 decoding needs no key. Secrets belong in Key Vault (AWS: Secrets Manager) or at minimum `dotnet user-secrets` in development.",
+      "optionNotes": [
+        "There is no key involved.",
+        "Base64 is fully reversible.",
+        "There is no signature.",
+        null
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-002",
+      "topic": "crypto-secrets",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How should a web app store user passwords?",
+      "options": [
+        "With a slow, salted password hash such as PBKDF2, bcrypt or Argon2id",
+        "Encrypted with AES-256 so support can recover them",
+        "Hashed once with SHA-256",
+        "Base64-encoded in a separate table"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Password hashes must be one-way, salted per user, and deliberately slow to resist offline guessing. ASP.NET Core Identity's `PasswordHasher` uses PBKDF2; Argon2id is OWASP's first choice.",
+      "optionNotes": [
+        null,
+        "Anyone with the key could decrypt every password.",
+        "A single fast hash allows billions of guesses per second.",
+        "Encoding provides no protection."
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-003",
+      "topic": "crypto-secrets",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this password storage code vulnerable, and why?",
+      "code": "public static string HashPassword(string password) =>\n    Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password)));",
+      "codeLang": "csharp",
+      "options": [
+        "No, SHA-256 is a secure hash and can't be reversed",
+        "Only if passwords are shorter than 8 characters",
+        "Yes: it is fast and unsalted, so identical passwords match and GPUs can guess billions per second",
+        "Yes, because hex encoding can be decoded back to the password"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "SHA-256 is fine for integrity, not for passwords. Without a salt, equal passwords share hashes and precomputed tables work; without a work factor, offline brute force is cheap. Use `PasswordHasher<T>` or `Rfc2898DeriveBytes.Pbkdf2` with a random salt and high iterations.",
+      "optionNotes": [
+        "Irreversible is not enough; guessing is the attack.",
+        "Long passwords are also cracked quickly with fast hashes and dictionaries.",
+        null,
+        "Hex decoding gives the hash bytes, not the password."
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-004",
+      "topic": "crypto-secrets",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`PasswordHasher<TUser>.VerifyHashedPassword` returns `SuccessRehashNeeded`. What should the app do?",
+      "options": [
+        "Reject the login, because the hash is corrupted",
+        "Accept the login and re-hash the password with current settings, then save it",
+        "Force the user to reset their password by email",
+        "Nothing; it is informational only"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The password is correct, but the stored hash used an older format or lower iteration count. Because you now have the plain password, re-hash it with the current parameters. ASP.NET Core Identity's `UserManager` does this automatically.",
+      "optionNotes": [
+        "Verification succeeded.",
+        null,
+        "Unnecessary; the upgrade can happen silently.",
+        "Ignoring it leaves weak hashes in the database indefinitely."
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-005",
+      "topic": "crypto-secrets",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An ASP.NET Core app with cookie auth runs as 3 container replicas behind a load balancer. Users are randomly logged out and see antiforgery errors after deployments. What is the most likely cause?",
+      "options": [
+        "The load balancer strips cookies",
+        "The JWT signing key expired",
+        "The cookies are missing the `HttpOnly` flag",
+        "Each replica has its own Data Protection key ring, which is not persisted or shared"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Auth cookies and antiforgery tokens are protected by the Data Protection API. Without shared, persisted keys (e.g. `PersistKeysToAzureBlobStorage` + `ProtectKeysWithAzureKeyVault` and a common application name), each instance and each restart has different keys.",
+      "optionNotes": [
+        "Then nothing would work, not random failures.",
+        "This app uses cookie auth.",
+        "HttpOnly affects JavaScript access, not decryption.",
+        null
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-006",
+      "topic": "crypto-secrets",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How can an App Service read secrets from Azure Key Vault **without storing any credential**?",
+      "options": [
+        "Enable a managed identity, grant it the Key Vault Secrets User role, and use `DefaultAzureCredential`",
+        "Put the vault's access key in an App Service app setting",
+        "Make the Key Vault public so no credential is needed",
+        "Encrypt the client secret with Base64 in `appsettings.json`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A managed identity is an Entra ID identity managed by Azure. The platform issues tokens for it, so there is no bootstrap secret. Grant least-privilege RBAC on the vault. AWS equivalent: an IAM role on the workload with access to Secrets Manager.",
+      "optionNotes": [
+        null,
+        "That is a stored credential, and Key Vault uses Entra auth rather than access keys.",
+        "Public network access still requires authentication; never remove it.",
+        "Base64 is not encryption, and it is still a stored secret."
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-007",
+      "topic": "crypto-secrets",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about AES-GCM are true? (Select all that apply)",
+      "options": [
+        "It is authenticated encryption: decryption fails if the ciphertext or tag was modified",
+        "A nonce must never be reused with the same key",
+        "It is an asymmetric algorithm with a public and private key",
+        "The same secret key is used to encrypt and decrypt"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "AES-GCM is a symmetric AEAD mode: one key, confidentiality plus integrity via the tag. Reusing a nonce with the same key breaks both confidentiality and authenticity, so generate a random 12-byte nonce per message.",
+      "optionNotes": [
+        null,
+        null,
+        "AES is symmetric; RSA and ECC are asymmetric.",
+        null
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-008",
+      "topic": "crypto-secrets",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A webhook endpoint verifies an HMAC signature with `computed.SequenceEqual(received)`. What is the weakness, and the fix?",
+      "options": [
+        "None; `SequenceEqual` compares every byte",
+        "HMAC should be replaced with SHA-256 alone",
+        "Timing attack: the comparison exits early on the first mismatch; use `CryptographicOperations.FixedTimeEquals`",
+        "The signature should be Base64-decoded twice"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Early-exit comparisons take slightly longer the more leading bytes match, which can leak the expected value byte by byte. `FixedTimeEquals` always compares the full length in constant time.",
+      "optionNotes": [
+        "It stops at the first difference, which leaks timing.",
+        "A plain hash has no key, so anyone could compute it.",
+        null,
+        "Encoding has nothing to do with the issue."
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-crypto-secrets-009",
+      "topic": "crypto-secrets",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Five microservices validate tokens issued by one auth service. Why is RS256 preferred over HS256 here?",
+      "options": [
+        "RS256 tokens are encrypted, HS256 tokens are not",
+        "With HS256 every validating service holds the shared secret and could forge tokens; with RS256 they only hold the public key",
+        "HS256 is deprecated and rejected by ASP.NET Core",
+        "RS256 tokens are smaller and faster to validate"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "HMAC uses the same key to sign and verify, so every verifier is also a potential issuer and the secret is spread across services. With RSA/ECDSA only the issuer has the private key, and services fetch public keys from the JWKS endpoint.",
+      "optionNotes": [
+        "Both are signatures; neither encrypts the payload.",
+        null,
+        "HS256 is supported and fine when one service issues and validates.",
+        "RSA signatures are larger, and HMAC verification is faster."
+      ],
+      "readMore": "/security/crypto-secrets/"
+    },
+    {
+      "id": "security-secure-coding-checklist-001",
+      "topic": "secure-coding-checklist",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which response header stops browsers from MIME-sniffing a JSON response into HTML or script?",
+      "options": [
+        "`Strict-Transport-Security`",
+        "`Referrer-Policy: no-referrer`",
+        "`X-Content-Type-Options: nosniff`",
+        "`X-XSS-Protection: 1`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`nosniff` makes the browser respect the declared `Content-Type` instead of guessing. It is cheap and should be on every response.",
+      "optionNotes": [
+        "HSTS enforces HTTPS.",
+        "Controls what is sent in the Referer header.",
+        null,
+        "Obsolete; modern browsers ignore it."
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    },
+    {
+      "id": "security-secure-coding-checklist-002",
+      "topic": "secure-coding-checklist",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "An Angular reactive form validates email format and max length. What does that mean for the API?",
+      "options": [
+        "The API must still validate, because client-side validation is UX only and can be bypassed",
+        "The API can skip validation for requests from the Angular app",
+        "The API only needs to validate when the request has no `Origin` header",
+        "Validation is needed only in the database constraints"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Anyone can call the API directly with curl or modify the app in DevTools. Client validation improves UX; server validation (DataAnnotations, FluentValidation, `[ApiController]`) enforces the rules.",
+      "optionNotes": [
+        null,
+        "The API can't trust where requests come from.",
+        "Headers are attacker-controlled.",
+        "DB constraints are a last line of defence, not input validation."
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    },
+    {
+      "id": "security-secure-coding-checklist-003",
+      "topic": "secure-coding-checklist",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Is this endpoint vulnerable, and to what? `UserEntity` has `Id`, `Email` and `IsAdmin` properties.",
+      "code": "app.MapPost(\"/users\", async (UserEntity user, AppDb db) =>\n{\n    db.Add(user);\n    await db.SaveChangesAsync();\n    return Results.Created();\n});",
+      "codeLang": "csharp",
+      "options": [
+        "SQL injection through the email field",
+        "CSRF, because it accepts JSON",
+        "Not vulnerable, as EF Core validates entities",
+        "Mass assignment: a client can send `\"isAdmin\": true` and it is saved"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Binding the entity lets the client set every property, including privileged ones. Bind a request DTO with only the allowed fields, validate it, and map explicitly to the entity.",
+      "optionNotes": [
+        "EF Core parameterises the INSERT.",
+        "JSON with bearer tokens isn't CSRF-prone; the bigger issue is over-posting.",
+        "EF Core doesn't enforce business rules about which fields a client may set.",
+        null
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    },
+    {
+      "id": "security-secure-coding-checklist-004",
+      "topic": "secure-coding-checklist",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is wrong with this log statement?",
+      "code": "log.LogWarning(\"Login failed for {Email} with password {Password}\",\n    req.Email, req.Password);",
+      "codeLang": "csharp",
+      "options": [
+        "Nothing; failed logins should be logged in full for forensics",
+        "It writes a password (often a real one with a typo) and PII into logs that many people and systems can read",
+        "It should use string interpolation instead of a message template",
+        "Failed logins should never be logged"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Logs are shipped to many systems and retained for a long time. Log the event with a user id, client IP and correlation id, never passwords or tokens, and minimise PII.",
+      "optionNotes": [
+        "Forensics need the event, not the secret.",
+        null,
+        "Templates are correct; interpolation loses structured fields.",
+        "Failed logins are important security events; log them without secrets."
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    },
+    {
+      "id": "security-secure-coding-checklist-005",
+      "topic": "secure-coding-checklist",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A login rate limiter is partitioned by `HttpContext.Connection.RemoteIpAddress`. Behind Azure Front Door, all users start getting 429s at once. Why?",
+      "options": [
+        "Front Door caches the first 429 response and serves it to everyone",
+        "Fixed window limiters stop working when the app sits behind a proxy",
+        "Without forwarded headers, every request has the proxy's IP, so all users share a partition",
+        "The rate limiter must be registered after `UseAuthorization` in the pipeline"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The connection's remote IP is the proxy. Configure `ForwardedHeadersOptions` (with known proxies/networks) and `UseForwardedHeaders()` so the real client IP is used, or partition by user id or API key.",
+      "optionNotes": [
+        "Not the cause of shared limits.",
+        "Any limiter works if partitioned on the right key.",
+        null,
+        "Order affects user-based partitions, but the IP problem remains."
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    },
+    {
+      "id": "security-secure-coding-checklist-006",
+      "topic": "secure-coding-checklist",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these belong in security event logging? (Select all that apply)",
+      "options": [
+        "Failed sign-ins with user id, client IP and timestamp",
+        "Authorization failures (403s) on sensitive endpoints",
+        "The password the user typed on a failed attempt",
+        "Changes to user roles by an administrator"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Security logs capture who did what, when and from where: authentication results, denials and privileged changes, so alerts can spot attacks. Secrets such as passwords and tokens must never be logged.",
+      "optionNotes": [
+        null,
+        null,
+        "Never log credentials, even failed ones.",
+        null
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    },
+    {
+      "id": "security-secure-coding-checklist-007",
+      "topic": "secure-coding-checklist",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which Content-Security-Policy most reduces the impact of an XSS bug in an Angular app?",
+      "options": [
+        "`default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'`",
+        "`default-src *; script-src * 'unsafe-inline'; object-src *`",
+        "`default-src 'self'; script-src 'self' 'nonce-r4nd0m'; object-src 'none'`",
+        "`X-XSS-Protection: 1; mode=block` sent instead of any CSP header"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Without `'unsafe-inline'`, injected inline scripts and event handlers don't run; the per-response nonce allows only your own inline code. `object-src 'none'` and `base-uri` close other injection paths.",
+      "optionNotes": [
+        "`unsafe-inline` lets injected scripts run, defeating most of CSP's value.",
+        "Allows everything.",
+        null,
+        "An obsolete header ignored by modern browsers, and not a CSP."
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    },
+    {
+      "id": "security-secure-coding-checklist-008",
+      "topic": "secure-coding-checklist",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Applying least privilege, which database permissions should the production API's SQL identity have?",
+      "options": [
+        "`db_owner`, so EF Core migrations can run automatically on startup",
+        "`sysadmin` (or the `sa` login), to avoid permission errors in production",
+        "`db_ddladmin` plus `db_datawriter`, so it can create tables as needed",
+        "Read/write on needed tables only; migrations use a separate pipeline identity"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "If the app is compromised (for example via SQL injection), the attacker gets exactly the app's permissions. Separate runtime and schema-change identities, ideally Entra-authenticated managed identities with no passwords.",
+      "optionNotes": [
+        "Running migrations at startup with owner rights gives every request that power.",
+        "Server-wide admin is the worst case.",
+        "Runtime code has no need for DDL.",
+        null
+      ],
+      "readMore": "/security/secure-coding-checklist/"
+    }
+  ]
+}

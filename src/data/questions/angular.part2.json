@@ -1,0 +1,1554 @@
+{
+  "section": "angular",
+  "version": 1,
+  "questions": [
+    {
+      "id": "angular-http-interceptors-001",
+      "topic": "http-interceptors",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How do you register functional interceptors in a standalone Angular app?",
+      "options": [
+        "Add them to the `HTTP_INTERCEPTORS` array in `bootstrapApplication`",
+        "Decorate them with `@Interceptor()` and list them in `imports`",
+        "Pass them to `withInterceptors([...])` inside `provideHttpClient(...)`",
+        "Call `HttpClient.use(fn)` once in the root component"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Functional interceptors are plain `HttpInterceptorFn` functions registered with `provideHttpClient(withInterceptors([authInterceptor, ...]))`. The array order is the order requests pass through them.",
+      "optionNotes": [
+        "`HTTP_INTERCEPTORS` is the multi-provider for legacy class-based interceptors and needs `withInterceptorsFromDi()`.",
+        "There is no `@Interceptor` decorator.",
+        null,
+        "HttpClient has no `use` method."
+      ],
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-http-interceptors-002",
+      "topic": "http-interceptors",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What happens when this code runs?",
+      "code": "ngOnInit() {\n  this.http.get<Order[]>('/api/orders');\n}",
+      "codeLang": "ts",
+      "options": [
+        "No request is sent, because nothing subscribes to the cold observable",
+        "The request is sent and the result is cached for the next call",
+        "The request is sent and the response is discarded",
+        "A compile error, because the result must be assigned"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`HttpClient` methods return cold observables: the request is only made when something subscribes (a `subscribe` call, the `async` pipe, `toSignal`, `firstValueFrom`). Each subscription sends a new request.",
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-http-interceptors-003",
+      "topic": "http-interceptors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Interceptors are registered as `withInterceptors([a, b, c])`. In which order do they see the outgoing request and the incoming response?",
+      "options": [
+        "Request: c, b, a. Response: a, b, c",
+        "Request: a, b, c. Response: a, b, c",
+        "Request: a, b, c. Response: c, b, a",
+        "The order is not defined and depends on provider resolution"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Each interceptor wraps the observable returned by `next(req)`, so requests flow in array order and responses unwind in reverse, like ASP.NET Core middleware.",
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-http-interceptors-004",
+      "topic": "http-interceptors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Inside an interceptor you need to add an `Authorization` header. Which line is correct?",
+      "options": [
+        "`req.headers.set('Authorization', `Bearer ${t}`); return next(req);`",
+        "`return next(req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }));`",
+        "`req.setHeader('Authorization', `Bearer ${t}`); return next(req);`",
+        "`return next({ ...req, Authorization: `Bearer ${t}` });`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`HttpRequest` and `HttpHeaders` are immutable. `headers.set` returns a new `HttpHeaders` and leaves the request unchanged. Use `req.clone({ setHeaders })` and pass the clone to `next`.",
+      "optionNotes": [
+        "The returned headers object is thrown away; the request is unchanged.",
+        null,
+        "`HttpRequest` has no `setHeader` method.",
+        "Spreading creates a plain object, not an `HttpRequest`."
+      ],
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-http-interceptors-005",
+      "topic": "http-interceptors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You want one specific call to skip the global loading spinner that an interceptor shows. What is the idiomatic way?",
+      "options": [
+        "Add a custom `X-Skip-Loading` header and remove it in the interceptor",
+        "Use a separate `HttpClient` instance created with `new HttpClient()`",
+        "Set a global flag on the loading service before the call",
+        "Pass `context: new HttpContext().set(SKIP_LOADING, true)` and read it in the interceptor"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`HttpContextToken` carries typed, per-request metadata that only interceptors see and never goes over the network. A global flag is racy with parallel requests, and a header leaks to the server unless removed.",
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-http-interceptors-006",
+      "topic": "http-interceptors",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "This error interceptor shows a toast and returns `EMPTY` for every failed request. What is the consequence for callers?",
+      "code": "return next(req).pipe(\n  catchError(err => {\n    toast.error('Request failed');\n    return EMPTY;\n  })\n);",
+      "codeLang": "ts",
+      "options": [
+        "Callers receive the error in their `error` callback as usual",
+        "Callers' observables complete without a value, so their `error` handlers never run",
+        "The request is automatically retried once",
+        "Angular throws a runtime error because interceptors must return a value"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`EMPTY` completes immediately. The caller's `next` and `error` callbacks are not called, only `complete`, so spinners, form error handling and `firstValueFrom` (which rejects with EmptyError) behave unexpectedly. Usually re-throw with `throwError(() => err)` after the global handling.",
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-http-interceptors-007",
+      "topic": "http-interceptors",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `provideHttpClient(withFetch())` are true? (Select all that apply)",
+      "options": [
+        "HttpClient uses the Fetch API instead of XMLHttpRequest",
+        "It is recommended for server-side rendering",
+        "Upload progress events are not available",
+        "It replaces `HttpClient` with the native `fetch` function in your services"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "`withFetch()` only swaps the backend that `HttpClient` uses. The API, observables and interceptors stay the same. Fetch works natively in Node, which is why it is recommended for SSR, but it does not report upload progress.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "Your code still injects and calls `HttpClient`; only the transport changes."
+      ],
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-http-interceptors-008",
+      "topic": "http-interceptors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An app migrated to `provideHttpClient(withInterceptors([...]))`, and its old class-based `LoggingInterceptor` registered with `HTTP_INTERCEPTORS` stopped running. Why?",
+      "options": [
+        "Class-based interceptors are removed in recent Angular versions",
+        "The class must be converted to `@Injectable({ providedIn: 'root' })`",
+        "DI-based interceptors are only used when `withInterceptorsFromDi()` is also passed",
+        "`HTTP_INTERCEPTORS` only works in lazy-loaded routes"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "With `provideHttpClient`, interceptors from the `HTTP_INTERCEPTORS` multi-provider are ignored unless you opt in with `withInterceptorsFromDi()`. Class-based interceptors are still supported, but functional ones are recommended.",
+      "readMore": "/angular/http-interceptors/"
+    },
+    {
+      "id": "angular-rxjs-basics-001",
+      "topic": "rxjs-basics",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which is a key difference between a Promise and an Observable?",
+      "options": [
+        "A Promise is lazy, an Observable is eager",
+        "A Promise can emit many values, an Observable only one",
+        "Promises can be cancelled, Observables cannot",
+        "An Observable is lazy and can emit many values; a Promise is eager and resolves once"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A Promise starts work when created and settles once. An Observable does nothing until subscribed, can emit zero to many values over time, and supports cancellation through `unsubscribe()`.",
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-basics-002",
+      "topic": "rxjs-basics",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which Subject requires an initial value and gives new subscribers the current value immediately?",
+      "options": [
+        "`Subject`",
+        "`BehaviorSubject`",
+        "`ReplaySubject`",
+        "`AsyncSubject`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`BehaviorSubject` is constructed with an initial value, always holds a current value (readable via `.value`), and emits it to each new subscriber.",
+      "optionNotes": [
+        "A plain Subject has no current value; late subscribers get only future values.",
+        null,
+        "ReplaySubject replays a buffer but has no initial value.",
+        "AsyncSubject emits only the last value, and only after complete."
+      ],
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-basics-003",
+      "topic": "rxjs-basics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "const s = new BehaviorSubject(0);\ns.next(1);\ns.subscribe(v => console.log('A', v));\ns.next(2);\nconst r = new ReplaySubject(2);\n[1, 2, 3].forEach(v => r.next(v));\nr.subscribe(v => console.log('B', v));",
+      "codeLang": "ts",
+      "options": [
+        "A 0, A 1, A 2, B 1, B 2, B 3",
+        "A 1, A 2, B 2, B 3",
+        "A 2, B 3",
+        "A 1, A 2, B 1, B 2"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The BehaviorSubject's current value at subscription time is 1, then 2 is emitted. `ReplaySubject(2)` buffers the last two values, so the late subscriber gets 2 and 3. All of it is synchronous.",
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-basics-004",
+      "topic": "rxjs-basics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A template uses the same HTTP observable twice: `{{ (user$ | async)?.name }}` and `{{ (user$ | async)?.email }}`. What happens?",
+      "options": [
+        "Two HTTP requests are sent, because each async pipe subscribes to the cold observable",
+        "One request is sent; Angular deduplicates identical async pipes",
+        "One request is sent; HttpClient caches GET responses automatically",
+        "A runtime error, because an observable can have only one subscriber"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each `async` pipe is a separate subscription, and every subscription to an `HttpClient` observable sends a request. Use one subscription (`@let user = user$ | async;`, `toSignal`) or share with `shareReplay`.",
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-basics-005",
+      "topic": "rxjs-basics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Where can `takeUntilDestroyed()` be called without passing a `DestroyRef`?",
+      "options": [
+        "Anywhere in the component class, including `ngOnInit`",
+        "Only inside `ngOnDestroy`",
+        "In an injection context, such as the constructor or a field initializer",
+        "Only inside services provided in root"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Without an argument it calls `inject(DestroyRef)`, which only works in an injection context. In `ngOnInit` or later, inject `DestroyRef` in a field and pass it: `takeUntilDestroyed(this.destroyRef)`.",
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-basics-006",
+      "topic": "rxjs-basics",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why should `takeUntilDestroyed()` (or `takeUntil(destroy$)`) usually be the last operator in the pipe?",
+      "code": "interval(1000).pipe(\n  takeUntilDestroyed(this.destroyRef),\n  switchMap(() => this.poll$)\n).subscribe();",
+      "codeLang": "ts",
+      "options": [
+        "Operators after it run on a different scheduler",
+        "If it is not last, the subscription is never created",
+        "It only works on the last emitted value",
+        "Inner subscriptions created by later operators like `switchMap` are not torn down when it completes the source"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "When the operator completes its upstream, a downstream `switchMap` still keeps its active inner subscription until that inner completes. If `poll$` is long-lived it leaks. Placing the take-until operator last unsubscribes the whole chain.",
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-basics-007",
+      "topic": "rxjs-basics",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these are hot (shared producer) rather than cold? (Select all that apply)",
+      "options": [
+        "A `Subject` you call `next()` on",
+        "`fromEvent(document, 'click')`",
+        "`this.http.get('/api/items')`",
+        "`router.events`"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Subjects, DOM events and router events exist independently of any one subscriber, and late subscribers miss earlier values. `HttpClient` is cold: each subscription sends its own request.",
+      "optionNotes": [
+        null,
+        null,
+        "HttpClient observables are cold.",
+        null
+      ],
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-basics-008",
+      "topic": "rxjs-basics",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "const s = new Subject<number>();\ns.subscribe({ next: v => console.log('v', v), error: () => console.log('err') });\ns.next(1);\ns.error(new Error('x'));\ns.next(2);\ns.subscribe({ error: () => console.log('late err') });",
+      "codeLang": "ts",
+      "options": [
+        "v 1, err, v 2",
+        "v 1, err",
+        "v 1, err, late err",
+        "v 1, err, v 2, late err"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "After `error()`, the Subject is stopped: `next(2)` is ignored. A Subject that has errored immediately sends the stored error to any new subscriber, so the late subscriber logs `late err`.",
+      "readMore": "/angular/rxjs-basics/"
+    },
+    {
+      "id": "angular-rxjs-operators-001",
+      "topic": "rxjs-operators",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which operator should map search-box input to HTTP requests so that stale requests are cancelled?",
+      "options": [
+        "`mergeMap`",
+        "`concatMap`",
+        "`switchMap`",
+        "`exhaustMap`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`switchMap` unsubscribes from the previous inner observable when a new value arrives, which aborts the in-flight HTTP request, so only the latest query's results are shown.",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-002",
+      "topic": "rxjs-operators",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A Save button should ignore extra clicks while a save is in progress. Which operator fits?",
+      "options": [
+        "`exhaustMap`",
+        "`switchMap`",
+        "`mergeMap`",
+        "`combineLatest`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`exhaustMap` ignores new source values while the current inner observable is active, which prevents duplicate submissions from double clicks.",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-003",
+      "topic": "rxjs-operators",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "of(1, 2, 3)\n  .pipe(concatMap(x => of(x * 10).pipe(delay(30 - x * 10))))\n  .subscribe(console.log);",
+      "codeLang": "ts",
+      "options": [
+        "30, 20, 10",
+        "10, 20, 30",
+        "10, 30, 20",
+        "Only 30"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`concatMap` subscribes to the next inner observable only after the previous one completes, so output follows source order regardless of each inner delay. With `mergeMap` the output would be 30, 20, 10 (completion order).",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-004",
+      "topic": "rxjs-operators",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`forkJoin([this.user$, this.settings$])` never emits. `user$` is an HTTP call and `settings$` is a `BehaviorSubject`. Why?",
+      "options": [
+        "forkJoin requires exactly three sources",
+        "BehaviorSubject emits synchronously, which forkJoin ignores",
+        "The HTTP call is cancelled by forkJoin",
+        "forkJoin waits for every source to complete, and the BehaviorSubject never completes"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`forkJoin` emits once, with the last value of each source, after all of them complete. Use `combineLatest` for long-lived sources, or `settings$.pipe(take(1))` if you only need its current value.",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-005",
+      "topic": "rxjs-operators",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "After one search request fails, the typeahead stops responding to typing. What is the most likely cause?",
+      "code": "this.results$ = this.query.valueChanges.pipe(\n  debounceTime(300),\n  switchMap(q => this.api.search(q)),\n  catchError(() => of([]))\n);",
+      "codeLang": "ts",
+      "options": [
+        "`catchError` is on the outer stream, so the error ended the `valueChanges` pipeline",
+        "`debounceTime` swallows values after an error",
+        "`switchMap` cancels all future requests after a failure",
+        "`of([])` is cold and never emits"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The error propagates out of `switchMap` and terminates the outer stream; `catchError` replaces it with `of([])`, which completes. Put `catchError` inside the inner observable: `switchMap(q => this.api.search(q).pipe(catchError(() => of([]))))`.",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-006",
+      "topic": "rxjs-operators",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `withLatestFrom(form$)` do in `saveClicks$.pipe(withLatestFrom(form$))`?",
+      "options": [
+        "Emits whenever either `saveClicks$` or `form$` emits",
+        "Emits only when `saveClicks$` emits, paired with the latest value of `form$`",
+        "Waits for both to complete, then emits once",
+        "Pairs the nth click with the nth form value"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`withLatestFrom` is driven only by the source. The other stream is sampled, not a trigger. That differs from `combineLatest` (any input triggers), `forkJoin` (waits for completion) and `zip` (pairs by index).",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-007",
+      "topic": "rxjs-operators",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A service exposes `prices$ = websocketPrices$.pipe(shareReplay(1))`. All components using it are destroyed. What happens to the websocket subscription?",
+      "options": [
+        "It is closed, because the subscriber count dropped to zero",
+        "It is closed after one more value is replayed",
+        "It stays open, because `shareReplay(1)` uses `refCount: false` by default",
+        "It throws an error on the next emission"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The `shareReplay(n)` shorthand keeps the source subscription alive even with no subscribers. For infinite sources use `shareReplay({ bufferSize: 1, refCount: true })` so the source is unsubscribed when the last subscriber leaves.",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-008",
+      "topic": "rxjs-operators",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why is `switchMap` a risky choice for mapping Save clicks to POST requests?",
+      "options": [
+        "switchMap cannot be used with HttpClient POST calls",
+        "A cancelled POST may already have been processed by the server, so the UI can show a different result than what was saved",
+        "switchMap queues the requests, making saves slow",
+        "switchMap ignores clicks while a save is running"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Unsubscribing aborts the request on the client, but if it already reached the server the write still happens. The UI only shows the last response, so it can disagree with the database. Use `concatMap` to queue or `exhaustMap` to ignore duplicates.",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-rxjs-operators-009",
+      "topic": "rxjs-operators",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which operator builds a running total and emits after every value?",
+      "options": [
+        "`reduce`",
+        "`scan`",
+        "`count`",
+        "`last`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`scan` applies an accumulator and emits each intermediate result, so it works on infinite streams. `reduce` emits only the final result when the source completes.",
+      "readMore": "/angular/rxjs-operators/"
+    },
+    {
+      "id": "angular-directives-pipes-001",
+      "topic": "directives-pipes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the difference between a component and a directive?",
+      "options": [
+        "Components cannot have inputs",
+        "Directives must always be structural",
+        "A component is a directive with its own template",
+        "Directives can only be used inside NgModules"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Components are directives that render a view from a template. Attribute and structural directives attach behaviour to existing elements. An element can host many directives but only one component.",
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-directives-pipes-002",
+      "topic": "directives-pipes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "When does a pure pipe re-run its `transform` method?",
+      "options": [
+        "When its input value reference or an argument changes",
+        "On every change detection cycle",
+        "Only once, when the component is created",
+        "Whenever any signal in the app changes"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Pure pipes (the default) are re-evaluated only when the input or arguments change by `===` comparison. Impure pipes run on every change detection cycle.",
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-directives-pipes-003",
+      "topic": "directives-pipes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A pure `sortBy` pipe is used as `items | sortBy:'name'`. The code then runs `this.items.push(newItem)`. What does the view show?",
+      "options": [
+        "The new item, sorted correctly",
+        "An ExpressionChangedAfterItHasBeenChecked error",
+        "The new item, appended unsorted at the end",
+        "The previous sorted output without the new item"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`push` mutates the same array, so the reference is unchanged and the pure pipe returns its cached result. Replace the array (`this.items = [...this.items, newItem]`) or use a signal with `update`.",
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-directives-pipes-004",
+      "topic": "directives-pipes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does a structural directive inject to add or remove DOM?",
+      "options": [
+        "`ElementRef` and `Renderer2`",
+        "`TemplateRef` and `ViewContainerRef`",
+        "`ChangeDetectorRef` and `NgZone`",
+        "`DOCUMENT` and `DomSanitizer`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The `*` syntax wraps the host element in an `ng-template`. The directive gets the template as `TemplateRef` and calls `viewContainerRef.createEmbeddedView(templateRef)` or `clear()` on the `ViewContainerRef` anchor.",
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-directives-pipes-005",
+      "topic": "directives-pipes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does `{{ total(order) }}` in a template perform worse than `{{ order | total }}` with a pure pipe?",
+      "options": [
+        "Method calls run on every change detection pass; the pure pipe only re-runs when `order` changes reference",
+        "Method calls are executed on the server",
+        "Pipes are compiled to WebAssembly",
+        "Method calls disable OnPush for the component"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Angular cannot know whether a method's result changed, so it calls it every time the view is checked. A pure pipe is memoised on its inputs. In signal-based components a `computed()` gives the same benefit.",
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-directives-pipes-006",
+      "topic": "directives-pipes",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A template contains `@for (o of getOrders() | async; track o.id)`, where `getOrders()` returns `this.http.get(...)`. What happens?",
+      "options": [
+        "One request, results are shown normally",
+        "A compile error, because async cannot be used in `@for`",
+        "Each change detection pass gets a new observable, so the async pipe keeps resubscribing and sends repeated requests",
+        "The async pipe caches the first observable and ignores later ones"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The async pipe compares the observable reference. A new reference makes it unsubscribe from the old one and subscribe to the new one, and each subscription to an HttpClient observable sends a request. Store the observable in a field (or use `toSignal`/`httpResource`).",
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-directives-pipes-007",
+      "topic": "directives-pipes",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about the `async` pipe are true? (Select all that apply)",
+      "options": [
+        "It is an impure pipe",
+        "It calls `markForCheck()` when the observable emits, so it works with OnPush",
+        "It unsubscribes when the component is destroyed",
+        "It converts the observable to a signal and stores it on the component"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "The async pipe must run every cycle to return the latest value (the observable reference doesn't change on emission), so it is impure. It marks the view for check on each emission and unsubscribes on destroy or when the bound reference changes.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "It keeps the latest value internally; that is `toSignal`'s job, not the pipe's."
+      ],
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-directives-pipes-008",
+      "topic": "directives-pipes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `hostDirectives` in a component's metadata do?",
+      "options": [
+        "Lists directives the component's template is allowed to use",
+        "Applies standalone directives to the component's host element, optionally re-exposing their inputs and outputs",
+        "Registers directives globally for the whole application",
+        "Makes the component inherit from the listed directive classes"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The directive composition API attaches directives to the host element from inside the component. Their inputs/outputs are only public if listed (with optional aliases). It is composition, not inheritance.",
+      "readMore": "/angular/directives-pipes/"
+    },
+    {
+      "id": "angular-performance-001",
+      "topic": "performance",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the default trigger of a `@defer` block with no trigger specified?",
+      "options": [
+        "`on viewport`",
+        "`on immediate`",
+        "`on interaction`",
+        "`on idle`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Without a trigger, `@defer` loads its content when the browser is idle (`requestIdleCallback`). Other triggers include viewport, interaction, hover, immediate, timer and `when` conditions.",
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-performance-002",
+      "topic": "performance",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `track item.id` in `@for` primarily improve?",
+      "options": [
+        "It sorts the rendered list by the id property ascending",
+        "It lets Angular reuse existing DOM nodes for items with the same id when the array changes",
+        "It turns on CDK virtual scrolling for the list automatically",
+        "It throws at runtime if two items in the array share an id"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`track` gives each item an identity. When a new array arrives (for example after a refetch), Angular matches items by id and only creates, moves or removes the DOM that actually changed.",
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-performance-003",
+      "topic": "performance",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A list is rendered with `@for (row of rows(); track $index)`. Rows are re-fetched and sorted by date. What is the likely problem?",
+      "options": [
+        "DOM nodes and child component state are reused by position, so state like an expanded row or input focus ends up on the wrong item",
+        "A compile error, because `$index` cannot be used with `track`",
+        "Every row is always destroyed and recreated, but state stays correct",
+        "Nothing; tracking by index is the recommended default"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "With `track $index` Angular considers position the identity. After sorting, the component at position 0 now receives a different item but keeps its internal state. Track a stable key such as `row.id`.",
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-performance-004",
+      "topic": "performance",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `@defer (on viewport; prefetch on idle)` do?",
+      "options": [
+        "Renders the block on the server only",
+        "Loads and renders the block when idle, ignoring the viewport",
+        "Downloads the block's code when the browser is idle, and renders it when the placeholder enters the viewport",
+        "Prefetches data for the block's HTTP calls when idle"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`prefetch` controls when the chunk is downloaded; the main trigger controls when it is rendered. Prefetching early removes the loading delay when the user scrolls to the block.",
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-performance-005",
+      "topic": "performance",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which events mark an OnPush component for check? (Select all that apply)",
+      "options": [
+        "An input receives a new object reference",
+        "A signal read in its template changes",
+        "A mutation of a property inside an existing input object",
+        "An event handler bound in its template runs"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "OnPush views are refreshed when inputs change by reference, a template event fires, a template-read signal changes, the async pipe emits, or `markForCheck()` is called. Mutating an input object in place keeps the same reference, so it is not detected.",
+      "optionNotes": [
+        null,
+        null,
+        "Same reference, so OnPush skips the component.",
+        null
+      ],
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-performance-006",
+      "topic": "performance",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A component uses `@defer { <app-chart /> }` but the build output shows the chart library is still in the main bundle. What is a likely reason?",
+      "options": [
+        "`@defer` only works with NgModule-based components",
+        "`@defer` requires an explicit `on viewport` trigger to split code",
+        "Deferred code is never split in production builds",
+        "`ChartComponent` is also referenced eagerly elsewhere in the same component (for example in a `viewChild` query or outside the block)"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Dependencies are only split out of the main chunk if they are standalone and not used eagerly anywhere else in that file. Referencing the class outside the block (or importing it eagerly elsewhere) keeps it in the eager bundle.",
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-performance-007",
+      "topic": "performance",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which `NgOptimizedImage` attribute should you add to the hero image that is the page's Largest Contentful Paint element?",
+      "options": [
+        "`loading=\"lazy\"`",
+        "`priority`",
+        "`decoding=\"async\"`",
+        "`ngSkipHydration`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`priority` marks the image as high priority (eager loading, `fetchpriority=high`) and, with SSR, preload hints. By default NgOptimizedImage lazy-loads images, which would delay the LCP image.",
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-performance-008",
+      "topic": "performance",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why does switching a new app to zoneless change detection usually reduce unnecessary work?",
+      "options": [
+        "Change detection is only scheduled when Angular is notified (signals, markForCheck, async pipe, template events), not after every async task",
+        "Zoneless apps skip change detection for every OnPush component in the tree",
+        "Zoneless apps move change detection into a dedicated web worker thread",
+        "Zoneless apps render all templates on the server and ship static HTML only"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "With zone.js, any `setTimeout`, promise or XHR (including from third-party libraries) triggers a check. Zoneless removes that patching, so checks run only when state actually signals a change. It also removes zone.js from the bundle.",
+      "readMore": "/angular/performance/"
+    },
+    {
+      "id": "angular-ssr-hydration-001",
+      "topic": "ssr-hydration",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which rendering approach generates HTML once at build time for each route?",
+      "options": [
+        "Client-side rendering (CSR)",
+        "Server-side rendering (SSR)",
+        "Prerendering / static site generation (SSG)",
+        "Hydration"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Prerendering (SSG) produces static HTML during the build, which can be served from a CDN. SSR renders on each request; CSR renders in the browser.",
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-ssr-hydration-002",
+      "topic": "ssr-hydration",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does hydration do in an Angular SSR app?",
+      "options": [
+        "Re-renders the page from scratch in the browser, replacing the server HTML",
+        "Reuses the server-rendered DOM and attaches event listeners and bindings to it",
+        "Compresses the HTML before sending it",
+        "Converts the app into a static site"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Non-destructive hydration (enabled with `provideClientHydration()`) matches the existing DOM to the component tree instead of destroying it, avoiding flicker and layout shift.",
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-ssr-hydration-003",
+      "topic": "ssr-hydration",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A component calls `localStorage.getItem('theme')` in its constructor and SSR fails with `localStorage is not defined`. What is the best fix?",
+      "options": [
+        "Polyfill `localStorage` globally on the server with an empty object",
+        "Disable SSR for the whole app",
+        "Wrap the call in `try/catch` and ignore the error",
+        "Move the access into `afterNextRender` or guard it with `isPlatformBrowser(inject(PLATFORM_ID))`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Browser globals do not exist on the server. `afterNextRender` runs only in the browser after rendering, and `isPlatformBrowser` lets you branch explicitly. A storage service with a server-safe implementation is a cleaner long-term option.",
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-ssr-hydration-004",
+      "topic": "ssr-hydration",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With SSR, a product page calls the same GET API on the server and again in the browser. What prevents the duplicate call?",
+      "options": [
+        "The HTTP transfer cache enabled by `provideClientHydration()`",
+        "`withFetch()`",
+        "`ngSkipHydration` on the component",
+        "Setting `Cache-Control: no-store` on the API"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The transfer cache serialises server-side GET/HEAD responses into the HTML, and HttpClient serves them during hydration instead of sending the request again. Requests with auth headers are excluded by default.",
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-ssr-hydration-005",
+      "topic": "ssr-hydration",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What problem does event replay solve?",
+      "options": [
+        "It replays HTTP requests that failed during SSR",
+        "It re-runs change detection after hydration",
+        "It captures user events that happen before hydration finishes and replays them afterwards",
+        "It records user sessions for analytics"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Server HTML is visible before the JS is ready, so early clicks would hit elements with no listeners. Event replay (`withEventReplay()`, on by default for new SSR apps) queues those events and dispatches them after hydration.",
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-ssr-hydration-006",
+      "topic": "ssr-hydration",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "With incremental hydration enabled, what does the user see for `@defer (hydrate on viewport) { <app-reviews /> }` on the initial server-rendered page?",
+      "options": [
+        "The `@placeholder` content until the block scrolls into view",
+        "The real reviews HTML rendered on the server; its JS is loaded and hydrated when it enters the viewport",
+        "Nothing until the block scrolls into view",
+        "The reviews, fully hydrated immediately with the rest of the page"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Incremental hydration renders deferred blocks on the server so content and SEO are complete, but keeps them dehydrated (no code downloaded) until the hydrate trigger fires. The placeholder is used for client-side rendering, such as later in-app navigation.",
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-ssr-hydration-007",
+      "topic": "ssr-hydration",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In an e-commerce app, which per-route render mode configuration makes the most sense?",
+      "code": "export const serverRoutes: ServerRoute[] = [\n  { path: '', renderMode: /* A */ },\n  { path: 'product/:id', renderMode: /* B */ },\n  { path: 'checkout/**', renderMode: /* C */ },\n];",
+      "codeLang": "ts",
+      "options": [
+        "A: Server, B: Client, C: Prerender",
+        "A: Client, B: Prerender, C: Server",
+        "A: Prerender, B: Prerender, C: Prerender",
+        "A: Prerender, B: Server, C: Client"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The home page is the same for everyone and benefits from CDN caching (Prerender). Product pages need fresh price and stock plus SEO (Server). Checkout is personalised and not indexed (Client).",
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-ssr-hydration-008",
+      "topic": "ssr-hydration",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these can cause hydration mismatch errors? (Select all that apply)",
+      "options": [
+        "Setting `nativeElement.innerHTML` directly in a component",
+        "Invalid HTML nesting such as a `div` inside a `p`",
+        "Using signals for component state",
+        "Rendering `Math.random()` or the current time differently on server and client"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Hydration expects the client's DOM structure to match the server HTML. Direct DOM manipulation, markup the browser auto-corrects, and non-deterministic output all break that. Signals are fully compatible with hydration.",
+      "optionNotes": [
+        null,
+        null,
+        "Signals have no effect on DOM matching.",
+        null
+      ],
+      "readMore": "/angular/ssr-hydration/"
+    },
+    {
+      "id": "angular-testing-001",
+      "topic": "testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which test runner does the Angular CLI configure by default for new projects since v21?",
+      "options": [
+        "Karma with Jasmine",
+        "Jest",
+        "Vitest",
+        "Mocha"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Since v21, `ng new` sets up Vitest through the CLI's unit-test builder. Karma is deprecated, though existing Karma projects keep working.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-testing-002",
+      "topic": "testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How do you set a signal input named `currency` on a component in a TestBed test?",
+      "options": [
+        "`fixture.componentInstance.currency = 'INR'`",
+        "`fixture.componentRef.setInput('currency', 'INR')`",
+        "`fixture.componentInstance.currency.set('INR')`",
+        "`TestBed.overrideInput('currency', 'INR')`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Signal inputs are read-only `InputSignal`s with no `set` method, and assigning would replace the signal. `componentRef.setInput` works for signal and decorator inputs and marks OnPush components dirty.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-testing-003",
+      "topic": "testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an `HttpTestingController` test, what does `httpTesting.verify()` in `afterEach` check?",
+      "options": [
+        "That all responses had status 200",
+        "That no interceptors were registered",
+        "That every request was made with the correct headers",
+        "That there are no outstanding requests that the test did not expect or flush"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`verify()` fails the test if any request was made but not matched by `expectOne`/`match` and handled. It catches accidental extra or duplicate calls.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-testing-004",
+      "topic": "testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is `HttpTestingController` preferred over replacing `HttpClient` with a spy object?",
+      "options": [
+        "Requests go through the real HttpClient pipeline, including interceptors, params and headers, and you can assert and flush them",
+        "Spy objects cannot return observables, so HttpClient methods cannot be faked",
+        "HttpTestingController sends real requests to an in-memory test server it starts",
+        "It is the only supported way to test POST, PUT and DELETE requests in Angular"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "With `provideHttpClient()` plus `provideHttpClientTesting()`, only the backend is replaced. Your URL building, `HttpParams`, interceptors and error handling are exercised, and you control responses with `flush`.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-testing-005",
+      "topic": "testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the main benefit of component harnesses such as `MatButtonHarness`?",
+      "options": [
+        "They render components in Node without needing any DOM or browser environment",
+        "They interact with components through a stable API instead of internal DOM structure and CSS classes",
+        "They replace TestBed entirely, so no testing module configuration is needed",
+        "They make every unit test run inside a real Chrome browser instead of jsdom"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Harnesses are page objects for components. Tests call `click()` or `setValue()` and survive markup changes, and the harness waits for the fixture to be stable.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-testing-006",
+      "topic": "testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A test for a `debounceTime(300)` search uses `fakeAsync` and `tick(300)`, and fails in a new zoneless project running on Vitest. Why, and what is the usual replacement?",
+      "options": [
+        "`tick` only accepts values below 100 ms; split it into several calls",
+        "Vitest does not support RxJS; use Jasmine instead",
+        "`fakeAsync` depends on zone.js testing; use Vitest fake timers (`vi.useFakeTimers()` and advancing time) or async tests",
+        "Debounced code cannot be unit tested; use an E2E test"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`fakeAsync` runs the test in a special zone with a virtual clock, which requires zone.js. Zoneless Vitest setups use the runner's fake timers or real `async`/`await` with `fixture.whenStable()`.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-testing-007",
+      "topic": "testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is wrong with this test setup?",
+      "code": "TestBed.configureTestingModule({\n  providers: [provideHttpClientTesting(), provideHttpClient()],\n});",
+      "codeLang": "ts",
+      "options": [
+        "Nothing is wrong; provider order inside the providers array never matters",
+        "`provideHttpClientTesting()` must be listed in `imports`, not in `providers`",
+        "`provideHttpClient()` cannot be used in unit tests and must be removed",
+        "`provideHttpClient()` comes after the testing provider and overrides the test backend, so real requests may be attempted"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`provideHttpClientTesting()` replaces the backend that `provideHttpClient()` registers. Later providers win, so the testing provider must come after `provideHttpClient()`.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-testing-008",
+      "topic": "testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How can a test assert that a component's `saved = output<number>()` emitted 42?",
+      "options": [
+        "Subscribe to `fixture.componentInstance.saved` and record emitted values, then trigger the action",
+        "Read `fixture.componentInstance.saved()` after the action",
+        "Spy on `EventEmitter.prototype.emit`",
+        "Outputs cannot be tested in unit tests"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`output()` returns an `OutputEmitterRef` with a `subscribe` method. Subscribe in the test, perform the UI action, and assert on the collected values. A host component binding `(saved)` also works.",
+      "readMore": "/angular/testing/"
+    },
+    {
+      "id": "angular-security-001",
+      "topic": "security",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A comment containing `<script>alert(1)</script>` is shown with `{{ comment }}`. What happens?",
+      "options": [
+        "The script runs",
+        "It is displayed as literal text, because interpolation escapes HTML",
+        "Angular throws a security error",
+        "The comment is removed entirely"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Interpolation always renders values as text, so markup is escaped and shown literally. Scripts never execute from interpolation.",
+      "readMore": "/angular/security/"
+    },
+    {
+      "id": "angular-security-002",
+      "topic": "security",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which statement about route guards is correct?",
+      "options": [
+        "A `canActivate` guard is sufficient to protect admin data",
+        "Guards run on the server before the page is sent",
+        "Guards are a UX feature; the API must authorise every request",
+        "Guards encrypt the route's lazy-loaded chunk"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Guards run in the browser and can be bypassed, or the API can be called directly. They keep users away from pages they can't use, but authorisation must be enforced on the server.",
+      "readMore": "/angular/security/"
+    },
+    {
+      "id": "angular-security-003",
+      "topic": "security",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `sanitizer.bypassSecurityTrustHtml(value)` do?",
+      "options": [
+        "Marks the value as trusted so Angular skips sanitization, without checking it",
+        "Sanitizes the HTML more strictly than the default",
+        "Validates the HTML against a whitelist and throws if unsafe",
+        "Escapes the HTML so it is shown as text"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "It wraps the value in a `SafeHtml` marker. Angular trusts it and does no checking. Passing user-controlled content creates an XSS vulnerability.",
+      "readMore": "/angular/security/"
+    },
+    {
+      "id": "angular-security-004",
+      "topic": "security",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A user-supplied link is bound with `<a [href]=\"link\">` and its value is `javascript:alert(1)`. What does Angular do?",
+      "options": [
+        "Renders it as is; the script runs on click",
+        "Throws an error and stops rendering",
+        "Removes the `a` element",
+        "Sanitizes the URL, prefixing it with `unsafe:` so it won't execute"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "URL bindings are sanitized: safe schemes pass, dangerous ones like `javascript:` are prefixed with `unsafe:` and a warning is logged in dev mode.",
+      "readMore": "/angular/security/"
+    },
+    {
+      "id": "angular-security-005",
+      "topic": "security",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How does Angular's HttpClient help protect cookie-authenticated apps from CSRF?",
+      "options": [
+        "It encrypts all cookies before sending them",
+        "It reads the `XSRF-TOKEN` cookie and sends it as the `X-XSRF-TOKEN` header on mutating same-origin requests",
+        "It blocks all cross-origin requests",
+        "It adds `SameSite=Strict` to every cookie"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "This is the double-submit cookie pattern. An attacker site cannot read your cookie, so it cannot set the matching header. The server must issue the cookie and validate the header.",
+      "readMore": "/angular/security/"
+    },
+    {
+      "id": "angular-security-006",
+      "topic": "security",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these bypass Angular's built-in sanitization? (Select all that apply)",
+      "options": [
+        "`this.el.nativeElement.innerHTML = userHtml`",
+        "`<div [innerHTML]=\"userHtml\"></div>`",
+        "`this.sanitizer.bypassSecurityTrustHtml(userHtml)` bound to `[innerHTML]`",
+        "`renderer.setProperty(el, 'innerHTML', userHtml)`"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "Template binding to `[innerHTML]` is sanitized. Direct DOM writes through `ElementRef` or `Renderer2` skip the template sanitizer, and `bypassSecurityTrust*` explicitly disables it.",
+      "optionNotes": [
+        null,
+        "Template bindings are sanitized for the HTML context.",
+        null,
+        null
+      ],
+      "readMore": "/angular/security/"
+    },
+    {
+      "id": "angular-security-007",
+      "topic": "security",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You need `<iframe [src]=\"url\">` to embed a YouTube video chosen by the user. Which approach is safe?",
+      "options": [
+        "Bind the user's full URL directly; Angular sanitizes resource URLs",
+        "Pass the user's URL to `bypassSecurityTrustResourceUrl`",
+        "Validate the video id against a strict pattern, build the embed URL yourself, then call `bypassSecurityTrustResourceUrl`",
+        "Use `[innerHTML]` with an iframe string instead"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Resource URLs cannot be sanitized, so Angular requires explicit trust. Only trust a URL you constructed from validated parts, never a raw user-supplied URL.",
+      "optionNotes": [
+        "Angular throws for untrusted resource URLs; it does not sanitize them.",
+        "Trusting a raw user URL lets them load any page or `javascript:` content.",
+        null,
+        "The HTML sanitizer strips iframes."
+      ],
+      "readMore": "/angular/security/"
+    },
+    {
+      "id": "angular-version-history-001",
+      "topic": "version-history",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In which Angular version did the built-in control flow (`@if`, `@for`, `@switch`) and `@defer` first appear?",
+      "options": [
+        "v15",
+        "v16",
+        "v17",
+        "v19"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Angular 17 (November 2023) introduced the built-in control flow and deferrable views, together with the Vite/esbuild application builder as default and the new angular.dev site. They became stable in v18.",
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-version-history-002",
+      "topic": "version-history",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How long is a major Angular version supported in total?",
+      "options": [
+        "6 months",
+        "12 months",
+        "18 months",
+        "36 months"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Each major gets 6 months of active support and 12 months of long-term support. With a major roughly every six months, apps should upgrade regularly.",
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-version-history-003",
+      "topic": "version-history",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which change arrived with Angular v21 for newly generated projects?",
+      "options": [
+        "NgModules became mandatory again",
+        "Zoneless change detection became the default",
+        "RxJS was removed from HttpClient",
+        "Templates must be written in TSX"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Since v21, new projects are zoneless by default and use Vitest as the test runner. Signal Forms also arrived as experimental.",
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-version-history-004",
+      "topic": "version-history",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Signals were introduced in v16. In which major did the core signal APIs such as `effect`, `linkedSignal` and `toSignal` become stable?",
+      "options": [
+        "v17",
+        "v18",
+        "v19",
+        "v20"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`signal` and `computed` were stable early, but `effect`, `linkedSignal` and the RxJS interop `toSignal`/`toObservable` were promoted to stable in v20.",
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-version-history-005",
+      "topic": "version-history",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You must upgrade an app from Angular 16 to the latest version. What is the recommended approach?",
+      "options": [
+        "Update one major at a time with `ng update`, following the update guide and running tests after each step",
+        "Change all `@angular/*` versions in package.json to latest and run `npm install`",
+        "Create a new project and copy the source files across",
+        "Update only `@angular/core` and leave the CLI on v16"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`ng update` runs migrations designed for each major step. Jumping several majors at once skips those migrations and makes failures hard to diagnose. Update framework, CLI and libraries like Material together.",
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-version-history-006",
+      "topic": "version-history",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which version made the standalone APIs (`bootstrapApplication`, `provideRouter`, `provideHttpClient`) stable and introduced functional guards and interceptors?",
+      "options": [
+        "v14",
+        "v15",
+        "v17",
+        "v18"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Standalone components were a developer preview in v14 and became stable in v15, together with the provider functions, functional router guards, functional interceptors and the directive composition API.",
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-version-history-007",
+      "topic": "version-history",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An existing zone.js app adds `provideZonelessChangeDetection()` and removes zone.js. Some views stop updating after data loads. What is the most likely cause?",
+      "options": [
+        "Zoneless mode does not support HttpClient, so the requests never complete",
+        "Signals stop notifying the template once zone.js is removed from polyfills",
+        "Components assign plain fields inside `subscribe` callbacks and relied on zone.js to trigger change detection afterwards",
+        "OnPush components are skipped entirely and never rendered in zoneless mode"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Without zone.js nothing triggers a check after an async callback. Use signals (`this.rows.set(data)`), the async pipe, or `markForCheck()` so Angular is notified. Making components OnPush-compatible first is the usual migration path.",
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-version-history-008",
+      "topic": "version-history",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which official schematics help modernise an older Angular codebase? (Select all that apply)",
+      "options": [
+        "`ng generate @angular/core:standalone` to migrate away from NgModules",
+        "`ng generate @angular/core:control-flow` to convert `*ngIf`/`*ngFor` to `@if`/`@for`",
+        "`ng generate @angular/core:inject` to convert constructor injection to `inject()`",
+        "`ng generate @angular/core:remove-rxjs` to replace all observables with signals"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "Angular ships migrations for standalone, control flow, `inject()`, and signal inputs/outputs/queries. There is no schematic that removes RxJS; observables remain part of HttpClient, the router and forms.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "No such schematic exists; RxJS remains a core dependency."
+      ],
+      "readMore": "/angular/version-history/"
+    },
+    {
+      "id": "angular-angular-scenarios-001",
+      "topic": "angular-scenarios",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A child component needs a value from its parent and must notify the parent when the user clicks Remove. What is the modern approach?",
+      "options": [
+        "A root service with a BehaviorSubject",
+        "`input()` for the value and `output()` for the event",
+        "`viewChild()` in the child to read the parent",
+        "Store both in localStorage"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "For a direct parent/child relationship, data flows down through inputs and events flow up through outputs. It keeps the child reusable and easy to test.",
+      "readMore": "/angular/angular-scenarios/"
+    },
+    {
+      "id": "angular-angular-scenarios-002",
+      "topic": "angular-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Two sibling components on one screen share filter state, and the filters should reset when the user leaves the screen. Where should the shared `FilterState` service be provided?",
+      "options": [
+        "`@Injectable({ providedIn: 'root' })`",
+        "In each sibling's own `providers` array",
+        "In `app.config.ts` providers",
+        "In the common parent component's `providers` array"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Providing it on the parent gives both siblings the same instance, scoped to that screen and destroyed with it. Root or app-level providers create a global singleton that survives navigation; providing it in each sibling gives two separate instances.",
+      "readMore": "/angular/angular-scenarios/"
+    },
+    {
+      "id": "angular-angular-scenarios-003",
+      "topic": "angular-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An OnPush child receives `[items]=\"items\"`. The parent runs `this.items.push(newItem)` and the child doesn't update. What is the best fix?",
+      "options": [
+        "Create a new array: `this.items = [...this.items, newItem]` (or use a signal with `update`)",
+        "Call `detectChanges()` in the child's `ngDoCheck`",
+        "Switch the child back to Default change detection",
+        "Wrap the push in `setTimeout`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "OnPush compares input references, and `push` keeps the same reference. Immutable updates make the change visible. The other options hide the problem or give up OnPush's benefit.",
+      "readMore": "/angular/angular-scenarios/"
+    },
+    {
+      "id": "angular-angular-scenarios-004",
+      "topic": "angular-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a zoneless app, this component never shows the loaded rows. Why?",
+      "code": "rows: Row[] = [];\nngOnInit() {\n  this.api.getRows().subscribe(data => this.rows = data);\n}",
+      "codeLang": "ts",
+      "options": [
+        "HttpClient doesn't work without zone.js",
+        "`ngOnInit` is not called in zoneless apps",
+        "Assigning a plain field in a callback doesn't notify Angular; use a signal (`rows.set(data)`) or the async pipe",
+        "The subscription must be created in the constructor"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Zoneless change detection runs when Angular is notified: signal writes, `markForCheck` (including via the async pipe), template events. A plain field assignment after an async callback is invisible to it.",
+      "readMore": "/angular/angular-scenarios/"
+    },
+    {
+      "id": "angular-angular-scenarios-005",
+      "topic": "angular-scenarios",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Memory grows each time users navigate to and from a dashboard. Which are likely causes? (Select all that apply)",
+      "options": [
+        "A subscription to `interval(5000)` without `takeUntilDestroyed`",
+        "`window.addEventListener('resize', ...)` without removal on destroy",
+        "Using the async pipe on an HTTP observable",
+        "A root service caching every dashboard component instance in an array"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Long-lived subscriptions, global listeners and references held by singletons keep destroyed components in memory. The async pipe unsubscribes automatically on destroy.",
+      "optionNotes": [
+        null,
+        null,
+        "The async pipe cleans up on destroy.",
+        null
+      ],
+      "readMore": "/angular/angular-scenarios/"
+    },
+    {
+      "id": "angular-angular-scenarios-006",
+      "topic": "angular-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A table renders 5,000 rows and scrolling is janky. Which change usually has the biggest impact?",
+      "options": [
+        "Replace `@for` with `*ngFor`",
+        "Render only visible rows with CDK virtual scroll (or paginate on the server)",
+        "Move the styles to a global stylesheet",
+        "Add more `console.log` calls to find the slow row"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The cost is thousands of DOM nodes and component instances. Virtual scrolling or pagination cuts that to what is visible. Then `track` by id, OnPush rows and `computed()` instead of template method calls help further.",
+      "readMore": "/angular/angular-scenarios/"
+    },
+    {
+      "id": "angular-angular-scenarios-007",
+      "topic": "angular-scenarios",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In a typeahead, results for an older query sometimes overwrite results for the latest query. Which pipeline fixes this?",
+      "options": [
+        "`debounceTime(300), mergeMap(q => api.search(q))`",
+        "`debounceTime(300), concatMap(q => api.search(q))`",
+        "`debounceTime(300), exhaustMap(q => api.search(q))`",
+        "`debounceTime(300), distinctUntilChanged(), switchMap(q => api.search(q))`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`switchMap` cancels the previous request when a new query arrives, so a slow older response can never be emitted after a newer one. `mergeMap` allows out-of-order results, `concatMap` waits for stale requests, and `exhaustMap` ignores the newest query.",
+      "readMore": "/angular/angular-scenarios/"
+    },
+    {
+      "id": "angular-angular-scenarios-008",
+      "topic": "angular-scenarios",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Product list filters should survive a page refresh and be shareable as a link. Where should they live?",
+      "options": [
+        "In URL query parameters",
+        "In a root service signal",
+        "In a component field",
+        "In an NgRx store only"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Query parameters survive refresh, work with back/forward and can be bookmarked or shared. Services, fields and stores are lost on a full reload unless persisted.",
+      "readMore": "/angular/angular-scenarios/"
+    }
+  ]
+}

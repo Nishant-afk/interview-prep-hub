@@ -1,0 +1,62 @@
+---
+title: "Cheat Sheet: System Design & Microservices"
+description: One-page revision of the design interview framework, building blocks, trade-offs and messaging patterns.
+sidebar:
+  order: 7
+noProgress: true
+tableOfContents: false
+---
+
+## The 45-minute framework
+
+| Minutes | Step | Output |
+|---|---|---|
+| 0-5 | Requirements | Functional list, non-functional (scale, latency, availability, consistency), out of scope |
+| 5-10 | Estimates | QPS (read/write), storage per year, bandwidth |
+| 10-15 | API + data model | Endpoints, main tables/collections, SQL or NoSQL and why |
+| 15-30 | High-level design | Boxes and arrows; walk through the main flows |
+| 30-40 | Deep dives | 2-3 hard parts: hot keys, ordering, idempotency, fan-out |
+| 40-45 | Trade-offs, failures | What breaks first and what you'd change at 10x |
+
+[Full framework](../../system-design/interview-framework/)
+
+**Numbers to know:** 1 day ≈ 86,400 s (round to 10^5). 1M requests/day ≈ 12 QPS. Memory read is about 100 ns, SSD read about 100 µs, a same-datacenter round trip about 0.5 ms, a cross-continent round trip about 150 ms.
+
+## Building blocks
+
+| Block | Key points |
+|---|---|
+| Load balancer | L4 (TCP) vs L7 (HTTP, path routing). Round robin, least connections. Stateless services scale horizontally. [More](../../system-design/scaling-fundamentals/) |
+| Cache | Cache-aside is the default. Use a TTL plus invalidation on write. Guard against stampedes (locking, early refresh). Redis in front of SQL. [More](../../system-design/caching/) |
+| Database | Read replicas for reads. Shard by a high-cardinality key; consistent hashing limits reshuffling. [More](../../system-design/databases-at-scale/) |
+| CAP | During a partition, pick consistency or availability. PACELC: otherwise, latency vs consistency. |
+| Queue | Decouples services, absorbs spikes, enables retries. [More](../../system-design/messaging-basics/) |
+| Rate limiting | Token bucket allows bursts; sliding window is accurate. Use Redis for distributed limits; return 429 + `Retry-After`. [More](../../system-design/api-design-rate-limiting/) |
+| Blob + CDN | Upload directly to blob storage with a SAS / pre-signed URL; serve through a CDN. [More](../../system-design/storage-files-cdn/) |
+| Pagination | Offset is simple but slow when deep. A cursor (keyset) is stable and fast. |
+
+## Classic case-study hooks
+
+- **URL shortener:** base62 encoding of a unique ID, a read-heavy cache, 301 vs 302 redirects. [More](../../system-design/case-url-shortener/)
+- **Notifications:** a queue per channel, user preferences, retries + DLQ, dedup keys. [More](../../system-design/case-notification-system/)
+- **Chat:** WebSockets/SignalR, per-conversation ordering, a presence service, offline push. [More](../../system-design/case-chat-system/)
+- **News feed:** fan-out on write for normal users, on read for celebrities. [More](../../system-design/case-news-feed/)
+- **Orders:** reserve inventory, then a payment saga with an idempotency key and an outbox. [More](../../system-design/case-ecommerce-orders/)
+
+## Microservices and messaging
+
+| | RabbitMQ | Kafka | Azure Service Bus (AWS: SQS/SNS) |
+|---|---|---|---|
+| Model | Exchanges route to queues | Partitioned append-only log | Queues + topics/subscriptions |
+| After consume | Message removed | Retained; consumers track offsets | Removed (peek-lock) |
+| Ordering | Per queue | Per partition (choose the key) | Per session |
+| Best for | Task routing | Event streams, replay, high throughput | Enterprise messaging on Azure |
+
+[More](../../microservices/message-brokers/)
+
+- Delivery is **at-least-once** in practice, so make consumers **idempotent** with a processed-message ID table or natural keys. [More](../../microservices/delivery-guarantees/)
+- **Outbox:** write the business row and the event in one DB transaction; a relay publishes the event. This avoids a "saved but not published" gap. [More](../../microservices/reliability-patterns/)
+- **Saga:** a series of local transactions with compensating actions. Choreography (events) vs orchestration (a coordinator).
+- **Resilience:** timeouts, retries with backoff + jitter, circuit breaker, bulkhead.
+- **Observability:** trace IDs propagated across services (OpenTelemetry), structured logs, RED metrics (rate, errors, duration). [More](../../microservices/observability-cross-cutting/)
+- **Data:** a database per service, no shared tables. Use API composition or CQRS read models for cross-service queries. [More](../../microservices/data-management/)

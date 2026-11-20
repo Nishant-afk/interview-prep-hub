@@ -1,0 +1,239 @@
+---
+title: Curated Problem List
+description: About 75 LeetCode problems grouped by pattern, with difficulty, a one-line key idea, the target complexity and a link to the page that teaches the pattern.
+sidebar:
+  order: 15
+  badge: { text: Hot, variant: danger }
+importance: high
+difficulty: medium
+estimatedMinutes: 20
+tags: [practice, leetcode, patterns, problem-list]
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Why it matters in interviews
+
+At 3-4 years you will usually get one or two easy-to-medium problems in 30-45 minutes. Interviewers rarely reuse a famous problem word for word, but almost every question is a **variation of a pattern** below. Solving these 77 problems, grouped by pattern, teaches you to recognise the pattern in a new question, which is the real skill being tested.
+
+## How to use this list
+
+1. **Learn the pattern first.** Read the linked page, then solve the problems in that group in order (they get harder).
+2. **Time-box.** 25 minutes for an Easy, 40 for a Medium. If stuck, read the key idea below, not the full solution, and try again.
+3. **Say the complexity** before you run the code, and compare it to the target column.
+4. **Re-solve after a week** without notes. Problems marked ⭐ are the core set if you only have two weeks.
+5. Solve in **C#** first; redo the ⭐ problems in TypeScript if you are interviewing for full-stack roles.
+
+<Aside type="tip" title="Tracking progress">
+The Done boxes are for the current session only and reset when you reload. Use the page's progress button to mark the whole list, or copy the tables into your own notes.
+</Aside>
+
+## Arrays & strings: two pointers, sliding window, prefix sums
+
+Pattern page: [Arrays & Strings Patterns](../arrays-strings/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Best Time to Buy and Sell Stock](https://leetcode.com/problems/best-time-to-buy-and-sell-stock/) | Easy | Track the minimum price so far; profit = price - min | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Valid Palindrome](https://leetcode.com/problems/valid-palindrome/) | Easy | Two pointers from both ends, skip non-alphanumerics | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | [Two Sum II - Input Array Is Sorted](https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/) | Medium | Sum too small: move left; too big: move right | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [3Sum](https://leetcode.com/problems/3sum/) | Medium | Sort, fix one value, two pointers on the rest, skip duplicates | O(n²) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | [Container With Most Water](https://leetcode.com/problems/container-with-most-water/) | Medium | Always move the shorter wall inward | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Maximum Subarray](https://leetcode.com/problems/maximum-subarray/) | Medium | Kadane: restart the run when the running sum goes negative | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Product of Array Except Self](https://leetcode.com/problems/product-of-array-except-self/) | Medium | Prefix products left-to-right, suffix products right-to-left | O(n) / O(1) extra |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Longest Substring Without Repeating Characters](https://leetcode.com/problems/longest-substring-without-repeating-characters/) | Medium | Variable window; jump left past the last index of the repeated char | O(n) / O(k) |
+| <input type="checkbox" aria-label="Done" /> | [Longest Repeating Character Replacement](https://leetcode.com/problems/longest-repeating-character-replacement/) | Medium | Window is valid while length - maxFreq ≤ k | O(n) / O(26) |
+| <input type="checkbox" aria-label="Done" /> | [Minimum Window Substring](https://leetcode.com/problems/minimum-window-substring/) | Hard | Expand until all needed chars are covered, then shrink from the left | O(m + n) / O(k) |
+
+## Hashing
+
+Pattern page: [Hashing Patterns](../hashing/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Two Sum](https://leetcode.com/problems/two-sum/) | Easy | Map value to index; look up target - x before inserting x | O(n) / O(n) |
+| <input type="checkbox" aria-label="Done" /> | [Contains Duplicate](https://leetcode.com/problems/contains-duplicate/) | Easy | `HashSet.Add` returns false on a repeat | O(n) / O(n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Valid Anagram](https://leetcode.com/problems/valid-anagram/) | Easy | One int[26] counter: +1 for s, -1 for t, all zero at the end | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Group Anagrams](https://leetcode.com/problems/group-anagrams/) | Medium | Key = sorted word (or a 26-count signature) | O(n·k log k) / O(n·k) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Longest Consecutive Sequence](https://leetcode.com/problems/longest-consecutive-sequence/) | Medium | HashSet; only start counting at x when x - 1 is absent | O(n) / O(n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Subarray Sum Equals K](https://leetcode.com/problems/subarray-sum-equals-k/) | Medium | Count prefix sums; add count of (prefix - k) seen so far | O(n) / O(n) |
+
+## Stacks & queues
+
+Pattern page: [Stacks & Queues](../stacks-queues/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Valid Parentheses](https://leetcode.com/problems/valid-parentheses/) | Easy | Push openers; a closer must match the top | O(n) / O(n) |
+| <input type="checkbox" aria-label="Done" /> | [Implement Queue using Stacks](https://leetcode.com/problems/implement-queue-using-stacks/) | Easy | In-stack and out-stack; refill out only when empty | Amortised O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Min Stack](https://leetcode.com/problems/min-stack/) | Medium | Store (value, min so far) pairs | O(1) per op |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Daily Temperatures](https://leetcode.com/problems/daily-temperatures/) | Medium | Monotonic decreasing stack of indices; pop when warmer | O(n) / O(n) |
+| <input type="checkbox" aria-label="Done" /> | [Sliding Window Maximum](https://leetcode.com/problems/sliding-window-maximum/) | Hard | Deque of indices with decreasing values; drop expired front | O(n) / O(k) |
+
+## Linked lists
+
+Pattern page: [Linked Lists](../linked-lists/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Reverse Linked List](https://leetcode.com/problems/reverse-linked-list/) | Easy | prev / current / next, three pointers | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Merge Two Sorted Lists](https://leetcode.com/problems/merge-two-sorted-lists/) | Easy | Dummy head, attach the smaller node | O(m + n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Linked List Cycle](https://leetcode.com/problems/linked-list-cycle/) | Easy | Floyd: slow moves 1, fast moves 2; they meet if there is a cycle | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | [Middle of the Linked List](https://leetcode.com/problems/middle-of-the-linked-list/) | Easy | Slow and fast pointers; slow is the middle when fast ends | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Remove Nth Node From End of List](https://leetcode.com/problems/remove-nth-node-from-end-of-list/) | Medium | Move fast n steps ahead, then move both; dummy head for n = length | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [LRU Cache](https://leetcode.com/problems/lru-cache/) | Medium | Dictionary to nodes + doubly linked list ordered by recency | O(1) per op |
+
+## Recursion & backtracking
+
+Pattern page: [Recursion & Backtracking](../recursion-backtracking/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Subsets](https://leetcode.com/problems/subsets/) | Medium | Include / exclude each element (or a bitmask) | O(n·2ⁿ) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Permutations](https://leetcode.com/problems/permutations/) | Medium | Choose an unused element, recurse, un-choose | O(n·n!) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Combination Sum](https://leetcode.com/problems/combination-sum/) | Medium | Recurse from index i (reuse allowed), stop when remaining goes below 0 | Exponential |
+| <input type="checkbox" aria-label="Done" /> | [Generate Parentheses](https://leetcode.com/problems/generate-parentheses/) | Medium | Add `(` while `open < n`, `)` while `close < open` | O(4ⁿ / √n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Word Search](https://leetcode.com/problems/word-search/) | Medium | DFS from each cell, mark visited, un-mark on return | O(m·n·4ᴸ) |
+
+## Binary search
+
+Pattern page: [Binary Search](../binary-search/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Binary Search](https://leetcode.com/problems/binary-search/) | Easy | `lo <= hi`, `mid = lo + (hi - lo) / 2` | O(log n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | [Find First and Last Position of Element in Sorted Array](https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/) | Medium | Two searches: keep going left (first) or right (last) after a hit | O(log n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Search in Rotated Sorted Array](https://leetcode.com/problems/search-in-rotated-sorted-array/) | Medium | One half is always sorted; check if the target is inside it | O(log n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Koko Eating Bananas](https://leetcode.com/problems/koko-eating-bananas/) | Medium | Binary search on the answer (speed); check feasibility in O(n) | O(n log max) |
+| <input type="checkbox" aria-label="Done" /> | [Capacity To Ship Packages Within D Days](https://leetcode.com/problems/capacity-to-ship-packages-within-d-days/) | Medium | Search capacity between max(weight) and sum(weights) | O(n log sum) |
+
+## Sorting
+
+Pattern page: [Sorting](../sorting/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Sort Colors](https://leetcode.com/problems/sort-colors/) | Medium | Dutch national flag: low / mid / high pointers | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | [Largest Number](https://leetcode.com/problems/largest-number/) | Medium | Custom comparer: a + b vs b + a as strings | O(n log n) |
+
+## Trees & BST
+
+Pattern page: [Trees & BST](../trees-bst/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Maximum Depth of Binary Tree](https://leetcode.com/problems/maximum-depth-of-binary-tree/) | Easy | 1 + max(left, right) | O(n) / O(h) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Invert Binary Tree](https://leetcode.com/problems/invert-binary-tree/) | Easy | Swap children, recurse | O(n) / O(h) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Diameter of Binary Tree](https://leetcode.com/problems/diameter-of-binary-tree/) | Easy | Height helper; best = max(left + right) at every node | O(n) / O(h) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Binary Tree Level Order Traversal](https://leetcode.com/problems/binary-tree-level-order-traversal/) | Medium | BFS; read queue size before each level | O(n) / O(w) |
+| <input type="checkbox" aria-label="Done" /> | [Binary Tree Right Side View](https://leetcode.com/problems/binary-tree-right-side-view/) | Medium | Level order, keep the last node of each level | O(n) / O(w) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Validate Binary Search Tree](https://leetcode.com/problems/validate-binary-search-tree/) | Medium | Pass a (low, high) window down, use long bounds | O(n) / O(h) |
+| <input type="checkbox" aria-label="Done" /> | [Kth Smallest Element in a BST](https://leetcode.com/problems/kth-smallest-element-in-a-bst/) | Medium | Iterative inorder, stop at the kth pop | O(h + k) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Lowest Common Ancestor of a Binary Tree](https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/) | Medium | Found on both sides means this node is the LCA | O(n) / O(h) |
+| <input type="checkbox" aria-label="Done" /> | [Serialize and Deserialize Binary Tree](https://leetcode.com/problems/serialize-and-deserialize-binary-tree/) | Hard | Preorder with null markers, rebuild from a token queue | O(n) / O(n) |
+
+## Heaps
+
+Pattern page: [Heaps & Priority Queues](../heaps/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Kth Largest Element in an Array](https://leetcode.com/problems/kth-largest-element-in-an-array/) | Medium | Min-heap of size k; root is the answer | O(n log k) / O(k) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Top K Frequent Elements](https://leetcode.com/problems/top-k-frequent-elements/) | Medium | Count, then size-k heap or bucket sort by frequency | O(n log k) or O(n) |
+| <input type="checkbox" aria-label="Done" /> | [K Closest Points to Origin](https://leetcode.com/problems/k-closest-points-to-origin/) | Medium | Max-heap of size k on squared distance | O(n log k) / O(k) |
+| <input type="checkbox" aria-label="Done" /> | [Merge k Sorted Lists](https://leetcode.com/problems/merge-k-sorted-lists/) | Hard | Heap of current heads; pop smallest, push its next | O(N log k) / O(k) |
+| <input type="checkbox" aria-label="Done" /> | [Find Median from Data Stream](https://leetcode.com/problems/find-median-from-data-stream/) | Hard | Max-heap for the low half, min-heap for the high half | O(log n) add, O(1) median |
+
+## Graphs
+
+Pattern page: [Graphs](../graphs/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Number of Islands](https://leetcode.com/problems/number-of-islands/) | Medium | Count each unvisited '1', then sink the whole island | O(m·n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Rotting Oranges](https://leetcode.com/problems/rotting-oranges/) | Medium | Multi-source BFS; one level = one minute | O(m·n) |
+| <input type="checkbox" aria-label="Done" /> | [Clone Graph](https://leetcode.com/problems/clone-graph/) | Medium | DFS/BFS with a Dictionary from original node to copy | O(V + E) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Course Schedule](https://leetcode.com/problems/course-schedule/) | Medium | Kahn's topological sort; cycle if not all nodes processed | O(V + E) |
+| <input type="checkbox" aria-label="Done" /> | [Network Delay Time](https://leetcode.com/problems/network-delay-time/) | Medium | Dijkstra with a min-heap, skip stale entries | O((V + E) log V) |
+| <input type="checkbox" aria-label="Done" /> | [Redundant Connection](https://leetcode.com/problems/redundant-connection/) | Medium | Union-find; the first edge joining already-connected nodes | O(E·α(V)) |
+
+## Dynamic programming
+
+Pattern page: [Dynamic Programming](../dynamic-programming/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Climbing Stairs](https://leetcode.com/problems/climbing-stairs/) | Easy | ways(n) = ways(n-1) + ways(n-2); two variables | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [House Robber](https://leetcode.com/problems/house-robber/) | Medium | max(skip this house, rob it + best two back) | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Coin Change](https://leetcode.com/problems/coin-change/) | Medium | dp[a] = min over coins of dp[a - coin] + 1 | O(amount·coins) |
+| <input type="checkbox" aria-label="Done" /> | [Unique Paths](https://leetcode.com/problems/unique-paths/) | Medium | dp[r][c] = from above + from left; one row is enough | O(m·n) / O(n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Longest Increasing Subsequence](https://leetcode.com/problems/longest-increasing-subsequence/) | Medium | dp[i] = LIS ending at i; or tails + binary search | O(n²) or O(n log n) |
+| <input type="checkbox" aria-label="Done" /> | [Word Break](https://leetcode.com/problems/word-break/) | Medium | dp[i] = some dp[j] is true and s[j..i] is a word | O(n²) with a HashSet |
+| <input type="checkbox" aria-label="Done" /> | [Partition Equal Subset Sum](https://leetcode.com/problems/partition-equal-subset-sum/) | Medium | 0/1 knapsack on sum / 2, iterate capacity backwards | O(n·sum) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Longest Common Subsequence](https://leetcode.com/problems/longest-common-subsequence/) | Medium | Match: diagonal + 1; else max(up, left) | O(m·n) |
+| <input type="checkbox" aria-label="Done" /> | [Edit Distance](https://leetcode.com/problems/edit-distance/) | Medium | Match: diagonal; else 1 + min(replace, delete, insert) | O(m·n) |
+
+## Greedy & intervals
+
+Pattern page: [Greedy & Intervals](../greedy-intervals/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Merge Intervals](https://leetcode.com/problems/merge-intervals/) | Medium | Sort by start; extend the last interval with max(end) | O(n log n) |
+| <input type="checkbox" aria-label="Done" /> | [Insert Interval](https://leetcode.com/problems/insert-interval/) | Medium | Copy before, absorb overlaps, copy after | O(n) |
+| <input type="checkbox" aria-label="Done" /> | [Non-overlapping Intervals](https://leetcode.com/problems/non-overlapping-intervals/) | Medium | Sort by end; keep the earliest-ending compatible interval | O(n log n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Meeting Rooms II](https://leetcode.com/problems/meeting-rooms-ii/) (premium) | Medium | Min-heap of end times, or sorted starts vs sorted ends | O(n log n) |
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Jump Game](https://leetcode.com/problems/jump-game/) | Medium | Track the farthest reachable index | O(n) / O(1) |
+
+## Bit manipulation
+
+Pattern page: [Bit Manipulation](../bit-manipulation/)
+
+| Done | Problem | Level | Key idea | Target |
+|---|---|---|---|---|
+| <input type="checkbox" aria-label="Done" /> | ⭐ [Single Number](https://leetcode.com/problems/single-number/) | Easy | XOR everything; pairs cancel | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | [Counting Bits](https://leetcode.com/problems/counting-bits/) | Easy | `bits[i] = bits[i >> 1] + (i & 1)` | O(n) |
+| <input type="checkbox" aria-label="Done" /> | [Missing Number](https://leetcode.com/problems/missing-number/) | Easy | XOR all indices and values | O(n) / O(1) |
+| <input type="checkbox" aria-label="Done" /> | [Power of Two](https://leetcode.com/problems/power-of-two/) | Easy | `n > 0 && (n & (n - 1)) == 0` | O(1) |
+
+## Interview Q&A
+
+<details>
+<summary>How many problems should I solve before interviewing?</summary>
+
+Quality beats count. Solving these ~75 properly (pattern understood, complexity stated, re-solved a week later) is worth more than rushing through 300. If you can solve a new Medium in a pattern you know within 30-40 minutes, move on to the next pattern.
+</details>
+
+<details>
+<summary>I am stuck on a problem. When should I read the solution?</summary>
+
+After about 25-40 minutes of genuine attempts. Read the key idea first, then try again. If you still need the full solution, write it yourself from memory afterwards, and add the problem to a "redo" list for next week.
+</details>
+
+<details>
+<summary>What should I say in the first two minutes of a coding interview?</summary>
+
+Restate the problem, ask about input size, duplicates, negatives, empty input and expected output format, then walk through a small example. State a brute-force approach and its complexity before optimising. Interviewers grade the communication as much as the final code.
+</details>
+
+<details>
+<summary>Should I practise in C# or TypeScript?</summary>
+
+Use the language you are strongest in, usually C# for a .NET role. Know the standard library well: `Dictionary`, `HashSet`, `Queue`, `Stack`, `PriorityQueue`, `Array.Sort` with a comparison, `List.BinarySearch`. For full-stack roles, be able to write the ⭐ problems in TypeScript too, remembering that JS has no built-in heap and that `.sort()` compares as strings by default.
+</details>
+
+## Pitfalls
+
+<Aside type="caution" title="Common practice mistakes">
+- Grinding problems in random order instead of by pattern.
+- Reading the solution after five minutes, then "recognising" it later and mistaking that for learning.
+- Never stating complexity, or only stating time and forgetting space.
+- Skipping edge cases: empty input, single element, duplicates, negatives, overflow.
+- Practising only in an IDE with autocomplete. Do some problems in a plain editor, since many interviews use one.
+</Aside>
+
+## Related
+
+- [Big-O & Complexity Analysis](../big-o/)
+- [C# Coding Round](../csharp-coding-round/)
+- [Angular Live Coding](../angular-live-coding/)

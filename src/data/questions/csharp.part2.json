@@ -1,0 +1,1298 @@
+{
+  "section": "csharp",
+  "version": 1,
+  "questions": [
+    {
+      "id": "csharp-threading-001",
+      "topic": "threading",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which statement best describes a `Task` in .NET?",
+      "options": [
+        "A lightweight OS thread created for each operation",
+        "A representation of an asynchronous operation and its eventual result, which may or may not use a thread",
+        "A wrapper that always runs its work on a dedicated background thread",
+        "A synchronization primitive used to protect critical sections"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A `Task` is a promise of a result. CPU-bound tasks run on thread-pool threads, but I/O-bound tasks use no thread at all while waiting. Tasks also carry exceptions, support cancellation and compose with `await` and `WhenAll`.",
+      "optionNotes": [
+        "Tasks do not create OS threads; they mostly reuse pool threads or none at all.",
+        null,
+        "Only `TaskCreationOptions.LongRunning` hints at a dedicated thread.",
+        "That describes `lock`, `SemaphoreSlim` and similar."
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-002",
+      "topic": "threading",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "On a multi-core machine, what does this code print?",
+      "code": "int counter = 0;\nParallel.For(0, 1_000_000, _ => counter++);\nConsole.WriteLine(counter);",
+      "codeLang": "csharp",
+      "options": [
+        "Exactly 1000000 every time",
+        "A number up to 1000000 that usually differs between runs",
+        "Always 0, because each thread gets its own copy of counter",
+        "It throws InvalidOperationException for concurrent access"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`counter++` is read, add, write. Two threads can read the same value and both write back value + 1, losing increments. The result is non-deterministic. Use `Interlocked.Increment(ref counter)` or per-thread local totals.",
+      "optionNotes": [
+        "Only true with Interlocked or a lock.",
+        null,
+        "The lambda captures the same variable for all iterations.",
+        "Plain fields have no concurrency checks; races are silent."
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-003",
+      "topic": "threading",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A critical section must `await` an HTTP call while holding exclusive access. Which primitive should protect it?",
+      "options": [
+        "`lock` on a private object",
+        "`Monitor.Enter` / `Monitor.Exit`",
+        "`SemaphoreSlim(1, 1)` with `await WaitAsync()`",
+        "`ReaderWriterLockSlim` in write mode"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`lock`, `Monitor` and `ReaderWriterLockSlim` are thread-affine: the thread that acquires must release, but the code after `await` may run on another thread. The compiler rejects `await` inside `lock` (CS1996). `SemaphoreSlim` has `WaitAsync` and no thread affinity; release it in `finally`.",
+      "optionNotes": [
+        "Compile error CS1996: cannot await in the body of a lock statement.",
+        "Same thread-affinity problem as `lock`.",
+        null,
+        "Also thread-affine; must not be held across an await."
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-004",
+      "topic": "threading",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var results = new ConcurrentBag<int>();\nvar threads = new List<Thread>();\nfor (int i = 0; i < 3; i++)\n    threads.Add(new Thread(() => results.Add(i)));\nthreads.ForEach(t => t.Start());\nthreads.ForEach(t => t.Join());\nConsole.WriteLine(string.Join(\",\", results.Order()));",
+      "codeLang": "csharp",
+      "options": [
+        "0,1,2",
+        "3,3,3",
+        "Some mix of 0, 1 and 2",
+        "It does not compile"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A `for` loop has one variable `i` shared by every closure. The threads start after the loop has finished, when `i` is 3, so each adds 3. A `foreach` loop creates a fresh variable per iteration (since C# 5); with `for`, copy it to a local inside the loop.",
+      "optionNotes": [
+        "Would be true with `var copy = i;` inside the loop, or with foreach.",
+        null,
+        "All threads start after the loop ends, so they all see the final value.",
+        "Capturing a loop variable is legal."
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-005",
+      "topic": "threading",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `ConcurrentDictionary<TKey, TValue>` are true? (Select all that apply)",
+      "options": [
+        "Each individual method call is atomic",
+        "`ContainsKey` followed by an indexer assignment is atomic as a pair",
+        "The value factory passed to `GetOrAdd` can run more than once for the same key",
+        "Enumerating it while another thread adds items throws `InvalidOperationException`"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Single operations are thread-safe, but sequences of calls are not, so check-then-act still races. `GetOrAdd` runs the factory outside its internal lock, so under contention several threads may run it and only one result is stored; wrap values in `Lazy<T>` if that matters. Enumeration is safe and does not throw, though it may or may not reflect concurrent changes.",
+      "optionNotes": [
+        null,
+        "Another thread can add the key between the two calls; use `GetOrAdd`/`TryAdd`.",
+        null,
+        "Unlike `Dictionary`, its enumerator tolerates concurrent modification."
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-006",
+      "topic": "threading",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A field is declared `private volatile int _count;` and several threads run `_count++`. Is that thread-safe?",
+      "options": [
+        "Yes, `volatile` makes every operation on the field atomic",
+        "Yes, but only on x64 processors",
+        "No, because `volatile` cannot be applied to `int`",
+        "No. `volatile` gives visibility and ordering, but `++` is still a non-atomic read-modify-write"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`volatile` ensures each read sees the latest write and prevents certain reorderings, but `_count++` is still read, add, write, so concurrent increments can be lost. Use `Interlocked.Increment(ref _count)` or a lock.",
+      "optionNotes": [
+        "Atomicity of compound operations is not part of volatile's guarantee.",
+        "The race exists on every architecture.",
+        "`volatile int` is valid.",
+        null
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-007",
+      "topic": "threading",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You must call a partner API for 1,000 items with at most 10 requests in flight. Which approach fits best?",
+      "options": [
+        "`Parallel.ForEach(items, async item => await CallAsync(item))`",
+        "`await Task.WhenAll(items.Select(CallAsync))` with no limit",
+        "`Parallel.ForEachAsync(items, new ParallelOptions { MaxDegreeOfParallelism = 10 }, ...)`",
+        "Wrap each call in `lock` so they run one at a time"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`Parallel.ForEachAsync` is built for async I/O work with a concurrency cap. A `SemaphoreSlim(10)` around each call with `Task.WhenAll` also works.",
+      "optionNotes": [
+        "`Parallel.ForEach` takes an `Action`, so the lambda becomes `async void` and the loop returns before the calls complete.",
+        "Starts all 1,000 calls at once: risks socket exhaustion and rate limits.",
+        null,
+        "You can't await inside `lock`, and one at a time is far below the allowed 10."
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-008",
+      "topic": "threading",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An ASP.NET Core API calls `httpClient.GetStringAsync(url).Result` in a controller. Under a traffic burst, requests time out while CPU stays low. What is the most likely cause?",
+      "options": [
+        "A SynchronizationContext deadlock, as in classic ASP.NET",
+        "Thread-pool starvation caused by blocking on async calls",
+        "HttpClient is not thread-safe, so concurrent calls serialize",
+        "Long garbage collection pauses stopping all threads"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each request blocks a pool thread on `.Result`. The I/O completions need pool threads to run their continuations, but the pool is full of blocked threads and injects new ones slowly, so latency spikes while CPU is idle. The fix is async all the way: `await` the call.",
+      "optionNotes": [
+        "ASP.NET Core has no SynchronizationContext, so that classic deadlock does not occur.",
+        null,
+        "`HttpClient` is safe for concurrent requests.",
+        "GC pauses would show CPU activity and are short."
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-threading-009",
+      "topic": "threading",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the cheapest correct way to increment a shared `int` request counter from many threads?",
+      "options": [
+        "`lock (this) { _count++; }`",
+        "Mark the field `volatile` and use `_count++`",
+        "Use a `Mutex` around the increment",
+        "`Interlocked.Increment(ref _count)`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`Interlocked.Increment` maps to a single atomic CPU instruction and never blocks. A lock is also correct but heavier, and `lock (this)` exposes the lock object to outside code.",
+      "optionNotes": [
+        "Correct but heavier, and locking on `this` is discouraged.",
+        "volatile does not make `++` atomic.",
+        "A kernel mutex is far slower and only needed across processes.",
+        null
+      ],
+      "readMore": "/csharp/threading/"
+    },
+    {
+      "id": "csharp-exceptions-001",
+      "topic": "exceptions",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Inside a `catch (Exception ex)` block you want the exception to keep propagating with its original stack trace. What do you write?",
+      "options": [
+        "`throw ex;`",
+        "`throw new Exception(ex.Message);`",
+        "`throw;`",
+        "`return ex;`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`throw;` rethrows the current exception and preserves the original stack trace. `throw ex;` resets the trace to the current line (analyzer CA2200). To add context, wrap: `throw new XException(\"context\", ex);`.",
+      "optionNotes": [
+        "Resets the stack trace to this line.",
+        "Loses the original type, stack trace and inner exception.",
+        null,
+        "Does not rethrow anything."
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-exceptions-002",
+      "topic": "exceptions",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `Console.WriteLine(F());` print?",
+      "code": "static int F()\n{\n    int x = 1;\n    try { return x; }\n    finally { x = 2; }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "1",
+        "2",
+        "0",
+        "It does not compile"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The return value is evaluated and stored before `finally` runs. Reassigning the local afterwards does not change it. If `F` returned a mutable object and `finally` mutated it (e.g. added to a list), the caller would see the mutation.",
+      "optionNotes": [
+        null,
+        "finally runs after the return value has already been captured.",
+        "x is never 0.",
+        "Assigning in finally is legal; only `return` inside finally is not."
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-exceptions-003",
+      "topic": "exceptions",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does calling `Run()` print?",
+      "code": "static void Run()\n{\n    try { Console.Write(\"A \"); throw new Exception(); }\n    catch { Console.Write(\"B \"); return; }\n    finally { Console.WriteLine(\"C\"); }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "A B",
+        "A C",
+        "A B C",
+        "A C B"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The exception is caught, the catch block prints B and returns, and `finally` still runs before the method actually exits, printing C.",
+      "optionNotes": [
+        "`return` in catch does not skip finally.",
+        "The catch block runs because it matches all exceptions.",
+        null,
+        "finally runs after the catch block, not before it."
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-exceptions-004",
+      "topic": "exceptions",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In what order are the lines printed?",
+      "code": "try { Inner(); }\ncatch (Exception) when (Say(\"filter\")) { Say(\"catch\"); }\n\nstatic void Inner()\n{\n    try { throw new Exception(); }\n    finally { Say(\"inner finally\"); }\n}\nstatic bool Say(string s) { Console.WriteLine(s); return true; }",
+      "codeLang": "csharp",
+      "options": [
+        "inner finally, filter, catch",
+        "filter, inner finally, catch",
+        "filter, catch, inner finally",
+        "inner finally, catch (the filter is skipped)"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Exception handling is two-pass. The first pass searches for a handler and evaluates `when` filters before anything is unwound. The second pass unwinds, running inner `finally` blocks, and then executes the chosen catch. That is why filters preserve the full stack for debugging and logging.",
+      "optionNotes": [
+        "That would be true for a catch-and-rethrow, not a filter.",
+        null,
+        "Inner finally blocks run before the outer catch body.",
+        "Filters always run when the catch type matches."
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-exceptions-005",
+      "topic": "exceptions",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "During checkout, \"insufficient stock\" happens hundreds of times a day and the UI must show a friendly message. How should the service report it?",
+      "options": [
+        "Throw `Exception` and let the global handler return 500",
+        "Throw `StackOverflowException` to stop processing",
+        "Return `null` and let the caller guess why",
+        "Return a Result (or Try-pattern) value describing the business failure"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Expected business outcomes are not exceptional. A Result type makes the failure explicit in the signature, is cheap, and keeps logs free of noise. Exceptions remain for unexpected failures such as a database outage or a bug.",
+      "optionNotes": [
+        "Exceptions for expected outcomes are slow, noisy and turn a business case into a 500.",
+        "Cannot be caught; it terminates the process.",
+        "Loses the reason and invites NullReferenceExceptions.",
+        null
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-exceptions-006",
+      "topic": "exceptions",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A `try` block throws `InvalidOperationException`, and its `finally` block then throws `ArgumentException`. What does an outer `catch (Exception e)` receive?",
+      "options": [
+        "The `InvalidOperationException`",
+        "An `AggregateException` containing both",
+        "The `ArgumentException`; the original exception is lost",
+        "Nothing: the process terminates"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "An exception thrown from `finally` replaces the one currently propagating, which is discarded. This is why cleanup code in `finally` and `Dispose` should never throw.",
+      "optionNotes": [
+        "It is replaced by the exception from finally.",
+        "Only Task-based APIs aggregate exceptions.",
+        null,
+        "It is a normal managed exception and can be caught."
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-exceptions-007",
+      "topic": "exceptions",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about exceptions in async code are true? (Select all that apply)",
+      "options": [
+        "`.Wait()` on a faulted task throws `AggregateException`",
+        "`await Task.WhenAll(...)` throws an `AggregateException` containing every failure",
+        "`await` rethrows the first inner exception with its original stack trace",
+        "An exception thrown in an `async void` method can be caught by the caller's try/catch"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Blocking APIs wrap failures in `AggregateException`, while `await` unwraps and rethrows the first one (using ExceptionDispatchInfo to keep the stack). After awaiting `WhenAll`, read `whenAllTask.Exception.InnerExceptions` to see all failures. `async void` exceptions go to the SynchronizationContext or thread pool and typically crash the process.",
+      "optionNotes": [
+        null,
+        "`await` throws only the first exception; the rest are on the task's `Exception` property.",
+        null,
+        "The caller has no Task to observe; the exception escapes."
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-exceptions-008",
+      "topic": "exceptions",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens with this code?",
+      "code": "try { Process(); }\ncatch (Exception ex) { Log(ex); }\ncatch (ArgumentException ex) { Warn(ex); }",
+      "codeLang": "csharp",
+      "options": [
+        "ArgumentExceptions go to `Warn`, everything else to `Log`",
+        "Both handlers run for an ArgumentException",
+        "It compiles, but the second catch is silently never used",
+        "Compile error: a previous catch clause already catches all exceptions of this type"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Catch clauses are checked top to bottom, so a more general type above a more specific one makes the specific clause unreachable. C# reports this as error CS0160. Order catches from most specific to most general.",
+      "optionNotes": [
+        "Only if the order were reversed.",
+        "At most one catch clause runs per try.",
+        "The compiler treats this as an error, not a warning.",
+        null
+      ],
+      "readMore": "/csharp/exceptions/"
+    },
+    {
+      "id": "csharp-strings-span-001",
+      "topic": "strings-span",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var s = \"Hello\";\ns.ToUpper();\nConsole.WriteLine(s);",
+      "codeLang": "csharp",
+      "options": [
+        "HELLO, because s is updated in place",
+        "It does not compile: the result is unused",
+        "Hello, because the new string is discarded",
+        "An empty line"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Strings are immutable. `ToUpper()` returns a new string, which is discarded here, so `s` still refers to \"Hello\". Write `s = s.ToUpper();` to keep the result.",
+      "optionNotes": [
+        "Strings are immutable; only `s = s.ToUpper()` would change s.",
+        "Ignoring a return value is legal (analyzers may warn).",
+        null,
+        "s is never changed."
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-002",
+      "topic": "strings-span",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "string a = \"hello\";\nstring b = \"hel\" + \"lo\";\nstring c = \"hel\";\nstring d = c + \"lo\";\nConsole.WriteLine($\"{ReferenceEquals(a, b)} {ReferenceEquals(a, d)} {a == d}\");",
+      "codeLang": "csharp",
+      "options": [
+        "True True True",
+        "True False True",
+        "False False True",
+        "False False False"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`\"hel\" + \"lo\"` is a constant expression folded at compile time into the interned literal \"hello\", so `a` and `b` are the same object. `d` is built at runtime, so it is a different object, but `==` on strings compares contents.",
+      "optionNotes": [
+        "Runtime concatenation creates a new, non-interned string.",
+        null,
+        "Constant folding makes b the same interned literal as a.",
+        "`==` is overloaded for strings to compare characters."
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-003",
+      "topic": "strings-span",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A CLI checks `if (cmd.ToUpper() == \"FILE\")`. A user in Turkey reports it never matches `file`. What is the best fix?",
+      "options": [
+        "`string.Equals(cmd, \"file\", StringComparison.OrdinalIgnoreCase)`",
+        "`cmd.ToLower() == \"file\"`",
+        "`string.Compare(cmd, \"FILE\", ignoreCase: true) == 0` under the current culture",
+        "`cmd.ToUpper(CultureInfo.CurrentCulture) == \"FILE\"`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Under tr-TR, `\"file\".ToUpper()` returns \"FİLE\" with a dotted capital İ. Identifiers and commands should use ordinal comparison, which is culture-independent, faster and allocation-free.",
+      "optionNotes": [
+        null,
+        "Still culture-sensitive (Turkish has a dotless ı) and allocates.",
+        "Current culture is exactly what causes the bug.",
+        "Same as the original code."
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-004",
+      "topic": "strings-span",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "When is `StringBuilder` clearly the right choice?",
+      "options": [
+        "Joining exactly two strings once",
+        "Formatting a single message with three values",
+        "Comparing two strings case-insensitively",
+        "Appending text inside a loop with thousands of iterations"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`s += x` in a loop copies the whole accumulated string each time (O(n²)). `StringBuilder` appends into internal chunk buffers and creates the final string once. For a few fixed pieces, `+` or interpolation is as fast or faster.",
+      "optionNotes": [
+        "`+` compiles to a single `string.Concat`.",
+        "Interpolation uses a pooled handler; no builder needed.",
+        "Unrelated to building strings.",
+        null
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-005",
+      "topic": "strings-span",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these are NOT allowed with `Span<T>`? (Select all that apply)",
+      "options": [
+        "Storing it in a field of a class",
+        "Slicing it without copying the data",
+        "Keeping a span variable alive across an `await`",
+        "Pointing it at a `stackalloc` buffer"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "`Span<T>` is a `ref struct` that may point to stack memory, so it can never end up on the heap: no class fields, boxing, lambda capture, or use across `await`/`yield`. Slicing is free and wrapping `stackalloc` is a primary use case. Use `Memory<T>` when you need to store the buffer or cross an await.",
+      "optionNotes": [
+        null,
+        "Free slicing is the main point of Span.",
+        null,
+        "`Span<byte> buf = stackalloc byte[256];` is the idiomatic pattern."
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-006",
+      "topic": "strings-span",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "`var buffer = ArrayPool<byte>.Shared.Rent(1000);` Which statement is correct?",
+      "options": [
+        "`buffer.Length` is always exactly 1000",
+        "The array is freed automatically when `buffer` goes out of scope",
+        "The array is zeroed on every rent, so it is safe to read before writing",
+        "`buffer.Length` may be greater than 1000, so track the length you actually use"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The pool hands out arrays from size buckets, so you may get a bigger array, and it may contain data from a previous user. You must `Return` it (usually in `finally`), never touch it afterwards, and pass `clearArray: true` when it held sensitive data.",
+      "optionNotes": [
+        "Rent returns at least the requested size, often more.",
+        "Nothing is returned to the pool unless you call Return.",
+        "Rented arrays are not cleared by default.",
+        null
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-007",
+      "topic": "strings-span",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What do these two lines print?",
+      "code": "Console.WriteLine(\"Total: \" + 1 + 2);\nConsole.WriteLine(1 + 2 + \" total\");",
+      "codeLang": "csharp",
+      "options": [
+        "Total: 3 and 3 total",
+        "Total: 12 and 12 total",
+        "Total: 12 and 3 total",
+        "Total: 3 and 12 total"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`+` is left-associative. In the first line, \"Total: \" + 1 is already a string, so 2 is appended as text. In the second, 1 + 2 is integer addition (3) before the string is involved.",
+      "optionNotes": [
+        "The first expression becomes a string before 2 is added.",
+        "The second line adds the integers first.",
+        null,
+        "Evaluation is left to right in both lines."
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-008",
+      "topic": "strings-span",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In C# 10 and later, how does the compiler typically build `string s = $\"Id={id}\";` where `id` is an `int`?",
+      "options": [
+        "Calls `string.Format(\"Id={0}\", id)`, boxing `id`",
+        "Uses `DefaultInterpolatedStringHandler`, appending `id` into a pooled buffer without boxing",
+        "Uses reflection to find a ToString overload at runtime",
+        "Interns the result in the string intern pool"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Interpolated string handlers replaced the `string.Format` lowering. The compiler emits `AppendLiteral` and `AppendFormatted<T>` calls on a handler that writes into pooled memory, so value types are formatted without boxing. APIs can define their own handlers (e.g. `StringBuilder.Append`).",
+      "optionNotes": [
+        "That was the pre-C# 10 behaviour.",
+        null,
+        "No reflection is involved.",
+        "Runtime-built strings are never interned automatically."
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-strings-span-009",
+      "topic": "strings-span",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What are the signs of these two comparison results?",
+      "code": "int ordinal = string.Compare(\"a\", \"B\", StringComparison.Ordinal);\nint culture = string.Compare(\"a\", \"B\", StringComparison.InvariantCulture);",
+      "codeLang": "csharp",
+      "options": [
+        "ordinal < 0, culture < 0",
+        "ordinal > 0, culture > 0",
+        "ordinal < 0, culture > 0",
+        "ordinal > 0, culture < 0"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Ordinal compares UTF-16 code units: 'a' is 97 and 'B' is 66, so \"a\" sorts after \"B\". Culture-aware comparison uses linguistic rules where a comes before b regardless of case. Use ordinal for identifiers, culture for human-facing sorting.",
+      "optionNotes": [
+        "Ordinal compares raw code units, and 97 > 66.",
+        "Linguistic order puts a before B.",
+        "Both signs are reversed.",
+        null
+      ],
+      "readMore": "/csharp/strings-span/"
+    },
+    {
+      "id": "csharp-modern-csharp-001",
+      "topic": "modern-csharp",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `var b = a with { Amount = 20m };` do for a record `a`?",
+      "options": [
+        "Mutates `a` in place",
+        "Creates a deep copy of `a`, including nested objects",
+        "Creates a shallow copy of `a` with `Amount` changed",
+        "Compares `a` with a new record whose Amount is 20"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`with` is non-destructive mutation: it calls the record's generated copy constructor and then applies the `init` assignments. The copy is shallow, so reference-type members such as lists are shared.",
+      "optionNotes": [
+        "The original record is unchanged.",
+        "Only the top-level fields are copied.",
+        null,
+        "`with` creates a copy; it is not a comparison."
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-002",
+      "topic": "modern-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "public record Money(decimal Amount, string Currency);\n\nvar a = new Money(10m, \"EUR\");\nvar b = new Money(10m, \"EUR\");\nConsole.WriteLine($\"{a == b} {ReferenceEquals(a, b)}\");",
+      "codeLang": "csharp",
+      "options": [
+        "True False",
+        "False False",
+        "True True",
+        "False True"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Records generate value-based equality, so `==` compares Amount and Currency. They are still two separate objects on the heap, so `ReferenceEquals` is false.",
+      "optionNotes": [
+        null,
+        "That is the result for a plain class.",
+        "Two `new` expressions always create two objects.",
+        "Same reference would imply equal values."
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-003",
+      "topic": "modern-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "public record Tagged(string Name, List<string> Tags);\n\nvar t1 = new Tagged(\"a\", [\"x\"]);\nvar t2 = new Tagged(\"a\", [\"x\"]);\nConsole.WriteLine(t1 == t2);",
+      "codeLang": "csharp",
+      "options": [
+        "False",
+        "True",
+        "It does not compile",
+        "It throws at runtime"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Record equality compares each member with that member's own `Equals`. `List<string>` uses reference equality, and the two lists are different objects, so the records are not equal.",
+      "optionNotes": [
+        null,
+        "Lists are not compared element by element.",
+        "Collection expressions can target `List<string>`.",
+        "Equality comparison does not throw."
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-004",
+      "topic": "modern-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "public class Counter(int start)\n{\n    public void Inc() => start++;\n    public int Value => start;\n}\n\nvar c = new Counter(5);\nc.Inc(); c.Inc();\nConsole.WriteLine(c.Value);",
+      "codeLang": "csharp",
+      "options": [
+        "Compile error: primary constructor parameters are readonly",
+        "5",
+        "0",
+        "7"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "On a class, a primary constructor parameter used by members is captured into a hidden mutable field. Both methods share it, so two increments give 7. Primary-constructor parameters are not readonly and do not become properties.",
+      "optionNotes": [
+        "They are mutable; assign to a readonly field if you need immutability.",
+        "The captured value is shared state, not a copy per member.",
+        "The parameter is initialised with 5.",
+        null
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-005",
+      "topic": "modern-csharp",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which C# 14 feature lets you add an `IsBlank` property to `string` without modifying the type?",
+      "options": [
+        "Partial properties",
+        "Extension members declared in an `extension(string s)` block",
+        "Default interface methods",
+        "The `field` keyword"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "C# 14 extension members extend the old extension-method model to properties and static members, declared inside an `extension` block in a static class. Usage looks like a real member: `name.IsBlank`.",
+      "optionNotes": [
+        "Partial properties split a declaration across files of the same type.",
+        null,
+        "Those require the type to implement your interface.",
+        "`field` accesses an auto-property's backing field."
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-006",
+      "topic": "modern-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `Classify(new Order(1500, [new Line(\"a\", 1)], \"Paid\"))` return?",
+      "code": "static string Classify(Order o) => o switch\n{\n    { Lines.Count: 0 }                => \"empty\",\n    { Total: > 1000, Status: \"Paid\" } => \"big paid\",\n    { Status: \"Paid\" or \"Shipped\" }   => \"in progress\",\n    _                                 => \"other\"\n};",
+      "codeLang": "csharp",
+      "options": [
+        "big paid",
+        "empty",
+        "in progress",
+        "other"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Arms are tested top to bottom. The order has one line, so the first arm fails; Total 1500 > 1000 and Status \"Paid\" match the second arm, so the third is never reached.",
+      "optionNotes": [
+        null,
+        "Lines.Count is 1.",
+        "It would match, but the earlier arm wins.",
+        "A more specific arm matches first."
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-007",
+      "topic": "modern-csharp",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What happens with this switch expression?",
+      "code": "static string Describe(object o) => o switch\n{\n    object => \"any\",\n    string => \"text\"\n};",
+      "codeLang": "csharp",
+      "options": [
+        "Returns \"text\" for strings and \"any\" otherwise",
+        "Returns \"any\" for everything, with a warning",
+        "Compile error: the `string` arm is unreachable",
+        "Throws SwitchExpressionException for strings"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The `object` arm matches every non-null value, so the `string` arm can never be reached. For switch expressions the compiler reports error CS8510. Order arms from most specific to most general.",
+      "optionNotes": [
+        "Arms are evaluated in order; there is no best-match selection.",
+        "It is an error, not a warning.",
+        null,
+        "The code never compiles, so nothing runs."
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-008",
+      "topic": "modern-csharp",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about C# 15 union types are true? (Select all that apply)",
+      "options": [
+        "A union value can hold several of its case types at the same time",
+        "A switch that handles every case type is exhaustive without a discard arm",
+        "They are resolved at runtime through reflection, like `dynamic`",
+        "Adding a new case type surfaces non-exhaustive switches as compiler warnings"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "A union says a value is exactly one of a fixed set of case types, and the compiler knows that set. Exhaustiveness is checked at compile time, so adding a case flags every switch that doesn't handle it, instead of failing at runtime through a `_ => throw` arm.",
+      "optionNotes": [
+        "A union value is exactly one case at a time.",
+        null,
+        "Checking happens at compile time; no reflection is involved.",
+        null
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-modern-csharp-009",
+      "topic": "modern-csharp",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "`Email` is declared `public required string Email { get; init; }`. What happens with `new CreateCustomer { Name = \"Ann\" }`?",
+      "options": [
+        "Email is set to an empty string",
+        "Email is null and a warning is shown at runtime",
+        "An exception is thrown when the object is constructed",
+        "Compile error: the required member Email must be set"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`required` (C# 11) makes the compiler insist that callers set the member in the object initializer (error CS9035), unless the constructor used is marked `[SetsRequiredMembers]`.",
+      "optionNotes": [
+        "No default is supplied.",
+        "The check is at compile time.",
+        "The check is at compile time, not runtime.",
+        null
+      ],
+      "readMore": "/csharp/modern-csharp/"
+    },
+    {
+      "id": "csharp-reflection-attributes-001",
+      "topic": "reflection-attributes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "When does the constructor of a custom attribute applied as `[Sensitive]` actually run?",
+      "options": [
+        "At compile time, when the compiler sees the attribute",
+        "When the containing type is first loaded",
+        "When code retrieves it via reflection, e.g. `GetCustomAttribute`",
+        "Every time the decorated property is read"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The compiler only stores the constructor arguments in metadata. An attribute instance is created when someone asks for it via reflection, and each call creates a new instance. That is why attributes do nothing unless code reads them.",
+      "optionNotes": [
+        "The compiler serialises the arguments; it does not execute code.",
+        "Type loading does not instantiate attributes.",
+        null,
+        "Attributes do not intercept member access."
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-reflection-attributes-002",
+      "topic": "reflection-attributes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`Premium` derives from `Customer`. What does this print?",
+      "code": "object o = new Premium();\nConsole.WriteLine($\"{o is Customer} {o.GetType() == typeof(Customer)}\");",
+      "codeLang": "csharp",
+      "options": [
+        "True False",
+        "True True",
+        "False False",
+        "False True"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`is` checks type compatibility, so a subclass instance is a Customer. `GetType()` returns the exact runtime type (`Premium`), which is not equal to `typeof(Customer)`.",
+      "optionNotes": [
+        null,
+        "GetType returns the most derived type.",
+        "`is` accepts derived types.",
+        "Both parts are wrong."
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-reflection-attributes-003",
+      "topic": "reflection-attributes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A mapper calls `typeof(T).GetProperty(name).GetValue(obj)` for every property of every row and shows up hot in the profiler. What is the best first fix?",
+      "options": [
+        "Wrap each GetValue call in `Task.Run`",
+        "Switch the mapper to use `dynamic`",
+        "Call `GC.Collect()` after each batch",
+        "Cache the lookups and use compiled getter delegates"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "String-based lookups and `GetValue` (type checks, boxing) are the expensive parts. Cache `PropertyInfo` per type and convert getters into delegates (`CreateDelegate` or compiled expressions), which run close to direct-call speed. A source-generated mapper removes reflection entirely.",
+      "optionNotes": [
+        "Moves the cost to another thread without reducing it.",
+        "`dynamic` adds its own binder overhead.",
+        "Forcing GC makes things slower.",
+        null
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-reflection-attributes-004",
+      "topic": "reflection-attributes",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is a C# source generator?",
+      "options": [
+        "A compiler component that inspects your code during build and adds new source files",
+        "A runtime library that emits IL with Reflection.Emit",
+        "A Visual Studio template for scaffolding classes",
+        "A tool that rewrites existing method bodies after compilation"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Source generators are Roslyn components that run during compilation, read syntax and semantic information (often attributes) and add new C# files. They can't modify existing code, which is why generated members are declared `partial`.",
+      "optionNotes": [
+        null,
+        "That is runtime code generation, which Native AOT doesn't support.",
+        "Templates run once at design time and aren't part of the build.",
+        "Generators only add code; they never rewrite yours."
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-reflection-attributes-005",
+      "topic": "reflection-attributes",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Code that does `Type.GetType(settings.HandlerName)!.GetProperties()` works locally but returns missing types or no properties after publishing with trimming (Native AOT). What is going on?",
+      "options": [
+        "Native AOT does not support `Type` objects at all",
+        "The trimmer can't see string-based reflection, so it removed types or members it thought were unused",
+        "Properties are only available after the JIT compiles the class",
+        "Release builds disable reflection for security"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Trimming keeps only what static analysis proves is used. A type name read from configuration is invisible to it, so the build warns (IL2057 and similar) and the members may be removed. Fix with `[DynamicallyAccessedMembers]` annotations, explicit roots, or a source-generated alternative.",
+      "optionNotes": [
+        "`typeof` and much of reflection still work.",
+        null,
+        "Metadata doesn't depend on JIT, and AOT has no JIT.",
+        "There is no such switch."
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-reflection-attributes-006",
+      "topic": "reflection-attributes",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are advantages of a source generator over runtime reflection? (Select all that apply)",
+      "options": [
+        "It can rewrite the bodies of existing methods",
+        "No scanning or metadata warm-up at application startup",
+        "It can discover types in plugin assemblies loaded at runtime",
+        "The output is compatible with trimming and Native AOT"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "Generators move work to build time, producing ordinary code: no startup scanning, compile-time diagnostics, and nothing hidden from the trimmer. They can only add code and only see types in the current compilation, so runtime plugin discovery still needs reflection.",
+      "optionNotes": [
+        "Generators can only add new source.",
+        null,
+        "Runtime-loaded assemblies don't exist at build time.",
+        null
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-reflection-attributes-007",
+      "topic": "reflection-attributes",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var prop = typeof(Customer).GetProperty(\"CardNumber\")!;\nvar a1 = prop.GetCustomAttribute<SensitiveAttribute>();\nvar a2 = prop.GetCustomAttribute<SensitiveAttribute>();\nConsole.WriteLine(ReferenceEquals(a1, a2));",
+      "codeLang": "csharp",
+      "options": [
+        "True, attributes are cached singletons per member",
+        "False, each call constructs a new attribute instance",
+        "True, attributes are created once when the type loads",
+        "It does not compile: attributes cannot be compared"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Attribute data lives in metadata, and every `GetCustomAttribute(s)` call instantiates fresh objects from it. Mutating an attribute instance therefore never affects others, and repeated lookups in hot paths allocate, so cache what you need.",
+      "optionNotes": [
+        "There is no per-member attribute instance cache.",
+        null,
+        "Type loading doesn't create attribute objects.",
+        "Attributes are ordinary objects; ReferenceEquals works."
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-reflection-attributes-008",
+      "topic": "reflection-attributes",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `[UnsafeAccessor]` (.NET 8+) give you?",
+      "options": [
+        "Permission to use `unsafe` pointer code without the compiler flag",
+        "A way to mark a method as callable only from reflection",
+        "Fast access to a private field or method through an `extern` method bound by the runtime, without reflection",
+        "Automatic thread-safety for a field"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "You declare a `static extern` method with `[UnsafeAccessor(UnsafeAccessorKind.Field, Name = \"_x\")]` and the runtime binds it directly to the private member. It is as fast as normal code and works with trimming and Native AOT, unlike `FieldInfo.GetValue`.",
+      "optionNotes": [
+        "Unrelated to pointer code or AllowUnsafeBlocks.",
+        "It does the opposite: avoids reflection.",
+        null,
+        "It has nothing to do with synchronization."
+      ],
+      "readMore": "/csharp/reflection-attributes/"
+    },
+    {
+      "id": "csharp-serialization-001",
+      "topic": "serialization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "With no options, how does `JsonSerializer.Serialize(new { FirstName = \"Ann\" })` name the property?",
+      "options": [
+        "firstName (camelCase)",
+        "FirstName (as declared)",
+        "first_name (snake case)",
+        "first-name (kebab case)"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Plain `JsonSerializer` keeps the declared name. ASP.NET Core and `HttpClient` JSON helpers use the web defaults, which apply a camelCase naming policy, so the same object becomes `firstName` in an API response.",
+      "optionNotes": [
+        "Only with web defaults or `JsonNamingPolicy.CamelCase`.",
+        null,
+        "Requires `JsonNamingPolicy.SnakeCaseLower`.",
+        "Requires `JsonNamingPolicy.KebabCaseLower`."
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-002",
+      "topic": "serialization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`ProductDto` has `public string? Name { get; set; }`. What is `p.Name`?",
+      "code": "var p = JsonSerializer.Deserialize<ProductDto>(\"{\\\"id\\\":1,\\\"name\\\":\\\"Pen\\\"}\");",
+      "codeLang": "csharp",
+      "options": [
+        "\"Pen\"",
+        "It throws JsonException for unknown properties",
+        "An empty string",
+        "null"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Default `JsonSerializer` options match property names case-sensitively, so `name` does not bind to `Name` and is silently ignored. Pass `JsonSerializerOptions.Web` (or set `PropertyNameCaseInsensitive = true`).",
+      "optionNotes": [
+        "Only with case-insensitive matching (web defaults).",
+        "Unmapped properties are ignored unless `UnmappedMemberHandling.Disallow` is set.",
+        "Nothing assigns a value, so it stays at its default.",
+        null
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-003",
+      "topic": "serialization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API returns `\"status\": 1` but the Angular client expects `\"status\": \"Active\"`. What is the standard fix in System.Text.Json?",
+      "options": [
+        "Register `JsonStringEnumConverter` in the JSON options",
+        "Change the enum to a `string` constant class",
+        "Override `ToString()` on the enum",
+        "Set `PropertyNamingPolicy = JsonNamingPolicy.CamelCase`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "STJ writes enums as numbers by default. `JsonStringEnumConverter` (globally, or `JsonStringEnumConverter<TEnum>` per type for AOT) writes and reads names. With a source-generated context you can set `UseStringEnumConverter = true`.",
+      "optionNotes": [
+        null,
+        "Works but throws away type safety; unnecessary.",
+        "Enums cannot override ToString, and STJ wouldn't use it.",
+        "Naming policy affects property names, not enum values."
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-004",
+      "topic": "serialization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does analyzer CA1869 warn about `JsonSerializer.Serialize(obj, new JsonSerializerOptions { WriteIndented = true })` inside a method?",
+      "options": [
+        "WriteIndented is deprecated in .NET 10",
+        "Options must be registered through DI",
+        "Metadata is cached per options instance and rebuilt each call",
+        "A new options instance is not thread-safe"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The first serialization of a type with a given options instance builds and caches a `JsonTypeInfo`. Creating options per call discards that cache and is dramatically slower. Store options in a `static readonly` field and reuse them.",
+      "optionNotes": [
+        "WriteIndented is fully supported.",
+        "Options can live anywhere; reuse is what matters.",
+        null,
+        "Options are safe to share once configured (they become immutable)."
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-005",
+      "topic": "serialization",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "`Shape` is marked `[JsonPolymorphic]` with `[JsonDerivedType(typeof(Circle), \"circle\")]`. What does this print?",
+      "code": "Console.WriteLine(JsonSerializer.Serialize(new Circle(1)));",
+      "codeLang": "csharp",
+      "options": [
+        "{\"$type\":\"circle\",\"Radius\":1}",
+        "{\"Radius\":1}",
+        "{}",
+        "It throws NotSupportedException"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The generic argument is inferred as `Circle`, and polymorphism (with the discriminator) only applies when serializing through the polymorphic base type, e.g. `Serialize<Shape>(circle)` or a `Shape[]`. Serializing the concrete type writes just its properties.",
+      "optionNotes": [
+        "That is the output for `Serialize<Shape>(new Circle(1))`.",
+        null,
+        "Circle's own properties are always written.",
+        "Serializing a concrete derived type is fine."
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-006",
+      "topic": "serialization",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A partner sends `{\"Side\":3,\"$type\":\"square\"}` and you call `JsonSerializer.Deserialize<Shape>(json)` with default options on .NET 10. What happens?",
+      "options": [
+        "It throws, because the discriminator is not the first property",
+        "It returns `Square { Side = 3 }`",
+        "It returns a base `Shape` with no data",
+        "It returns null"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "By default STJ requires metadata properties such as `$type` to come first so it can pick the type without buffering. Here it throws (NotSupportedException for an abstract base). Set `AllowOutOfOrderMetadataProperties = true` (.NET 9+) to accept discriminators anywhere.",
+      "optionNotes": [
+        null,
+        "Only with AllowOutOfOrderMetadataProperties enabled.",
+        "An abstract base type can't be instantiated.",
+        "Deserialize returns null only for a JSON null literal."
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-007",
+      "topic": "serialization",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What do you need for System.Text.Json to work in a Native AOT-published API?",
+      "options": [
+        "Switch to Newtonsoft.Json",
+        "Enable `ReferenceHandler.Preserve`",
+        "A source-generated `JsonSerializerContext` listing the serialized types",
+        "Mark DTOs with `[Serializable]`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Native AOT can't rely on runtime reflection and code generation, so STJ needs compile-time metadata from `[JsonSerializable]` types on a partial `JsonSerializerContext`, registered in the resolver chain.",
+      "optionNotes": [
+        "Newtonsoft is reflection-based and not AOT-friendly.",
+        "Reference handling is unrelated to AOT.",
+        null,
+        "`[Serializable]` is for the obsolete BinaryFormatter."
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-008",
+      "topic": "serialization",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "With plain `JsonSerializer` default options, which statements are true? (Select all that apply)",
+      "options": [
+        "Trailing commas in objects are accepted",
+        "Public fields are ignored unless opted in",
+        "Serializing an object graph with a reference cycle throws a `JsonException`",
+        "A quoted number such as `\"42\"` binds to an `int` property"
+      ],
+      "answer": [
+        1,
+        2
+      ],
+      "explanation": "STJ is strict by default: no trailing commas or comments, no numbers in quotes, fields excluded (`IncludeFields` or `[JsonInclude]`), and cycles fail with \"A possible object cycle was detected\" unless you set a `ReferenceHandler`.",
+      "optionNotes": [
+        "Requires `AllowTrailingCommas = true`.",
+        null,
+        null,
+        "Requires `NumberHandling.AllowReadingFromString` (on in web defaults)."
+      ],
+      "readMore": "/csharp/serialization/"
+    },
+    {
+      "id": "csharp-serialization-009",
+      "topic": "serialization",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is Newtonsoft.Json `TypeNameHandling.Auto` dangerous on request bodies from clients?",
+      "options": [
+        "It roughly doubles the payload size",
+        "It disables camelCase property naming",
+        "It only works with record types",
+        "The payload can choose arbitrary .NET types to instantiate"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "With type name handling on, the payload's `$type` decides which class is created, and attackers can choose gadget types whose constructors or setters do harmful things. STJ's polymorphism only allows types you list with `[JsonDerivedType]`.",
+      "optionNotes": [
+        "Payload size is a minor concern compared to security.",
+        "Naming is configured separately.",
+        "It works with any class.",
+        null
+      ],
+      "readMore": "/csharp/serialization/"
+    }
+  ]
+}

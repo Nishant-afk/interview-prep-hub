@@ -1,0 +1,1786 @@
+{
+  "section": "aspnet",
+  "version": 1,
+  "questions": [
+    {
+      "id": "aspnet-caching-001",
+      "topic": "caching",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Where does `IMemoryCache` store its entries?",
+      "options": [
+        "In a Redis instance shared by all app instances",
+        "In the memory of each app process, separately per instance",
+        "In the browser's HTTP cache",
+        "In SQL Server tempdb"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`IMemoryCache` is an in-process cache holding object references. Every instance behind a load balancer has its own copy, which is why it can be inconsistent across instances and is emptied on restart.",
+      "optionNotes": [
+        "That is `IDistributedCache` with the Redis provider.",
+        null,
+        "Browser caching is controlled by HTTP headers, not IMemoryCache.",
+        "The SQL Server distributed cache uses a regular table, and it is not IMemoryCache anyway."
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-002",
+      "topic": "caching",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which capability does `HybridCache` add that raw `IDistributedCache` does not provide?",
+      "options": [
+        "Storing values as `byte[]`",
+        "Using Redis as a backing store",
+        "Stampede protection: concurrent misses for one key run the factory once",
+        "Absolute expiration of entries"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`HybridCache` (GA in .NET 9) wraps an in-memory L1 and an optional distributed L2, and coalesces concurrent requests for the same key so the data source is hit once per instance. It also adds tag-based invalidation and handles serialization for you.",
+      "optionNotes": [
+        "`IDistributedCache` already works with `byte[]`.",
+        "`IDistributedCache` already supports Redis.",
+        null,
+        "Both support absolute expiration."
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-003",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API runs on 4 instances and caches product prices in `IMemoryCache` with a 10-minute TTL. A price update request hits instance 2, which updates the DB and removes its cache entry. What do users see?",
+      "options": [
+        "Instances 1, 3 and 4 may keep serving the old price for up to 10 minutes",
+        "All instances immediately serve the new price",
+        "Instances 1, 3 and 4 throw a cache-coherency exception",
+        "The update is rejected because other instances hold the key"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each instance has its own memory cache, so removing the key on one instance doesn't affect the others. Use a distributed or hybrid cache, keep local TTLs short, or broadcast invalidation messages to every instance.",
+      "optionNotes": [
+        null,
+        "Only instance 2's cache was cleared.",
+        "There is no coherency protocol between in-memory caches.",
+        "Caches don't lock keys across processes."
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-004",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A client sends `Cache-Control: no-cache` to an endpoint cached with `.CacheOutput()` (output caching middleware). What happens?",
+      "options": [
+        "The response caching middleware takes over and bypasses the cache",
+        "The cache entry is evicted and rebuilt",
+        "The request fails with 412 Precondition Failed",
+        "The server still serves the cached response, because the server-side policy decides"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Output caching is controlled by server policies, so clients can't bypass it with request headers. Response caching, by contrast, follows HTTP caching rules and honours `no-cache` from the client.",
+      "optionNotes": [
+        "Response caching is a separate middleware and isn't involved here.",
+        "Client headers don't evict output cache entries; tags or expiry do.",
+        "412 relates to `If-Match` preconditions, not caching directives.",
+        null
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-005",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A hot configuration entry is read every few seconds. What is the problem with this code?",
+      "code": "cache.Set(\"tax-rates\", rates, new MemoryCacheEntryOptions\n{\n    SlidingExpiration = TimeSpan.FromMinutes(5)\n});",
+      "codeLang": "csharp",
+      "options": [
+        "Sliding expiration is not supported by IMemoryCache",
+        "Because it is accessed constantly, the entry never expires and can serve stale data indefinitely",
+        "The entry expires every 5 minutes regardless of access",
+        "The value is serialized on every read, which is slow"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Sliding expiration is extended on each access, so a frequently read key never expires and never picks up changes. Combine it with `AbsoluteExpirationRelativeToNow` to cap the lifetime.",
+      "optionNotes": [
+        "IMemoryCache supports sliding expiration.",
+        null,
+        "That describes absolute expiration.",
+        "IMemoryCache stores object references; nothing is serialized."
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-006",
+      "topic": "caching",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "A popular cache key expires and hundreds of concurrent requests hit the database. Which techniques mitigate this cache stampede? (Select all that apply)",
+      "options": [
+        "Single-flight loading, e.g. `HybridCache.GetOrCreateAsync` or a per-key lock",
+        "Replacing the distributed cache with `IMemoryCache.GetOrCreateAsync`",
+        "Adding random jitter to TTLs so keys don't expire together",
+        "Refreshing hot entries in the background before they expire"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "Stampedes are prevented by letting only one caller rebuild the value, by spreading expirations with jitter, and by refreshing proactively so the key never goes cold. `IMemoryCache.GetOrCreateAsync` is not stampede-safe: concurrent misses each run the factory.",
+      "optionNotes": [
+        null,
+        "IMemoryCache's GetOrCreate does not coalesce concurrent misses.",
+        null,
+        null
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-007",
+      "topic": "caching",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A client sends `PUT /api/products/42` with `If-Match: \"v7\"`, but the product's current ETag is `\"v8\"`. What should the API return?",
+      "options": [
+        "200 OK and overwrite the product",
+        "304 Not Modified",
+        "412 Precondition Failed",
+        "409 Conflict with the new ETag in the body"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`If-Match` makes the update conditional: if the resource changed since the client read it, the precondition fails with 412. This is optimistic concurrency over HTTP and prevents lost updates.",
+      "optionNotes": [
+        "That would silently overwrite someone else's change.",
+        "304 is for conditional GETs with `If-None-Match`.",
+        null,
+        "409 is used for other state conflicts; failed preconditions have their own code, 412."
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-008",
+      "topic": "caching",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why is \"update the database, then delete the cache key\" usually preferred over \"update the database, then write the new value into the cache\"?",
+      "options": [
+        "Deleting is faster than writing in Redis",
+        "With concurrent writers, the older value can be written to the cache last and stay there until the TTL expires",
+        "Writing to the cache inside a request is not allowed by IDistributedCache",
+        "Deleting keys automatically notifies other instances' memory caches"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Two writers can interleave: A writes DB, B writes DB, B writes cache, A writes cache. The cache now holds A's older value. Deleting the key forces the next reader to load the current value from the source of truth.",
+      "optionNotes": [
+        "Performance isn't the reason; correctness is.",
+        null,
+        "Writing to the cache is perfectly allowed.",
+        "Deleting a Redis key does nothing to other instances' L1 memory caches."
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-caching-009",
+      "topic": "caching",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "With the default output caching policy, which of these responses is NOT cached?",
+      "options": [
+        "A 200 response to an anonymous GET",
+        "A 200 response to a HEAD request",
+        "A 200 response to a GET with a query string",
+        "A 200 response to a request carrying an `Authorization` header"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "By default output caching only caches 200 responses to GET/HEAD, and skips authenticated requests and responses that set cookies. This prevents one user's personalised data being served to another.",
+      "optionNotes": [
+        "This is cached by default.",
+        "HEAD requests are cacheable by default.",
+        "Query strings don't prevent caching; use `SetVaryByQuery` to cache per value.",
+        null
+      ],
+      "readMore": "/aspnet/caching/"
+    },
+    {
+      "id": "aspnet-performance-resilience-001",
+      "topic": "performance-resilience",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What problem does `using var client = new HttpClient();` inside each request cause under load?",
+      "options": [
+        "Memory leaks because HttpClient is never garbage-collected",
+        "Requests are serialized on a single connection",
+        "Socket exhaustion, because closed connections linger in TIME_WAIT",
+        "TLS certificates are not validated"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Disposing the client closes its connection, and each closed socket stays in TIME_WAIT for a while. At high request rates you run out of ephemeral ports. `IHttpClientFactory` pools handlers so connections are reused.",
+      "optionNotes": [
+        "Disposed clients are collected normally; the issue is sockets.",
+        "Each new client opens its own connection, so the opposite happens.",
+        null,
+        "Certificate validation is unaffected."
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-002",
+      "topic": "performance-resilience",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What happens to calls while a circuit breaker is in the Open state?",
+      "options": [
+        "They fail immediately without calling the downstream service",
+        "They are queued until the circuit closes",
+        "They are retried with exponential backoff",
+        "They are sent to the downstream service with a longer timeout"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "While open, the breaker short-circuits calls (Polly throws `BrokenCircuitException`), giving the dependency time to recover and letting callers fail fast. After the break duration it goes half-open and lets a trial call through.",
+      "optionNotes": [
+        null,
+        "Circuit breakers don't queue; queuing would defeat failing fast.",
+        "Retries are a separate strategy; an open circuit stops them too.",
+        "No calls reach the dependency while open."
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-003",
+      "topic": "performance-resilience",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A team fixes socket exhaustion by making one `static readonly HttpClient` for the app's lifetime, with a default handler. What problem can this introduce?",
+      "options": [
+        "Every request opens a new TCP connection",
+        "Concurrent requests on a static HttpClient are not thread-safe",
+        "Default headers can no longer be set",
+        "DNS changes are not picked up, so it can keep calling an old IP after a failover"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A long-lived connection pool never re-resolves DNS. `IHttpClientFactory` rotates handlers (2 minutes by default), and outside DI you can set `SocketsHttpHandler.PooledConnectionLifetime` to fix it.",
+      "optionNotes": [
+        "A static client reuses connections; that's why it fixes exhaustion.",
+        "HttpClient's send methods are thread-safe.",
+        "Default headers can be set, though changing them while requests run isn't safe.",
+        null
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-004",
+      "topic": "performance-resilience",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With `AddStandardResilienceHandler()` and default options, which response from the downstream API is retried?",
+      "options": [
+        "400 Bad Request",
+        "404 Not Found",
+        "503 Service Unavailable",
+        "401 Unauthorized"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The HTTP retry strategy treats transient failures as retryable: 408, 429, 5xx, `HttpRequestException` and attempt timeouts. Client errors like 400, 401 and 404 won't succeed on retry, so they aren't retried.",
+      "optionNotes": [
+        "A malformed request will fail the same way again.",
+        "The resource won't appear by retrying.",
+        null,
+        "Retrying with the same credentials won't help."
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-005",
+      "topic": "performance-resilience",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An orders endpoint uses `Skip((page - 1) * 50).Take(50)`. Page 1 is fast but page 5,000 takes seconds, and users report duplicate rows while new orders arrive. What is the best fix?",
+      "options": [
+        "Add `AsNoTracking()`",
+        "Switch to keyset pagination: `WHERE Id > @lastId ORDER BY Id`",
+        "Cache every page in Redis",
+        "Increase the page size to 500"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Offset pagination makes the database walk and discard all skipped rows, and pages shift when rows are inserted. Keyset pagination seeks via the index, so cost is constant at any depth and results are stable.",
+      "optionNotes": [
+        "Helps a little with materialization, but not with skipping rows or instability.",
+        null,
+        "Caching deep pages doesn't fix shifting results and wastes memory.",
+        "Fewer requests, but each is heavier and the root cause remains."
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-006",
+      "topic": "performance-resilience",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In the standard resilience pipeline, why does the attempt timeout sit inside the retry strategy while the total timeout sits outside it?",
+      "options": [
+        "So a single hung attempt is cut off and retried, while the whole operation including retries stays bounded",
+        "So retries happen only after the total timeout expires",
+        "Because Polly v8 requires timeouts to be the innermost strategy",
+        "So the circuit breaker ignores timeouts"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The per-attempt timeout turns a hung call into a failure that the retry (and circuit breaker) can react to. The outer total timeout caps the overall time spent including backoff delays, protecting the caller's latency budget.",
+      "optionNotes": [
+        null,
+        "Once the total timeout expires, the whole operation is cancelled and nothing more is retried.",
+        "Strategy order is your choice; this order is chosen for its semantics.",
+        "Attempt timeouts are inside the breaker, so they count as failures toward it."
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-007",
+      "topic": "performance-resilience",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A typed client `PricingClient(HttpClient http)` registered with `AddHttpClient<PricingClient>()` is injected into a singleton service. What is the consequence?",
+      "options": [
+        "The app fails to start with a DI validation error",
+        "Every call creates a new HttpClient and exhausts sockets",
+        "Resilience handlers are skipped for that client",
+        "The singleton keeps one handler forever, so handler rotation and DNS refresh no longer happen"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Typed clients are registered as transient. A singleton captures one instance, and with it one `HttpMessageHandler` chain, for the app's lifetime, defeating the factory's handler rotation. Inject `IHttpClientFactory` or make the consumer transient/scoped.",
+      "optionNotes": [
+        "Transient-into-singleton isn't caught by scope validation.",
+        "The opposite: one instance is reused forever.",
+        "The handlers are still in the captured pipeline.",
+        null
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-008",
+      "topic": "performance-resilience",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which observations point to thread-pool starvation in an ASP.NET Core API? (Select all that apply)",
+      "options": [
+        "Latency climbs under load while CPU stays low",
+        "The thread-pool queue length keeps growing",
+        "GC pause time is above 50%",
+        "A memory dump shows many threads blocked in `Task.Wait` or `.Result`"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Starvation happens when pool threads are blocked (usually sync-over-async), so queued work waits while CPU is idle. The pool adds threads slowly, so the queue grows. High GC time indicates memory pressure, a different problem.",
+      "optionNotes": [
+        null,
+        null,
+        "That points to allocation or memory pressure, not starvation.",
+        null
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-performance-resilience-009",
+      "topic": "performance-resilience",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is `ResponseCompressionOptions.EnableForHttps` false by default?",
+      "options": [
+        "Brotli is not supported over TLS",
+        "Compressing secrets alongside attacker-controlled input over HTTPS can enable BREACH/CRIME-style attacks",
+        "HTTPS responses are already compressed by TLS",
+        "Browsers reject compressed HTTPS responses"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Compression ratios can leak information about secrets (like CSRF tokens) when an attacker can inject content into the same response. Enable it consciously for responses where that risk doesn't apply, or compress at a gateway.",
+      "optionNotes": [
+        "Brotli works fine over HTTPS.",
+        null,
+        "TLS compression was removed precisely because of CRIME.",
+        "Browsers handle compressed HTTPS responses normally."
+      ],
+      "readMore": "/aspnet/performance-resilience/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-001",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which change to a published API is a breaking change that warrants a new version?",
+      "options": [
+        "Adding a new optional field to a response",
+        "Renaming the `customerName` field in a response",
+        "Adding a new endpoint",
+        "Adding an optional query parameter"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Existing clients read `customerName`; renaming it breaks them. Additive changes (new optional fields, endpoints, parameters) are non-breaking as long as clients ignore unknown properties.",
+      "optionNotes": [
+        "Additive and non-breaking if clients ignore unknown fields.",
+        null,
+        "Existing clients are unaffected.",
+        "Optional inputs don't break existing calls."
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-002",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In a new .NET 9 or .NET 10 Web API project, what generates the OpenAPI document by default?",
+      "options": [
+        "Swashbuckle's `AddSwaggerGen()`",
+        "NSwag's `AddOpenApiDocument()`",
+        "`Microsoft.AspNetCore.OpenApi` via `AddOpenApi()` and `MapOpenApi()`",
+        "Nothing; OpenAPI requires Azure API Management"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Since .NET 9 the template uses the built-in `Microsoft.AspNetCore.OpenApi` package; Swashbuckle was removed from the template. The UI (Scalar, Swagger UI, ReDoc) is chosen separately.",
+      "optionNotes": [
+        "Swashbuckle still works but is no longer in the template.",
+        "NSwag is a third-party option, not the default.",
+        null,
+        "APIM can import OpenAPI documents but doesn't generate them for your app."
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-003",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular app on `https://app.contoso.com` sends `GET https://api.contoso.com/orders` with an `Authorization: Bearer ...` header. Why does the browser send an OPTIONS request first?",
+      "options": [
+        "`Authorization` is not a CORS-safelisted header, so the request is not \"simple\"",
+        "All cross-origin GET requests require a preflight",
+        "The browser is checking whether the token is still valid",
+        "OPTIONS is needed to negotiate HTTP/2"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Requests are simple only with GET/HEAD/POST, safelisted headers and simple content types. A custom or `Authorization` header (or `Content-Type: application/json`) makes the browser preflight to ask the server's permission first.",
+      "optionNotes": [
+        null,
+        "A plain cross-origin GET without custom headers is a simple request.",
+        "Preflights carry no credentials and don't validate tokens.",
+        "HTTP/2 is negotiated via TLS ALPN, not OPTIONS."
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-004",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens with this CORS policy?",
+      "code": "builder.Services.AddCors(o => o.AddPolicy(\"spa\", p => p\n    .AllowAnyOrigin()\n    .AllowAnyHeader()\n    .AllowCredentials()));",
+      "codeLang": "csharp",
+      "options": [
+        "Any website can call the API with the user's cookies",
+        "Credentials are silently ignored, so cookies are never sent to any origin",
+        "Only same-origin requests are allowed, so the SPA is blocked",
+        "It throws `InvalidOperationException`: a wildcard origin plus credentials is invalid"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The CORS spec forbids `Access-Control-Allow-Origin: *` with credentials, and ASP.NET Core's policy builder throws when you combine them. List explicit origins with `WithOrigins(...)` instead.",
+      "optionNotes": [
+        "That is exactly what the spec and the framework prevent.",
+        "The framework fails loudly rather than ignoring the setting.",
+        "The policy is invalid, not restrictive.",
+        null
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-005",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A call works in Postman but fails in the Angular app with \"blocked by CORS policy\". What explains the difference?",
+      "options": [
+        "Postman uses HTTP/1.1 while browsers use HTTP/2",
+        "Postman sends a valid token automatically",
+        "The API detects Postman's User-Agent and allows it",
+        "CORS is enforced by the browser; Postman doesn't apply the same-origin policy"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The server responds to both, but only browsers check CORS headers before letting JavaScript read the response. Look at the OPTIONS request and response headers in the browser's network tab to find the mismatch.",
+      "optionNotes": [
+        "Protocol version is unrelated to CORS.",
+        "Postman doesn't add tokens on its own.",
+        "ASP.NET Core CORS doesn't look at User-Agent.",
+        null
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-006",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "`UseCors(\"spa\")` allows only `https://app.contoso.com`. A preflight arrives with `Origin: https://evil.example`. What does ASP.NET Core return?",
+      "options": [
+        "403 Forbidden with a ProblemDetails body explaining the origin",
+        "A 204 without `Access-Control-Allow-Origin`, so the browser blocks the real call",
+        "400 Bad Request, because the Origin header is not in the policy",
+        "A 204 response with `Access-Control-Allow-Origin: https://app.contoso.com`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The CORS middleware answers the preflight but omits the CORS response headers for a disallowed origin. The browser sees no permission and never sends the actual request. CORS failures are signalled by missing headers, not error codes.",
+      "optionNotes": [
+        "The middleware doesn't produce 403 for disallowed origins.",
+        null,
+        "No 400 is produced; the request itself is well-formed.",
+        "The middleware doesn't echo a different allowed origin."
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-007",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API uses header versioning (`X-Api-Version`) and sits behind a CDN that caches GET responses. Some v1 clients receive v2 payloads. What is missing?",
+      "options": [
+        "The `api-supported-versions` response header",
+        "A route constraint `{version:apiVersion}`",
+        "A `Vary: X-Api-Version` response header so caches key on the version",
+        "`AssumeDefaultVersionWhenUnspecified = true`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Caches key on the URL by default. When the representation depends on a request header, the response must declare it in `Vary`, otherwise a cached v2 response is served for the same URL to v1 clients. URL versioning avoids this by design.",
+      "optionNotes": [
+        "That header informs clients but doesn't affect cache keys.",
+        "Route constraints are for URL-segment versioning.",
+        null,
+        "This only affects requests that omit the version."
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-008",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `Asp.Versioning` are true? (Select all that apply)",
+      "options": [
+        "`ApiVersionReader.Combine` lets clients specify the version in more than one way, e.g. URL segment or header",
+        "`ReportApiVersions = true` adds headers such as `api-supported-versions` to responses",
+        "Versions marked deprecated are reported in the `api-deprecated-versions` header but still served",
+        "Marking a version deprecated removes its routes automatically"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "Readers can be combined, and with `ReportApiVersions` the library advertises supported and deprecated versions in response headers. Deprecation is a signal to clients; the endpoints keep working until you remove them.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "Deprecated versions keep working; you remove them later yourself."
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-versioning-openapi-cors-009",
+      "topic": "versioning-openapi-cors",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "For the same-origin policy, which parts make up an origin?",
+      "options": [
+        "Host only",
+        "Host and path",
+        "Domain and cookie path",
+        "Scheme, host and port"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`http://localhost:4200` and `https://localhost:5001` are different origins because scheme and port differ. That is why an Angular dev server calling a local API needs CORS or a dev proxy.",
+      "optionNotes": [
+        "Different ports or schemes on the same host are still different origins.",
+        "Path is not part of the origin.",
+        "Cookie scoping uses different rules than origins.",
+        null
+      ],
+      "readMore": "/aspnet/versioning-openapi-cors/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-001",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You add `AddRateLimiter` with a fixed window policy but don't set `RejectionStatusCode`. What status do rejected requests get?",
+      "options": [
+        "429 Too Many Requests",
+        "503 Service Unavailable",
+        "403 Forbidden",
+        "400 Bad Request"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The built-in middleware defaults to 503. Set `RejectionStatusCode = StatusCodes.Status429TooManyRequests` and add a `Retry-After` header in `OnRejected` so clients back off instead of treating the service as down.",
+      "optionNotes": [
+        "429 is the right code, but you must configure it.",
+        null,
+        "403 is for authorization failures.",
+        "400 is for malformed requests."
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-002",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which built-in limiter caps the number of requests being processed at the same moment, rather than requests per time period?",
+      "options": [
+        "Fixed window limiter",
+        "Sliding window limiter",
+        "Token bucket limiter",
+        "Concurrency limiter"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A concurrency limiter hands out N leases and frees one when a request finishes. It suits expensive endpoints like report generation. The other three limit the rate over time.",
+      "optionNotes": [
+        "Counts requests per window.",
+        "Counts requests per window split into segments.",
+        "Controls average rate with bursts.",
+        null
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-003",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In Kubernetes, what happens when a pod's liveness probe keeps failing?",
+      "options": [
+        "The container is restarted",
+        "The pod is removed from Service endpoints but kept running",
+        "The node is drained",
+        "Nothing until the readiness probe also fails"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Liveness answers \"should this container be restarted?\". Readiness failures remove the pod from load balancing without restarting it.",
+      "optionNotes": [
+        null,
+        "That is what a failing readiness probe does.",
+        "Probes act on containers, not nodes.",
+        "Liveness and readiness are independent."
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-004",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A fixed window limiter allows 100 requests per minute. What is the most a client can get through in a short burst around a window boundary?",
+      "options": [
+        "100, because a window never allows more than its limit",
+        "150, because the limiter averages two adjacent windows",
+        "About 200: 100 just before the reset and 100 just after",
+        "Unlimited until the window resets at the full minute"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Counters reset at window boundaries, so a client can use the full quota just before and just after the reset. Sliding windows or token buckets smooth this out.",
+      "optionNotes": [
+        "Per window yes, but two windows meet at the boundary.",
+        "There is no 1.5x rule.",
+        null,
+        "The limiter rejects after the permit limit within a window."
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-005",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API runs on 5 instances behind a load balancer, each with a built-in per-user limit of 100 requests per minute. Roughly how many requests per minute can one user get through?",
+      "options": [
+        "Exactly 100, since limits are per user",
+        "Up to about 500, because each instance counts separately in memory",
+        "20, since the limit is split across instances",
+        "It depends on the Redis configuration"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The built-in limiter keeps state in memory per instance. For an exact global quota, enforce it at the gateway (Azure API Management, AWS API Gateway) or use a distributed, Redis-backed limiter.",
+      "optionNotes": [
+        "Instances don't share counters.",
+        null,
+        "Nothing splits the limit automatically.",
+        "The built-in limiter doesn't use Redis."
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-006",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A team adds `AddDbContextCheck<AppDbContext>()` to the endpoint used by the Kubernetes liveness probe. What can happen during a 60-second database failover?",
+      "options": [
+        "Nothing; liveness only affects new deployments",
+        "Kubernetes scales the deployment up to compensate",
+        "Pods are removed from load balancing until the DB recovers, which is the desired behaviour",
+        "All pods fail liveness and restart together, turning a DB blip into a full outage with cold starts"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Dependencies belong in readiness, which takes pods out of rotation without restarting them. In liveness, a shared dependency failing restarts every pod at once, which doesn't fix the database and adds startup time.",
+      "optionNotes": [
+        "Liveness runs continuously.",
+        "Probe failures don't trigger autoscaling.",
+        "That describes a readiness probe, not liveness.",
+        null
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-007",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A client has been idle, then sends 30 requests at the same instant to an endpoint using this limiter. How many succeed?",
+      "code": "o.AddTokenBucketLimiter(\"burst\", t =>\n{\n    t.TokenLimit = 20;\n    t.TokensPerPeriod = 10;\n    t.ReplenishmentPeriod = TimeSpan.FromSeconds(1);\n    t.QueueLimit = 0;\n});",
+      "codeLang": "csharp",
+      "options": [
+        "20 succeed and 10 are rejected",
+        "10 succeed and 20 are rejected",
+        "All 30 succeed because tokens are replenished",
+        "30 succeed after queuing"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The bucket starts full with `TokenLimit` tokens, so an idle client can burst up to 20. With no queue, the remaining 10 are rejected immediately; 10 more tokens arrive each second after that.",
+      "optionNotes": [
+        null,
+        "TokensPerPeriod is the refill rate, not the burst size.",
+        "Replenishment happens per period, not instantly.",
+        "QueueLimit is 0, so nothing waits."
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-008",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "With default `HealthCheckOptions`, which mappings from health status to HTTP status are correct? (Select all that apply)",
+      "options": [
+        "Healthy → 200",
+        "Degraded → 200",
+        "Unhealthy → 503",
+        "Degraded → 503"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "By default Healthy and Degraded both return 200, so a degraded instance stays in rotation, and Unhealthy returns 503. You can change the mapping with `ResultStatusCodes`.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "Degraded maps to 200 by default."
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-rate-limiting-health-checks-009",
+      "topic": "rate-limiting-health-checks",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Behind Azure Application Gateway, a policy partitions anonymous traffic by `HttpContext.Connection.RemoteIpAddress`. Soon all anonymous users are throttled together. Why?",
+      "options": [
+        "RemoteIpAddress is always null in Kestrel",
+        "IPv6 addresses can't be used as partition keys",
+        "Every request appears to come from the gateway's IP unless forwarded headers are configured with trusted proxies",
+        "Partitioned limiters only work for authenticated users"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The proxy terminates the connection, so the app sees the proxy's address. Configure the Forwarded Headers middleware with known proxies or networks so `RemoteIpAddress` reflects the client, and prefer user or API-key partitions where possible.",
+      "optionNotes": [
+        "It is populated; it's just the proxy's address.",
+        "Any string works as a partition key.",
+        null,
+        "Partition keys can be anything, including IPs."
+      ],
+      "readMore": "/aspnet/rate-limiting-health-checks/"
+    },
+    {
+      "id": "aspnet-background-services-001",
+      "topic": "background-services",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which method do you override when deriving from `BackgroundService`?",
+      "options": [
+        "`RunAsync()`",
+        "`StartAsync()` and `StopAsync()` only",
+        "`ExecuteAsync(CancellationToken stoppingToken)`",
+        "`OnTimerElapsed()`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`BackgroundService` implements `IHostedService` for you and calls your `ExecuteAsync` when the host starts, cancelling `stoppingToken` on shutdown.",
+      "optionNotes": [
+        "There is no RunAsync to override.",
+        "Those are the IHostedService methods; BackgroundService already implements them.",
+        null,
+        "No such method exists."
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-002",
+      "topic": "background-services",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the effective lifetime of a hosted service registered with `AddHostedService<T>()`?",
+      "options": [
+        "Singleton",
+        "Scoped",
+        "Transient",
+        "Per request"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Hosted services are created once and live for the app's lifetime. That's why they must create their own scopes to use scoped services like `DbContext`.",
+      "optionNotes": [
+        null,
+        "There's no request scope around a hosted service.",
+        "The host resolves it once at startup.",
+        "Hosted services aren't tied to requests."
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-003",
+      "topic": "background-services",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens when this worker starts in the Development environment?",
+      "code": "public sealed class CleanupWorker(AppDbContext db) : BackgroundService\n{\n    protected override async Task ExecuteAsync(CancellationToken ct)\n    {\n        await db.Sessions.Where(s => s.Expired).ExecuteDeleteAsync(ct);\n    }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "It works; the host creates a scope for each hosted service",
+        "The app fails at startup: a scoped service can't be consumed from a singleton",
+        "It throws only when two requests run concurrently",
+        "EF Core silently switches to a pooled DbContext"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`AppDbContext` is scoped, and hosted services are singletons. Scope validation (on by default in Development) throws at startup. Inject `IServiceScopeFactory` and create a scope per unit of work.",
+      "optionNotes": [
+        "The host doesn't create scopes for hosted services.",
+        null,
+        "The error is a DI validation error at startup.",
+        "EF Core doesn't change your registration."
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-004",
+      "topic": "background-services",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In .NET 8, an exception escapes `ExecuteAsync` of a `BackgroundService` with default `HostOptions`. What happens?",
+      "options": [
+        "The exception is swallowed and the app keeps running without the worker",
+        "The worker is restarted automatically after 5 seconds",
+        "The exception is rethrown on the next HTTP request",
+        "The exception is logged and the host stops the application"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Since .NET 6, `BackgroundServiceExceptionBehavior.StopHost` is the default, so an unhandled worker exception stops the app (and the orchestrator restarts it). Catch per-iteration errors inside your loop.",
+      "optionNotes": [
+        "That was the behaviour before .NET 6, or with the `Ignore` option.",
+        "There's no automatic worker restart.",
+        "Workers and requests are unrelated.",
+        null
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-005",
+      "topic": "background-services",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is `PeriodicTimer` preferred over `System.Threading.Timer` for an async job in a `BackgroundService`?",
+      "options": [
+        "It runs the job on a dedicated thread",
+        "It supports cron expressions",
+        "You await each tick, so runs never overlap and cancellation is built in",
+        "It persists its schedule across restarts"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`await timer.WaitForNextTickAsync(ct)` in a loop only waits for the next tick after the current work finishes, and it observes the cancellation token. `System.Threading.Timer` callbacks can overlap and push you towards `async void`.",
+      "optionNotes": [
+        "It doesn't create a thread.",
+        "It only supports fixed intervals; use Quartz or Hangfire for cron.",
+        null,
+        "It's an in-memory timer."
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-006",
+      "topic": "background-services",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A `BackgroundService` sends a nightly digest email. After scaling the API to 3 instances, customers get 3 emails. Which fix addresses the cause?",
+      "options": [
+        "Register the worker with `AddSingleton` instead of `AddHostedService`",
+        "Coordinate instances (shared Hangfire storage or a distributed lock) and make sends idempotent",
+        "Increase `HostOptions.ShutdownTimeout` so each instance finishes cleanly",
+        "Use `PeriodicTimer` instead of `Task.Delay` to schedule the run"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Every instance runs every hosted service. You need cross-instance coordination (a scheduler with shared storage, a lease or lock, or a single dedicated worker) and idempotency so a duplicate run is harmless.",
+      "optionNotes": [
+        "A singleton is per instance; it would just stop the worker from running.",
+        null,
+        "Shutdown timing doesn't affect duplicate runs.",
+        "The timer type doesn't change how many instances run the job."
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-007",
+      "topic": "background-services",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An endpoint writes email jobs to a bounded `Channel<EmailJob>` consumed by a `BackgroundService`. During a deployment, 200 jobs are still in the channel. What happens to them?",
+      "options": [
+        "They are lost when the process exits",
+        "They are saved to disk and resumed on startup",
+        "They move to another instance's channel",
+        "The deployment waits until the channel is empty"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A `Channel<T>` is in-memory only. Use a durable queue (Azure Service Bus, AWS SQS), Hangfire, or an outbox table for work that must survive restarts.",
+      "optionNotes": [
+        null,
+        "Channels have no persistence.",
+        "Instances don't share memory.",
+        "The host waits at most `ShutdownTimeout`, and only if your worker drains the channel."
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-008",
+      "topic": "background-services",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Kubernetes sends SIGTERM to a pod running an ASP.NET Core app with background workers. Which statements are true? (Select all that apply)",
+      "options": [
+        "The `stoppingToken` passed to `ExecuteAsync` is cancelled",
+        "The host waits up to `HostOptions.ShutdownTimeout` (30 seconds by default) for services to stop",
+        "Items left in an in-memory `Channel<T>` are persisted automatically",
+        "If the process is still running after `terminationGracePeriodSeconds`, Kubernetes kills it"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Graceful shutdown cancels the token, waits for workers up to the shutdown timeout, then exits. Kubernetes sends SIGKILL after the grace period, so keep `ShutdownTimeout` below it. Nothing persists in-memory work for you.",
+      "optionNotes": [
+        null,
+        null,
+        "In-memory items are lost.",
+        null
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-background-services-009",
+      "topic": "background-services",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A controller does `_ = Task.Run(() => _reportService.GenerateAsync(id));` and returns 202. The report service uses the request's `DbContext`. What typically goes wrong?",
+      "options": [
+        "Task.Run blocks the request thread until the report has finished",
+        "The report runs twice because Task.Run retries on failure",
+        "The request scope is disposed after the response, so the DbContext is used after disposal",
+        "Nothing; this is the recommended pattern for background work"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Fire-and-forget outlives the request's DI scope, so scoped services are disposed mid-work, exceptions are lost, and shutdown kills the work silently. Queue the work to a `BackgroundService` or a durable queue instead.",
+      "optionNotes": [
+        "Task.Run returns immediately.",
+        "Nothing causes a second run.",
+        null,
+        "It's a well-known anti-pattern."
+      ],
+      "readMore": "/aspnet/background-services/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-001",
+      "topic": "signalr-grpc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which transport does SignalR prefer when both client and server support it?",
+      "options": [
+        "Long Polling",
+        "WebSockets",
+        "Server-Sent Events",
+        "gRPC streaming"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "SignalR negotiates WebSockets first, then falls back to Server-Sent Events, then Long Polling.",
+      "optionNotes": [
+        "The last-resort fallback.",
+        null,
+        "The second choice.",
+        "Not a SignalR transport."
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-002",
+      "topic": "signalr-grpc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What do gRPC services in ASP.NET Core use by default for the contract and wire format?",
+      "options": [
+        "OpenAPI and JSON over HTTP/1.1",
+        "WSDL and XML over SOAP",
+        "GraphQL schema and JSON",
+        "A `.proto` contract and Protocol Buffers binary over HTTP/2"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "gRPC is contract-first: the `.proto` file generates server and client code, and messages are serialized as compact protobuf binary over HTTP/2.",
+      "optionNotes": [
+        "That describes a typical REST API.",
+        "That's SOAP/WCF.",
+        "That's GraphQL.",
+        null
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-003",
+      "topic": "signalr-grpc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An `OrderService` (not a hub) needs to notify everyone watching order 42 when its status changes. What should it use?",
+      "options": [
+        "Inject `IHubContext<OrderHub>` and call `Clients.Group(\"order-42\")`",
+        "Create `new OrderHub()` and call its methods",
+        "Resolve `OrderHub` from DI and call `Clients.All`",
+        "Store connection ids in a static list and write to the sockets directly"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`IHubContext<THub>` (or the strongly typed `IHubContext<THub, TClient>`) lets any service send messages to clients, groups or users. Hub instances are created by the framework per invocation and can't be used outside it.",
+      "optionNotes": [
+        null,
+        "A hub created manually has no connection context.",
+        "Hubs are transient per invocation; their Clients property isn't usable outside one.",
+        "This bypasses SignalR and won't work with scale-out."
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-004",
+      "topic": "signalr-grpc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "SignalR runs on 2 servers behind a load balancer with no backplane. Server A sends a message to group `order-42`, whose members are connected to both servers. Who receives it?",
+      "options": [
+        "All group members on both servers",
+        "Nobody; group messages require a backplane",
+        "Only members connected to server A",
+        "Only the first member who joined"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Each server only knows its own connections. A Redis backplane or Azure SignalR Service relays messages so members on every server receive them.",
+      "optionNotes": [
+        "That needs a backplane or Azure SignalR Service.",
+        "Local delivery still works.",
+        null,
+        "Groups broadcast to all known members."
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-005",
+      "topic": "signalr-grpc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular app needs to call an existing ASP.NET Core gRPC service. What is a valid approach?",
+      "options": [
+        "Call it with `HttpClient` using `Content-Type: application/grpc`",
+        "Enable gRPC-Web on the server, or JSON transcoding to expose it as REST",
+        "Browsers support gRPC natively over HTTP/2, so nothing is needed",
+        "Open a WebSocket to the gRPC endpoint"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Browser APIs don't expose the HTTP/2 framing and trailers that native gRPC needs. gRPC-Web (`Grpc.AspNetCore.Web`) or JSON transcoding (`Microsoft.AspNetCore.Grpc.JsonTranscoding`) bridge the gap, or a BFF can call gRPC server-side.",
+      "optionNotes": [
+        "Browsers can't produce native gRPC framing and trailers.",
+        null,
+        "Browsers speak HTTP/2 but don't let JavaScript control it at the level gRPC needs.",
+        "gRPC doesn't run over WebSockets."
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-006",
+      "topic": "signalr-grpc",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Service A calls service B over gRPC through a connection-level (L4) load balancer. B has 4 replicas, yet one replica gets almost all of A's traffic. Why?",
+      "options": [
+        "gRPC requires sticky sessions, so the balancer pins the client",
+        "Protobuf messages embed the address of the first server contacted",
+        "L4 balancers can't handle TLS, so they fall back to one replica",
+        "All calls share one long-lived HTTP/2 connection, and L4 balances per connection"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Once A opens one HTTP/2 connection, all its calls flow over it to the same replica. Use an L7 proxy or service mesh (Envoy, Linkerd, YARP) that balances per request, or client-side load balancing.",
+      "optionNotes": [
+        "gRPC doesn't require stickiness; it happens as a side effect.",
+        "Messages don't carry routing information.",
+        "L4 balancers can pass TLS through.",
+        null
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-007",
+      "topic": "signalr-grpc",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "This message is used by many deployed clients. Which change is backward compatible?",
+      "code": "message StockReply {\n  string sku = 1;\n  int32 quantity = 2;\n  int64 updated_unix_ms = 3;\n}",
+      "codeLang": "proto",
+      "options": [
+        "Change `quantity` to `string quantity = 2;`",
+        "Remove `updated_unix_ms` and reuse number 3 for a new `string warehouse` field",
+        "Add `string warehouse = 4;`",
+        "Renumber `sku` to `5` to group fields"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Protobuf identifies fields by number. New fields with new numbers are ignored by old clients and default for old messages. Changing types or numbers, or reusing a number, corrupts data for existing clients; mark removed fields `reserved`.",
+      "optionNotes": [
+        "Changing the wire type breaks existing readers.",
+        "Old clients would decode the new field as the old one.",
+        null,
+        "The field number is the field's identity on the wire."
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-008",
+      "topic": "signalr-grpc",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about SignalR are true? (Select all that apply)",
+      "options": [
+        "Hub instances are transient, so state should not be kept in hub fields",
+        "Group membership is not restored automatically after a client reconnects",
+        "Messages sent while a client is offline are stored and delivered on reconnect by default",
+        "`Clients.User(id)` targets all connections whose user identifier matches, by default from the `NameIdentifier` claim"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Hubs are created per invocation, groups are in-memory and tied to connection ids, and user targeting uses `IUserIdProvider` (NameIdentifier by default). SignalR doesn't persist messages; clients should re-fetch state after reconnecting.",
+      "optionNotes": [
+        null,
+        null,
+        "Delivery is at-most-once with no persistence.",
+        null
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-signalr-grpc-009",
+      "topic": "signalr-grpc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main problem GraphQL solves compared with a typical REST API?",
+      "options": [
+        "It makes HTTP caching easier",
+        "It removes the need for authorization",
+        "Clients request exactly the fields they need, avoiding over- and under-fetching",
+        "It uses binary serialization for speed"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A GraphQL client sends a query naming the fields and related data it needs, in one round trip. The trade-offs are harder HTTP caching, N+1 risks (solved with DataLoader) and the need for query cost limits.",
+      "optionNotes": [
+        "GraphQL usually makes HTTP caching harder (POST to one URL).",
+        "Authorization is still required, often per field.",
+        null,
+        "GraphQL typically uses JSON."
+      ],
+      "readMore": "/aspnet/signalr-grpc/"
+    },
+    {
+      "id": "aspnet-rest-api-design-001",
+      "topic": "rest-api-design",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which HTTP method is NOT idempotent by definition?",
+      "options": [
+        "PUT",
+        "DELETE",
+        "POST",
+        "GET"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Repeating a POST can create another resource or trigger the action again. GET, PUT and DELETE leave the server in the same state however many times they're repeated.",
+      "optionNotes": [
+        "PUT replaces the resource with the same content each time.",
+        "Deleting twice leaves it deleted.",
+        null,
+        "GET is safe and idempotent."
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-002",
+      "topic": "rest-api-design",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What should `POST /api/orders` return after successfully creating order 42?",
+      "options": [
+        "201 Created with `Location: /api/orders/42` and usually the created order",
+        "200 OK with `{ \"success\": true }` in the response body",
+        "204 No Content, since the client already has the data it sent",
+        "302 Found, redirecting the client to the new order's URL"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "201 tells clients a resource was created and `Location` tells them where. Including the representation saves a round trip for server-generated fields like id and timestamps.",
+      "optionNotes": [
+        null,
+        "A success flag in a 200 hides semantics from clients and tools.",
+        "Loses the new resource's location and id.",
+        "Redirects are for browsers navigating, not API creation."
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-003",
+      "topic": "rest-api-design",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A user with a valid token calls an admin-only endpoint. Which status code fits?",
+      "options": [
+        "401 Unauthorized",
+        "400 Bad Request",
+        "404 Not Found, always",
+        "403 Forbidden"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "401 means not authenticated (missing or invalid credentials). 403 means authenticated but not permitted. Some APIs return 404 to hide a resource's existence, but for a known admin endpoint 403 is the standard answer.",
+      "optionNotes": [
+        "The user is authenticated, so 401 is wrong.",
+        "The request is well-formed.",
+        "404 is sometimes used to hide resources, but not as a rule.",
+        null
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-004",
+      "topic": "rest-api-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A client sends `PUT /api/customers/7` with a body that omits the `phone` field. A correctly implemented PUT should:",
+      "options": [
+        "Keep the existing phone, since only sent fields change",
+        "Replace the whole resource, so phone is cleared or reset to its default",
+        "Return 400 because PUT bodies may not omit fields",
+        "Return 409 Conflict"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "PUT replaces the full representation. For partial updates use PATCH (JSON Merge Patch or JSON Patch) or a nullable-field DTO with explicit semantics.",
+      "optionNotes": [
+        "That is PATCH semantics.",
+        null,
+        "Validation may require fields, but omission alone isn't defined as an error by PUT.",
+        "There's no state conflict here."
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-005",
+      "topic": "rest-api-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A mobile app's `POST /payments` times out, the app retries, and the customer is charged twice. What is the standard fix?",
+      "options": [
+        "Change the endpoint to PUT so retries become safe automatically",
+        "Increase the client timeout to 5 minutes to avoid retries",
+        "Send an `Idempotency-Key`; the server replays the stored result on retries",
+        "Disable retries in the app and ask users to try again"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The server may have completed the work before the response was lost. An idempotency key per logical operation lets the server recognise the retry and return the stored response instead of charging again.",
+      "optionNotes": [
+        "Renaming the verb doesn't make the operation idempotent.",
+        "Timeouts still happen; it only reduces frequency.",
+        null,
+        "Retries are necessary for reliability over mobile networks."
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-006",
+      "topic": "rest-api-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is wrong with exposing order cancellation as `GET /api/orders/42/cancel`?",
+      "options": [
+        "GET must be safe; crawlers, link prefetchers and caches may trigger the cancellation",
+        "GET requests can't have path segments after an id",
+        "GET responses can't return 204",
+        "Nothing, as long as the endpoint requires authentication"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Clients and intermediaries assume GET has no side effects and may call or retry it freely. State changes belong in POST (e.g. `POST /orders/42/cancel`), PUT, PATCH or DELETE.",
+      "optionNotes": [
+        null,
+        "Sub-resources after an id are fine.",
+        "That's not the issue; GET normally returns 200.",
+        "Authenticated browsers and tools can still prefetch or retry GETs."
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-007",
+      "topic": "rest-api-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Generating an annual report takes about 3 minutes. How should `POST /reports` respond?",
+      "options": [
+        "Keep the connection open for 3 minutes and return 200 with the file",
+        "Return 201 Created immediately with an empty report",
+        "Return 504 Gateway Timeout and let the client retry",
+        "Return 202 Accepted with a `Location` header pointing to a status resource the client can poll"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "This is the asynchronous request-reply pattern: queue the work, return 202 with a status URL, and when the job completes, expose a link to the result (or notify via SignalR or a webhook).",
+      "optionNotes": [
+        "Long requests hit proxy timeouts and tie up resources.",
+        "The resource doesn't exist yet; 201 would be misleading.",
+        "This makes the client repeat work that never finishes.",
+        null
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-008",
+      "topic": "rest-api-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API uses resource URLs, correct HTTP verbs and meaningful status codes, but responses contain no hypermedia links. Where is it on the Richardson maturity model?",
+      "options": [
+        "Level 1",
+        "Level 2",
+        "Level 3",
+        "Level 0"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Level 1 introduces resources, level 2 adds proper HTTP verbs and status codes, and level 3 adds hypermedia (HATEOAS). Most production APIs are level 2.",
+      "optionNotes": [
+        "Level 1 has resources but misuses verbs.",
+        null,
+        "Level 3 requires hypermedia links.",
+        "Level 0 is RPC over a single endpoint."
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-009",
+      "topic": "rest-api-design",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Two identical requests with the same `Idempotency-Key` arrive within milliseconds. What does this filter do?",
+      "code": "var cached = await cache.GetStringAsync(cacheKey);\nif (cached is not null)\n    return Replay(cached);\n\nvar result = await next(context);   // creates the order\nawait cache.SetStringAsync(cacheKey, Serialize(result));\nreturn result;",
+      "codeLang": "csharp",
+      "options": [
+        "Both can see an empty cache and both create an order",
+        "The second waits for the first and replays its response",
+        "The second gets 409 Conflict automatically",
+        "Redis serializes the requests, so only one order is created"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Check-then-act isn't atomic. Reserve the key first with an atomic operation (Redis `SET NX` or an insert against a unique index), return 409 while the first request is in progress, then store the final response.",
+      "optionNotes": [
+        null,
+        "Nothing in this code waits on the other request.",
+        "No code produces a 409 here.",
+        "Separate GET and SET commands don't make the sequence atomic."
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-rest-api-design-010",
+      "topic": "rest-api-design",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about HTTP method semantics are true? (Select all that apply)",
+      "options": [
+        "A second `DELETE /orders/42` may return 404 and the operation is still idempotent",
+        "PATCH is guaranteed to be idempotent",
+        "PUT is idempotent",
+        "Safe methods such as GET and HEAD are also idempotent"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "Idempotency is about server state, not identical responses, so DELETE returning 404 the second time is fine. PATCH isn't guaranteed idempotent (an \"increment\" patch isn't). Every safe method is idempotent because it changes nothing.",
+      "optionNotes": [
+        null,
+        "It depends on the patch; increments or appends aren't idempotent.",
+        null,
+        null
+      ],
+      "readMore": "/aspnet/rest-api-design/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-001",
+      "topic": "aspnet-scenarios",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "An interviewer asks \"design an API for 10,000 requests per second\". What should you do first?",
+      "options": [
+        "Propose Kubernetes with autoscaling and a Redis cache",
+        "Ask clarifying questions: read/write ratio, latency target, consistency",
+        "Start writing the controller and repository code",
+        "Pick between SQL Server and Cosmos DB for storage"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The right design depends on the workload. Clarifying a few facts that change the answer shows judgement; then outline the approach, go deep on one part and discuss trade-offs.",
+      "optionNotes": [
+        "Jumping to tools before understanding the problem is a common mistake.",
+        null,
+        "Code comes after the approach is agreed.",
+        "Storage choice depends on answers you don't have yet."
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-002",
+      "topic": "aspnet-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "During an ASP.NET Core request, when is the request's DI scope (and its scoped `DbContext`) disposed?",
+      "options": [
+        "When the controller action returns",
+        "When the routing middleware selects an endpoint",
+        "When the garbage collector finalizes the HttpContext",
+        "After the response has completed"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A scope is created per request and disposed after the response completes, disposing scoped services with it. That's why work started with `Task.Run` that outlives the request can hit disposed objects.",
+      "optionNotes": [
+        "Result execution and middleware still run after the action returns.",
+        "Routing happens early, long before disposal.",
+        "Disposal is deterministic, not GC-driven.",
+        null
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-003",
+      "topic": "aspnet-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A scoped service captured by a singleton throws at startup locally but runs in production, where users occasionally see each other's data. Why didn't production fail at startup?",
+      "options": [
+        "DI scope validation is enabled by default only in the Development environment",
+        "Production uses a different DI container",
+        "Scoped services behave like transient ones in production",
+        "Release builds strip DI registrations"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`ValidateScopes` and `ValidateOnBuild` default to true only in Development. In production the captive dependency silently shares one scoped instance. Enable validation in tests and fix with `IServiceScopeFactory` or correct lifetimes.",
+      "optionNotes": [
+        null,
+        "The same Microsoft.Extensions.DependencyInjection container is used.",
+        "Lifetimes don't change by environment.",
+        "Registrations are code and are unaffected by build configuration."
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-004",
+      "topic": "aspnet-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Under load, an API's p95 latency jumps from 80 ms to 6 s while CPU stays at 20% and the thread count keeps rising. What is the most likely cause?",
+      "options": [
+        "The JSON serializer is too slow",
+        "Garbage collection pauses",
+        "Thread-pool starvation from blocking calls such as `.Result` or `.Wait()`",
+        "The response is not compressed"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Low CPU with rising latency and thread count is the classic starvation signature: pool threads are blocked waiting on I/O, and the pool adds threads slowly. Make the call chain async and check with `dotnet-counters` or a dump.",
+      "optionNotes": [
+        "Slow serialization would show up as high CPU.",
+        "GC problems also show high CPU or memory, not idle CPU.",
+        null,
+        "Compression affects bandwidth, not this pattern."
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-005",
+      "topic": "aspnet-scenarios",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An API receives 10,000 requests/s, 90% of them reads. Reads go through a cache with a 95% hit ratio. Roughly how many read queries per second reach the database?",
+      "options": [
+        "9,000",
+        "450",
+        "500",
+        "950"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "9,000 reads/s × 5% misses = 450 DB reads/s. This kind of quick estimate shows the impact of caching and helps size the database and connection pools.",
+      "optionNotes": [
+        "That ignores the cache entirely.",
+        null,
+        "That's 5% of all 10,000 requests, but writes don't go through the read cache.",
+        "Miscalculated; 9,000 × 0.05 = 450."
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-006",
+      "topic": "aspnet-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Users must upload videos of up to 2 GB. Which design scales best?",
+      "options": [
+        "Accept `IFormFile` and buffer the file in memory before saving",
+        "Raise Kestrel's `MaxRequestBodySize` to 2 GB and stream through the API",
+        "Base64-encode the file into a JSON body",
+        "Have the API issue a short-lived, write-only SAS URL and let the client upload directly to Blob Storage"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Direct upload with a SAS URL (AWS: S3 presigned URL) keeps large transfers off your API servers. The API only authorizes and records metadata; a storage event triggers scanning and processing.",
+      "optionNotes": [
+        "Buffering GBs per request exhausts memory.",
+        "It works, but your servers still carry all the bandwidth and long-running connections.",
+        "Base64 inflates the size by about a third and buffers everything.",
+        null
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-007",
+      "topic": "aspnet-scenarios",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which practices make a file upload endpoint safer? (Select all that apply)",
+      "options": [
+        "Generate your own storage file names instead of using the client's `FileName`",
+        "Check the file's magic bytes against an allow-list, not just the extension",
+        "Trust the `Content-Type` header sent by the client to decide the file type",
+        "Store uploads outside the web root and scan them for malware"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Client file names enable path traversal and overwrites, extensions and `Content-Type` are trivially spoofed, and files served from the web root may be executed or served unsafely. Allow-list, verify content, rename, isolate and scan.",
+      "optionNotes": [
+        null,
+        null,
+        "The client controls this header, so it proves nothing.",
+        null
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-008",
+      "topic": "aspnet-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A third-party payment API is flaky and doesn't support idempotency keys. Your retry policy retries POST requests on timeouts. What is the main risk?",
+      "options": [
+        "Retries make the circuit breaker open too early",
+        "A timed-out request may have succeeded, so a retry can charge the customer twice",
+        "Retries violate CORS",
+        "Polly cannot retry POST requests"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A timeout doesn't mean the request failed. Without idempotency support, don't auto-retry unsafe calls; record the attempt, reconcile with the provider and retry only when you know it didn't go through.",
+      "optionNotes": [
+        "That's a tuning issue; duplicate charges are the real risk.",
+        null,
+        "CORS applies to browsers, not server-to-server calls.",
+        "Polly can retry anything you tell it to; that's the danger."
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    },
+    {
+      "id": "aspnet-aspnet-scenarios-009",
+      "topic": "aspnet-scenarios",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You need to log a correlation id for every request, including 404s and requests rejected before model binding. Where should this logic go?",
+      "options": [
+        "In middleware registered early in the pipeline",
+        "In an action filter",
+        "In each controller action",
+        "In a model binder"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Middleware runs for every request regardless of whether MVC handles it. Filters only run for matched controller actions, after routing and some earlier middleware.",
+      "optionNotes": [
+        null,
+        "Action filters don't run for 404s or failures before the action.",
+        "Duplicated and misses requests that never reach an action.",
+        "Model binders aren't meant for cross-cutting concerns."
+      ],
+      "readMore": "/aspnet/aspnet-scenarios/"
+    }
+  ]
+}

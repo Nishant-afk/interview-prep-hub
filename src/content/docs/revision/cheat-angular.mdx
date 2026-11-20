@@ -1,0 +1,62 @@
+---
+title: "Cheat Sheet: Angular & RxJS"
+description: One-page revision of modern Angular (v20-22) and the RxJS operators interviewers ask about.
+sidebar:
+  order: 5
+noProgress: true
+tableOfContents: false
+---
+
+## Modern Angular in one table
+
+| Topic | Modern (v20-22) | Legacy you may still see |
+|---|---|---|
+| Structure | Standalone components, `bootstrapApplication` | NgModules |
+| Inputs/outputs | `input()`, `input.required()`, `output()`, `model()` | `@Input()`, `@Output()` + `EventEmitter` |
+| Queries | `viewChild()`, `contentChildren()` | `@ViewChild` |
+| Control flow | `@if`, `@for (x of xs; track x.id)`, `@switch`, `@defer` | `*ngIf`, `*ngFor` (deprecated in v20) |
+| DI | `inject()` | Constructor injection |
+| Change detection | Zoneless (default for new apps since v21) + OnPush | zone.js |
+| Guards/interceptors | Functions | Classes |
+| Async data | `resource`, `httpResource` (stable in v22) | `subscribe` in `ngOnInit` |
+| Forms | Reactive Forms; Signal Forms (stable in v22) | Untyped forms |
+| Tests | Vitest (default since v21) | Karma + Jasmine |
+
+## Signals
+
+- `signal()` holds writable state, `computed()` derives values (lazy, memoised), `effect()` runs side effects (DOM, logging, storage), and `linkedSignal()` is derived state you can still overwrite. [More](../../angular/signals/)
+- Don't use `effect` to copy one signal into another; use `computed` or `linkedSignal`.
+- **Signals vs RxJS:** signals for state you read synchronously. RxJS for events over time (debounce, cancel, combine streams). Bridge them with `toSignal` and `toObservable`.
+
+## Change detection
+
+- **OnPush** re-checks a component when an input reference changes, an event fires in it, an async pipe emits, a signal it reads changes, or you call `markForCheck()`. [More](../../angular/change-detection/)
+- Mutating an array in place doesn't change the input reference, so an OnPush child won't update. Create a new array instead.
+- `ExpressionChangedAfterItHasBeenChecked` means a value changed during the check (dev mode only). Fix the data flow rather than hiding the error.
+
+## Lifecycle
+
+constructor (DI only) → `ngOnChanges` → `ngOnInit` → `ngDoCheck` → `ngAfterContentInit` → `ngAfterViewInit` → `ngOnDestroy`. Use `DestroyRef` / `takeUntilDestroyed()` for cleanup. [More](../../angular/lifecycle-hooks/)
+
+## DI and routing
+
+- `providedIn: 'root'` gives an app-wide, tree-shakable singleton. Providers on a component create one instance per component subtree. [More](../../angular/dependency-injection/)
+- Lazy-load with `loadComponent` / `loadChildren`. Functional `canActivate`/`canMatch` guards and resolvers. Guards are UX, not security. [More](../../angular/routing/)
+
+## RxJS flattening operators
+
+| Operator | When a new value arrives while the previous inner request runs | Use for |
+|---|---|---|
+| `switchMap` | Cancels the previous | Typeahead search, route params |
+| `mergeMap` | Runs both in parallel | Independent saves, fire-and-forget |
+| `concatMap` | Queues, runs in order | Ordered writes |
+| `exhaustMap` | Ignores the new one | Login / submit button double-clicks |
+
+- `combineLatest` emits the latest of each once all have emitted. `forkJoin` emits once, when all complete (like `Promise.all`). `withLatestFrom` samples another stream. [More](../../angular/rxjs-operators/)
+- **Subjects:** `Subject` (no initial value), `BehaviorSubject` (current value), `ReplaySubject(n)` (last n values). [More](../../angular/rxjs-basics/)
+- Typeahead: `debounceTime(300)`, then `distinctUntilChanged()`, then `switchMap(search)`, then `catchError` inside the switchMap.
+- **Leak prevention:** async pipe, `toSignal`, or `takeUntilDestroyed()`.
+
+## Performance checklist
+
+OnPush or zoneless, `track` in `@for`, `@defer` for heavy below-the-fold parts, lazy routes, `NgOptimizedImage`, virtual scrolling for long lists, bundle budgets. [More](../../angular/performance/)

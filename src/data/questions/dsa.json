@@ -1,0 +1,1320 @@
+{
+  "section": "dsa",
+  "version": 1,
+  "questions": [
+    {
+      "id": "dsa-big-o-001",
+      "topic": "big-o",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the time complexity of binary search on a sorted array of n elements?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "answer": [1],
+      "explanation": "Each step halves the remaining search range, so it takes about log₂ n steps: around 20 for a million elements.",
+      "optionNotes": [
+        "Only a direct index or hash lookup is constant time.",
+        null,
+        "That is linear search.",
+        "That is the cost of sorting first."
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-big-o-002",
+      "topic": "big-o",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "An algorithm performs `3n + n²/2 + 100` operations. What is its Big-O?",
+      "options": ["O(n)", "O(3n + n²)", "O(n²)", "O(100)"],
+      "answer": [2],
+      "explanation": "Big-O keeps only the fastest-growing term and drops constant factors. For large n, `n²/2` dominates `3n` and `100`, and dropping the ½ gives O(n²).",
+      "optionNotes": [
+        "The quadratic term dominates for large n.",
+        "Lower-order terms and constants are dropped.",
+        null,
+        "Constants never dominate a growing term."
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-big-o-003",
+      "topic": "big-o",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`a` has n elements and `b` has m elements. What is the time complexity of this method?",
+      "code": "List<int> Common(int[] a, int[] b)\n{\n    var bList = b.ToList();\n    var result = new List<int>();\n    foreach (int x in a)\n        if (bList.Contains(x)) result.Add(x);\n    return result;\n}",
+      "codeLang": "csharp",
+      "options": ["O(n + m)", "O(n · m)", "O(n log m)", "O(n)"],
+      "answer": [1],
+      "explanation": "`List<T>.Contains` is a linear scan of m items, and it runs once per element of `a`. Building a `HashSet<int>` from `b` instead makes each lookup O(1) on average, bringing the total to O(n + m).",
+      "optionNotes": [
+        "That would need O(1) lookups, e.g. a HashSet.",
+        null,
+        "Contains does not binary search; the list is not sorted.",
+        "The hidden O(m) cost of Contains is missing."
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-big-o-004",
+      "topic": "big-o",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`List<T>.Add` occasionally copies the entire backing array. Why is it still described as O(1)?",
+      "options": [
+        "The copy runs on a background thread",
+        "Copying an array is O(1) because it uses a single memory instruction",
+        "The runtime pre-allocates 1 million slots, so copying never happens in practice",
+        "The capacity doubles, so the total copying over n adds is O(n), which is O(1) per add on average"
+      ],
+      "answer": [3],
+      "explanation": "This is amortised analysis. Because capacity doubles (4, 8, 16, ...), the copies sum to less than 2n element moves across n adds. A single unlucky `Add` is O(n), but the average per operation is constant.",
+      "optionNotes": [
+        "Resizing happens synchronously inside Add.",
+        "Copying n elements is O(n), even with a fast memory copy.",
+        "An empty List starts with capacity 0, then 4.",
+        null
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-big-o-005",
+      "topic": "big-o",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A problem states `1 ≤ n ≤ 10^5`. Which time complexity should your solution aim for?",
+      "options": ["O(n!)", "O(2ⁿ)", "O(n²)", "O(n log n) or better"],
+      "answer": [3],
+      "explanation": "At roughly 10⁸ simple operations per second, n² = 10¹⁰ is far too slow, while n log n ≈ 1.7 × 10⁶ is instant. Constraints around 10⁵ to 10⁶ usually signal sorting, hashing, two pointers or binary search.",
+      "optionNotes": [
+        "Only feasible for n ≤ about 10.",
+        "Only feasible for n ≤ about 20.",
+        "10¹⁰ operations would take minutes.",
+        null
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-big-o-006",
+      "topic": "big-o",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the extra space complexity of this recursive sum?",
+      "code": "int Sum(int[] a, int i) => i == a.Length ? 0 : a[i] + Sum(a, i + 1);",
+      "codeLang": "csharp",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n²)"],
+      "answer": [2],
+      "explanation": "No collections are allocated, but the recursion goes n levels deep and each active call holds a stack frame. Recursion depth counts as space; the iterative loop version is O(1).",
+      "optionNotes": [
+        "Forgets the call stack.",
+        "The depth is n, not log n: the input shrinks by one each call.",
+        null,
+        "Only one frame per level is alive at a time."
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-big-o-007",
+      "topic": "big-o",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is the time complexity of this loop?",
+      "code": "int count = 0;\nfor (int i = n; i > 0; i /= 2)\n    for (int j = 0; j < i; j++)\n        count++;",
+      "codeLang": "csharp",
+      "options": ["O(log n)", "O(n log n)", "O(n²)", "O(n)"],
+      "answer": [3],
+      "explanation": "The inner loop runs n, then n/2, n/4, ... times. That geometric series sums to less than 2n (for n = 16 the count is 31), so the total is O(n). Multiplying 'outer log n × inner n' over-counts because the inner loop shrinks.",
+      "optionNotes": [
+        "The inner loop does real work proportional to i.",
+        "An upper bound, but not tight: the inner loop shrinks each time.",
+        "The outer loop only runs log n times.",
+        null
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-big-o-008",
+      "topic": "big-o",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these .NET operations are O(n) for a collection of n items? (Select all that apply)",
+      "options": [
+        "`List<T>.Insert(0, item)`",
+        "`List<T>.Contains(item)`",
+        "`Queue<T>.Dequeue()`",
+        "`SortedDictionary<K,V>.Add(key, value)`"
+      ],
+      "answer": [0, 1],
+      "explanation": "Inserting at the front of a `List<T>` shifts every element, and `Contains` scans linearly. `Queue<T>.Dequeue` is O(1) because it uses a circular buffer, and `SortedDictionary` is a red-black tree with O(log n) inserts.",
+      "optionNotes": [
+        null,
+        null,
+        "A circular buffer makes dequeue O(1).",
+        "Balanced tree: O(log n)."
+      ],
+      "readMore": "/dsa/big-o/"
+    },
+    {
+      "id": "dsa-arrays-strings-001",
+      "topic": "arrays-strings",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which pattern best fits \"find the length of the longest substring with at most k distinct characters\"?",
+      "options": ["Variable-size sliding window", "Converging two pointers", "Prefix sums", "Binary search"],
+      "answer": [0],
+      "explanation": "The question asks for the longest contiguous part satisfying a condition that stays valid when you shrink the window. Expand `right`, shrink `left` while there are more than k distinct characters, and track the best length.",
+      "optionNotes": [
+        null,
+        "Converging pointers suit sorted pairs and palindromes.",
+        "Prefix sums answer range-sum questions.",
+        "There is no sorted search space here."
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-arrays-strings-002",
+      "topic": "arrays-strings",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Kadane's algorithm initialises `current` and `best` with `nums[0]`. What does it return for `[-3, -1, -2]`?",
+      "options": ["0", "-6", "-1", "-3"],
+      "answer": [2],
+      "explanation": "With all negative numbers, the best non-empty subarray is the single largest element, -1. Initialising `best = 0` would wrongly return 0, the sum of an empty subarray.",
+      "optionNotes": [
+        "That is the bug from initialising best to 0.",
+        "That is the sum of the whole array, which is smaller.",
+        null,
+        "-3 is the first element, not the best."
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-arrays-strings-003",
+      "topic": "arrays-strings",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this method return for `MinSubArrayLen(7, [2, 3, 1, 2, 4, 3])`?",
+      "code": "int MinSubArrayLen(int target, int[] nums)\n{\n    int left = 0, sum = 0, best = int.MaxValue;\n    for (int right = 0; right < nums.Length; right++)\n    {\n        sum += nums[right];\n        while (sum >= target)\n        {\n            best = Math.Min(best, right - left + 1);\n            sum -= nums[left++];\n        }\n    }\n    return best == int.MaxValue ? 0 : best;\n}",
+      "codeLang": "csharp",
+      "options": ["1", "2", "3", "4"],
+      "answer": [1],
+      "explanation": "It is the shortest contiguous subarray with sum ≥ 7. The window `[4, 3]` (sum 7, length 2) is the shortest; no single element reaches 7.",
+      "optionNotes": [
+        "No single element is ≥ 7.",
+        null,
+        "`[2, 4, 3]` sums to 9, but `[4, 3]` is shorter.",
+        "`[2, 3, 1, 2]` is valid but not the shortest."
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-arrays-strings-004",
+      "topic": "arrays-strings",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A variable sliding window has a `while` loop nested inside a `for` loop. Why is it still O(n)?",
+      "options": [
+        "The while loop runs at most once per iteration",
+        "The JIT compiler flattens the nested loops",
+        "Both pointers only move forward, so together they make at most 2n moves",
+        "The window size is bounded by a constant"
+      ],
+      "answer": [2],
+      "explanation": "Count pointer moves rather than loop nesting. `right` advances n times and `left` never moves backwards or past `right`, so the inner loop body runs at most n times across the entire run.",
+      "optionNotes": [
+        "It can run many times in one iteration, but rarely overall.",
+        "Complexity is about the algorithm, not compiler tricks.",
+        null,
+        "The window can grow to the full array."
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-arrays-strings-005",
+      "topic": "arrays-strings",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "With a prefix array where `prefix[0] = 0` and `prefix[i + 1] = prefix[i] + nums[i]`, how do you get the sum of `nums[l..r]` (inclusive)?",
+      "options": [
+        "`prefix[r] - prefix[l]`",
+        "`prefix[r + 1] - prefix[l + 1]`",
+        "`prefix[r] - prefix[l - 1]`",
+        "`prefix[r + 1] - prefix[l]`"
+      ],
+      "answer": [3],
+      "explanation": "`prefix[r + 1]` is the sum of `nums[0..r]` and `prefix[l]` is the sum of `nums[0..l-1]`. Their difference is exactly `nums[l..r]`, and the leading zero means `l = 0` needs no special case.",
+      "optionNotes": [
+        "Misses nums[r].",
+        "Misses nums[l].",
+        "That is the formula without the leading zero, and breaks for l = 0.",
+        null
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-arrays-strings-006",
+      "topic": "arrays-strings",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Container With Most Water, both pointers start at the ends. Why do we always move the pointer at the shorter wall?",
+      "options": [
+        "The shorter wall caps the area, so any container keeping it and getting narrower cannot be larger",
+        "Moving the taller wall would make the loop O(n²)",
+        "It guarantees the next area is larger than the current one",
+        "It is an arbitrary choice; moving either wall gives the same answer"
+      ],
+      "answer": [0],
+      "explanation": "Area is `min(h[l], h[r]) * width`. Every container that keeps the shorter wall and moves the other pointer inward is narrower and still limited by that short wall, so it cannot win. Discarding the shorter wall is safe.",
+      "optionNotes": [
+        null,
+        "Either move is O(1); the issue is correctness.",
+        "The next area can be smaller; we only keep the best seen.",
+        "Moving the taller wall can skip the optimal pair."
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-arrays-strings-007",
+      "topic": "arrays-strings",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You need the number of subarrays whose sum equals k, and the array contains negative numbers. Which approach works in O(n)?",
+      "options": [
+        "Variable sliding window: shrink while sum > k",
+        "Sort the array, then use two pointers",
+        "Running prefix sum plus a hash map counting earlier prefix sums",
+        "Kadane's algorithm with a counter"
+      ],
+      "answer": [2],
+      "explanation": "With negatives, shrinking a window can increase its sum, so the window has no valid rule for moving `left`. A subarray sums to k exactly when two prefix sums differ by k, so counting earlier prefix sums in a map answers it in one pass.",
+      "optionNotes": [
+        "The condition is not monotonic with negative numbers.",
+        "Sorting destroys contiguity, which subarrays need.",
+        null,
+        "Kadane finds a maximum, not a count of exact sums."
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-arrays-strings-008",
+      "topic": "arrays-strings",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "This version of \"longest substring without repeating characters\" is missing the `prev >= left` check. What does it return for `\"abba\"`? (The correct answer is 2.)",
+      "code": "int Longest(string s)\n{\n    var lastSeen = new Dictionary<char, int>();\n    int left = 0, best = 0;\n    for (int right = 0; right < s.Length; right++)\n    {\n        if (lastSeen.TryGetValue(s[right], out int prev)) left = prev + 1;\n        lastSeen[s[right]] = right;\n        best = Math.Max(best, right - left + 1);\n    }\n    return best;\n}",
+      "codeLang": "csharp",
+      "options": ["1", "2", "3", "4"],
+      "answer": [2],
+      "explanation": "At the second `b`, `left` jumps to 2. At the final `a`, the previous `a` was at index 0, which is already outside the window, but the code moves `left` back to 1, giving a window `\"bba\"` of length 3. Only move `left` forward: `if (prev >= left)`.",
+      "optionNotes": [
+        "The window never shrinks that far at the end.",
+        "That is the correct answer, which the bug misses.",
+        null,
+        "The window never covers the whole string."
+      ],
+      "readMore": "/dsa/arrays-strings/"
+    },
+    {
+      "id": "dsa-hashing-001",
+      "topic": "hashing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the average time complexity of `Dictionary<TKey,TValue>.TryGetValue`?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "answer": [0],
+      "explanation": "The hash code selects a bucket directly, so on average only a few entries are compared. It degrades to O(n) only when many keys collide.",
+      "optionNotes": [
+        null,
+        "That is `SortedDictionary`, a balanced tree.",
+        "That is the worst case with many collisions, not the average.",
+        "No single lookup costs this much."
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-hashing-002",
+      "topic": "hashing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You only need to answer \"have I seen this value before?\" while scanning an array. Which collection fits best?",
+      "options": ["`List<int>`", "`Dictionary<int, int>`", "`HashSet<int>`", "`SortedList<int, int>`"],
+      "answer": [2],
+      "explanation": "`HashSet<T>` stores only keys and gives O(1) average `Add`/`Contains`. `Add` even returns false when the value already exists, which doubles as the duplicate check.",
+      "optionNotes": [
+        "Contains is O(n).",
+        "Works, but the value slot is wasted when you only need presence.",
+        null,
+        "O(n) inserts and O(log n) lookups."
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-hashing-003",
+      "topic": "hashing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In the one-pass Two Sum solution, why is `nums[i]` added to the map only after checking for `target - nums[i]`?",
+      "options": [
+        "Adding first would make the lookup O(n)",
+        "To keep the map sorted by index",
+        "Dictionary throws if you read and write the same key in one iteration",
+        "So an element cannot be paired with itself when `target = 2 * nums[i]`"
+      ],
+      "answer": [3],
+      "explanation": "If you insert first, `nums[i]` can find itself as its own complement and return `[i, i]`. Checking first guarantees the partner has a smaller index, and it still handles duplicates like `[3, 3]`, because the first 3 is already in the map.",
+      "optionNotes": [
+        "Insert order does not change lookup cost.",
+        "Dictionaries are not sorted.",
+        "Reading and writing in the same iteration is fine.",
+        null
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-hashing-004",
+      "topic": "hashing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In Group Anagrams, which dictionary key puts `\"eat\"`, `\"tea\"` and `\"ate\"` in the same group?",
+      "options": [
+        "The word's length",
+        "The word's first letter",
+        "The word with its characters sorted",
+        "The word's `GetHashCode()`"
+      ],
+      "answer": [2],
+      "explanation": "Anagrams contain the same letters, so sorting their characters gives the same canonical form, here `\"aet\"`. A 26-letter count signature works too and avoids the sort.",
+      "optionNotes": [
+        "Many non-anagrams share a length.",
+        "Anagrams can start with different letters.",
+        null,
+        "Different strings have different hash codes."
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-hashing-005",
+      "topic": "hashing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "This Subarray Sum Equals K solution forgot to seed the map with `{0: 1}`. What does it return for `nums = [1, 2, 3]`, `k = 3`? (The correct answer is 2.)",
+      "code": "var prefixCount = new Dictionary<int, int>();   // missing [0] = 1\nint sum = 0, count = 0;\nforeach (int x in nums)\n{\n    sum += x;\n    count += prefixCount.GetValueOrDefault(sum - k);\n    prefixCount[sum] = prefixCount.GetValueOrDefault(sum) + 1;\n}\nreturn count;",
+      "codeLang": "csharp",
+      "options": ["0", "1", "2", "3"],
+      "answer": [1],
+      "explanation": "It finds `[3]` (prefix 6 minus earlier prefix 3) but misses `[1, 2]`, which starts at index 0 and needs the empty prefix 0 to be in the map. The seed `{0: 1}` represents that empty prefix.",
+      "optionNotes": [
+        "`[3]` is still found.",
+        null,
+        "That needs the {0: 1} seed.",
+        "Only two subarrays sum to 3 at all."
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-hashing-006",
+      "topic": "hashing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`Point` is a plain class with public fields `X` and `Y` and no `Equals`/`GetHashCode` overrides. What does the last line print?",
+      "code": "var map = new Dictionary<Point, string>();\nmap[new Point(1, 2)] = \"A\";\nConsole.WriteLine(map.ContainsKey(new Point(1, 2)));",
+      "codeLang": "csharp",
+      "options": ["False", "True", "It throws KeyNotFoundException", "It does not compile"],
+      "answer": [0],
+      "explanation": "Without overrides, a class uses reference equality and an identity-based hash code, so a second `new Point(1, 2)` is a different key. Declaring `Point` as a `record` (or using a tuple) gives value equality and prints True.",
+      "optionNotes": [
+        null,
+        "That would need value equality, e.g. a record.",
+        "ContainsKey never throws for a missing key; the indexer getter does.",
+        "Any type can be a dictionary key."
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-hashing-007",
+      "topic": "hashing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In Longest Consecutive Sequence, the code loops `foreach (int x in nums)` (the original array) instead of over the `HashSet`. Which input exposes a performance problem?",
+      "options": [
+        "An empty array",
+        "An array of distinct numbers in random order",
+        "A long run such as 1..5000 followed by thousands of copies of 1",
+        "An array of all negative numbers"
+      ],
+      "answer": [2],
+      "explanation": "Each copy of the run start `1` passes the \"x - 1 not in set\" check and re-counts the whole run. With n/2 copies and a run of length n/2 this becomes O(n²). Iterating the set visits each distinct start once, keeping it O(n).",
+      "optionNotes": [
+        "Nothing to iterate.",
+        "Each run start appears once, so it stays O(n).",
+        null,
+        "Sign does not matter to the algorithm."
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-hashing-008",
+      "topic": "hashing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A custom key type's `GetHashCode()` always returns 1 (but `Equals` is correct). What is the total cost of adding n distinct keys to a `Dictionary`?",
+      "options": [
+        "O(n)",
+        "O(n log n)",
+        "O(n²)",
+        "It throws once two keys collide"
+      ],
+      "answer": [2],
+      "explanation": "Every key lands in the same bucket, so each insert walks the whole chain calling `Equals` to check for duplicates: 1 + 2 + ... + n comparisons, O(n²) in total. The results stay correct, only performance collapses.",
+      "optionNotes": [
+        "Only true when hashes spread keys across buckets.",
+        ".NET Dictionary chains collisions; it does not switch to a tree.",
+        null,
+        "Collisions are expected and handled by chaining."
+      ],
+      "readMore": "/dsa/hashing/"
+    },
+    {
+      "id": "dsa-stacks-queues-001",
+      "topic": "stacks-queues",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which data structure is the natural fit for checking whether brackets like `{[()]}` are balanced?",
+      "options": ["Queue", "Stack", "Hash set", "Min-heap"],
+      "answer": [1],
+      "explanation": "The most recently opened bracket must be the first one closed, which is last-in-first-out. Push openers and, on each closer, pop and compare.",
+      "optionNotes": [
+        "FIFO order would match the first opener, not the latest.",
+        null,
+        "A set loses order and counts.",
+        "Ordering by value is irrelevant here."
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-002",
+      "topic": "stacks-queues",
+      "difficulty": "easy",
+      "type": "single",
+      "question": ".NET has no built-in `Deque<T>`. Which BCL type gives O(1) add and remove at both ends?",
+      "options": ["`List<T>`", "`Queue<T>`", "`LinkedList<T>`", "`SortedSet<T>`"],
+      "answer": [2],
+      "explanation": "`LinkedList<T>` is doubly linked, with O(1) `AddFirst`, `AddLast`, `RemoveFirst` and `RemoveLast`. The cost is one heap-allocated node per item; a circular array avoids that in hot paths.",
+      "optionNotes": [
+        "Removing at index 0 is O(n).",
+        "Only removes from the front.",
+        null,
+        "Operations are O(log n) and it removes duplicates."
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-003",
+      "topic": "stacks-queues",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Daily Temperatures returns, for each day, the number of days until a warmer one (0 if none). What is the output for `[30, 40, 35, 50]`?",
+      "options": ["`[1, 1, 1, 0]`", "`[1, 2, 1, 0]`", "`[1, 0, 1, 0]`", "`[3, 2, 1, 0]`"],
+      "answer": [1],
+      "explanation": "30 → 40 is 1 day; 40 waits until 50, 2 days later; 35 → 50 is 1 day; 50 has no warmer day. In the monotonic stack, 50 pops both 35 and 40.",
+      "optionNotes": [
+        "35 is not warmer than 40.",
+        null,
+        "40 does get a warmer day: 50.",
+        "These are distances to the last day, not the next warmer one."
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-004",
+      "topic": "stacks-queues",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is a monotonic stack solution O(n) even though it has a `while` loop inside a `for` loop?",
+      "options": [
+        "The while loop pops at most one element per iteration",
+        "`Stack<T>.Pop` is amortised O(1/n)",
+        "The stack never holds more than a constant number of elements",
+        "Each index is pushed once and popped at most once over the whole run"
+      ],
+      "answer": [3],
+      "explanation": "There are n pushes, so there can be at most n pops in total. The while loop's body therefore runs at most n times across all iterations, for O(n) overall.",
+      "optionNotes": [
+        "One new element can pop many old ones.",
+        "Pop is O(1); there is no O(1/n).",
+        "For decreasing input the stack holds all n elements.",
+        null
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-005",
+      "topic": "stacks-queues",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Min Stack, why store each value together with the minimum at the time it was pushed, instead of one `currentMin` field?",
+      "options": [
+        "When the minimum is popped, the previous minimum is restored without rescanning",
+        "It halves the memory usage",
+        "Tuples are faster to push than ints",
+        "It makes Push O(log n), which is required"
+      ],
+      "answer": [0],
+      "explanation": "With a single field, popping the current minimum leaves you not knowing the next one, and finding it is O(n). Storing the running minimum per entry means the new top always knows the minimum below it, so `GetMin` stays O(1).",
+      "optionNotes": [
+        null,
+        "It uses more memory, not less.",
+        "Speed of tuples is not the point.",
+        "All operations are O(1)."
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-006",
+      "topic": "stacks-queues",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A queue built from two stacks moves all items from `in` to `out` only when `out` is empty. What is the cost of `Dequeue`?",
+      "options": [
+        "O(1) worst case",
+        "O(n) for every call",
+        "O(n) worst case, O(1) amortised",
+        "O(log n) amortised"
+      ],
+      "answer": [2],
+      "explanation": "A single dequeue may move n items, but each item is moved from `in` to `out` exactly once in its lifetime. Spread over all operations, that is constant work per item.",
+      "optionNotes": [
+        "The transfer step can move n items at once.",
+        "Only true if you transfer on every call, which is the classic mistake.",
+        null,
+        "Nothing here is logarithmic."
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-007",
+      "topic": "stacks-queues",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In Sliding Window Maximum, the deque drops indices from the back whose values are ≤ the new element. Why can those indices be thrown away safely?",
+      "options": [
+        "They are already outside the current window",
+        "Values ≤ the new element are duplicates",
+        "The deque must stay at size k",
+        "A newer element at least as large outlives them in every future window"
+      ],
+      "answer": [3],
+      "explanation": "Any future window containing an older, smaller element also contains the newer, larger one, which entered later and leaves later. So the older one can never be the maximum again. This keeps the deque decreasing and the whole algorithm O(n).",
+      "optionNotes": [
+        "Out-of-window indices are removed from the front, not the back.",
+        "They need not be equal; smaller values are dropped too.",
+        "The deque is often much smaller than k.",
+        null
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-008",
+      "topic": "stacks-queues",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does this C# code print?",
+      "code": "var stack = new Stack<int>(new[] { 1, 2, 3 });\nConsole.WriteLine(string.Join(\",\", stack));",
+      "codeLang": "csharp",
+      "options": [
+        "3,2,1",
+        "1,2,3",
+        "3",
+        "System.Collections.Generic.Stack`1[System.Int32]"
+      ],
+      "answer": [0],
+      "explanation": "The constructor pushes 1, then 2, then 3, so 3 is on top. Enumerating a `Stack<T>` yields items in pop order, top first. A `Queue<T>` built the same way enumerates as 1,2,3.",
+      "optionNotes": [
+        null,
+        "That is the Queue<T> order.",
+        "string.Join enumerates every element.",
+        "string.Join takes the IEnumerable<int> overload, not ToString()."
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-stacks-queues-009",
+      "topic": "stacks-queues",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "To find the next **smaller** element to the right of each item with a monotonic stack, how should the stack be ordered from bottom to top?",
+      "options": [
+        "Decreasing: pop smaller items when a bigger one arrives",
+        "Sorted by index, newest at the bottom",
+        "Increasing: pop bigger items when a smaller one arrives",
+        "Order does not matter if you store indices"
+      ],
+      "answer": [2],
+      "explanation": "Items wait on the stack until a smaller element arrives; that element is their answer and pops them. What remains is increasing from bottom to top. \"Next greater\" is the mirror image: a decreasing stack.",
+      "optionNotes": [
+        "That is the setup for next greater element.",
+        "Newest is always on top in a stack.",
+        null,
+        "Indices still need a value order to work."
+      ],
+      "readMore": "/dsa/stacks-queues/"
+    },
+    {
+      "id": "dsa-linked-lists-001",
+      "topic": "linked-lists",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which technique finds the middle node of a singly linked list in one pass with O(1) extra space?",
+      "options": ["A dummy head node", "Reversing the list first", "A hash set of visited nodes", "Fast and slow pointers"],
+      "answer": [3],
+      "explanation": "`slow` moves one node per step and `fast` moves two. When `fast` reaches the end, `slow` has covered half the distance and sits in the middle.",
+      "optionNotes": [
+        "Dummy nodes simplify head changes, not this.",
+        "Reversal is unnecessary and changes the list.",
+        "Uses O(n) space and doesn't give the middle.",
+        null
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-linked-lists-002",
+      "topic": "linked-lists",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main benefit of a dummy (sentinel) node placed before the head?",
+      "options": [
+        "Operations that may change the head need no special case",
+        "It makes the list doubly linked",
+        "It turns O(n) searches into O(1)",
+        "It prevents cycles"
+      ],
+      "answer": [0],
+      "explanation": "With a dummy node every real node has a predecessor, so merging, removing the first node or partitioning use one code path. Return `dummy.next` at the end.",
+      "optionNotes": [
+        null,
+        "It adds no backward links.",
+        "Searching is still O(n).",
+        "Cycles depend on how you link nodes."
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-linked-lists-003",
+      "topic": "linked-lists",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What are the time and extra space complexities of reversing a linked list recursively?",
+      "options": ["O(n) time, O(1) space", "O(log n) time, O(log n) space", "O(n²) time, O(1) space", "O(n) time, O(n) space"],
+      "answer": [3],
+      "explanation": "Each node is visited once, but every call stays on the stack until the recursion reaches the tail, so depth is n. That is why the iterative version (O(1) space) is preferred, and very long lists can overflow the stack.",
+      "optionNotes": [
+        "That is the iterative version.",
+        "Recursion depth is n, not log n.",
+        "Each node is handled once.",
+        null
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-linked-lists-004",
+      "topic": "linked-lists",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "For the list `1 → 2 → 3 → 4`, what value does this method return?",
+      "code": "ListNode? MiddleNode(ListNode? head)\n{\n    ListNode? slow = head, fast = head;\n    while (fast?.next != null)\n    {\n        slow = slow!.next;\n        fast = fast.next.next;\n    }\n    return slow;\n}",
+      "codeLang": "csharp",
+      "options": ["1", "2", "3", "4"],
+      "answer": [2],
+      "explanation": "Step 1: slow = 2, fast = 3. Step 2: slow = 3, fast = null (past 4). The loop stops, returning 3, the second of the two middles. Looping while `fast.next?.next != null` would return the first middle, 2.",
+      "optionNotes": [
+        "slow moves at least once.",
+        "That is the first middle, which needs a different loop condition.",
+        null,
+        "slow only covers half the list."
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-linked-lists-005",
+      "topic": "linked-lists",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an LRU cache built from `Dictionary<int, LinkedListNode<(int Key, int Value)>>` and `LinkedList<(int Key, int Value)>`, why does each list node store the key?",
+      "options": [
+        "On eviction you remove the last node and need its key to delete the dictionary entry",
+        "LinkedList requires tuple elements",
+        "To keep the list sorted by key",
+        "So Get can search the list by key"
+      ],
+      "answer": [0],
+      "explanation": "Eviction takes the least recently used node from the tail. Without its key you could not find the matching dictionary entry except by an O(n) search. Get uses the dictionary, never a list search.",
+      "optionNotes": [
+        null,
+        "LinkedList<T> accepts any T.",
+        "The list is ordered by recency, not key.",
+        "Searching the list would make Get O(n)."
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-linked-lists-006",
+      "topic": "linked-lists",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "To remove the nth node from the end in one pass, `fast` starts n nodes ahead of `slow` (both from a dummy node). When `fast` reaches the last node, where is `slow`?",
+      "options": [
+        "On the node to remove",
+        "On the head",
+        "On the node just before the one to remove",
+        "On the middle node"
+      ],
+      "answer": [2],
+      "explanation": "The gap between the pointers stays n. When `fast` is on the last node, `slow` is n + 1 nodes from the end, which is the predecessor of the target, so `slow.next = slow.next.next` unlinks it.",
+      "optionNotes": [
+        "Starting from the dummy shifts slow one node earlier, which is the point.",
+        "Only when the head itself is removed is slow the dummy.",
+        null,
+        "The gap is n, not half the list."
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-linked-lists-007",
+      "topic": "linked-lists",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "This reversal forgets to save `next` before overwriting it. What does it return for `1 → 2 → 3`?",
+      "code": "ListNode? prev = null, curr = head;\nwhile (curr != null)\n{\n    curr.next = prev;\n    prev = curr;\n    curr = curr.next;   // already overwritten!\n}\nreturn prev;",
+      "codeLang": "csharp",
+      "options": [
+        "`3 → 2 → 1`",
+        "`1 → 2 → 3` unchanged",
+        "An infinite loop",
+        "`1` alone (nodes 2 and 3 are lost)"
+      ],
+      "answer": [3],
+      "explanation": "In the first iteration `1.next` becomes null, and then `curr = curr.next` reads that null. The loop ends after one node and returns `1` with no successor; the rest of the list is unreachable. Always store `next` first.",
+      "optionNotes": [
+        "That needs the saved next pointer.",
+        "The first node's next is overwritten to null.",
+        "curr becomes null, so the loop ends.",
+        null
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-linked-lists-008",
+      "topic": "linked-lists",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "After Floyd's slow and fast pointers meet inside a cycle, how do you find the node where the cycle starts?",
+      "options": [
+        "Move one pointer back to head, then advance both one step at a time until they meet",
+        "Return the meeting node; it is always the cycle start",
+        "Keep moving fast two steps until it reaches head",
+        "Count the cycle length, then binary search for the start"
+      ],
+      "answer": [0],
+      "explanation": "The distance from head to the cycle start equals the distance from the meeting point to the cycle start (modulo the loop length). Moving both at the same speed from those two places makes them meet exactly at the start, in O(n) time and O(1) space.",
+      "optionNotes": [
+        null,
+        "The meeting point is generally inside the loop, not at its start.",
+        "If head is outside the cycle, fast never reaches it.",
+        "Linked lists have no random access for binary search."
+      ],
+      "readMore": "/dsa/linked-lists/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-001",
+      "topic": "recursion-backtracking",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What happens in C# if a recursive function has no reachable base case?",
+      "options": [
+        "It returns default(T) after 1,000 calls",
+        "The compiler rejects it",
+        "It recurses until the stack runs out and throws StackOverflowException",
+        "The JIT converts it into a loop"
+      ],
+      "answer": [2],
+      "explanation": "Each call adds a stack frame until the thread's stack (about 1 MB by default) is exhausted. In .NET a StackOverflowException cannot be caught and terminates the process.",
+      "optionNotes": [
+        "There is no built-in call limit that returns a default.",
+        "The compiler does not analyse termination.",
+        null,
+        "The .NET JIT does not guarantee tail-call elimination for C#."
+      ],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-002",
+      "topic": "recursion-backtracking",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How many subsets (including the empty set) does a set of 4 distinct elements have?",
+      "options": ["8", "12", "16", "24"],
+      "answer": [2],
+      "explanation": "Each element is either in or out of a subset, giving 2 × 2 × 2 × 2 = 2⁴ = 16. That 2ⁿ growth is why subset problems only work for small n.",
+      "optionNotes": [
+        "That is 2³, for 3 elements.",
+        "Not a power of two.",
+        null,
+        "That is 4!, the number of permutations."
+      ],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-003",
+      "topic": "recursion-backtracking",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "This subsets implementation adds `current` directly instead of a copy. What does it return for `[1, 2]`?",
+      "code": "var result = new List<IList<int>>();\nvar current = new List<int>();\nvoid Backtrack(int start)\n{\n    result.Add(current);              // no copy\n    for (int i = start; i < nums.Length; i++)\n    {\n        current.Add(nums[i]);\n        Backtrack(i + 1);\n        current.RemoveAt(current.Count - 1);\n    }\n}\nBacktrack(0);",
+      "codeLang": "csharp",
+      "options": [
+        "`[], [1], [1,2], [2]`",
+        "Only `[]`, because the list is cleared",
+        "`[1,2]` four times",
+        "Four references to the same list, which is empty at the end"
+      ],
+      "answer": [3],
+      "explanation": "All four entries reference the one `current` list. After the final un-choose step it is empty, so the result prints as four empty lists. Use `new List<int>(current)` to snapshot it.",
+      "optionNotes": [
+        "That is the correct output, which needs a copy.",
+        "Four entries are still added.",
+        "The shared list ends empty, not full.",
+        null
+      ],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-004",
+      "topic": "recursion-backtracking",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Combination Sum, the recursive call is `Backtrack(i, remaining - candidates[i])` rather than `Backtrack(i + 1, ...)`. Why?",
+      "options": [
+        "Each candidate may be used an unlimited number of times",
+        "To avoid an off-by-one error at the end of the array",
+        "To generate permutations instead of combinations",
+        "To skip duplicate candidates"
+      ],
+      "answer": [0],
+      "explanation": "Passing `i` allows the same candidate to be picked again at the next level, so `[2, 2, 3]` is possible. `i + 1` would limit each candidate to one use, which is Combination Sum II.",
+      "optionNotes": [
+        null,
+        "The loop bounds handle the end of the array.",
+        "Starting from i (not 0) still prevents reordered duplicates.",
+        "Duplicates are skipped with a separate check."
+      ],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-005",
+      "topic": "recursion-backtracking",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the time complexity of generating all permutations of n distinct elements and returning them as lists?",
+      "options": ["O(2ⁿ)", "O(n²)", "O(n · n!)", "O(n log n)"],
+      "answer": [2],
+      "explanation": "There are n! permutations, and copying each into the result costs O(n). No algorithm can beat the size of its output, so O(n · n!) is optimal here.",
+      "optionNotes": ["That is the number of subsets.", "Far too small for n! outputs.", null, "That is a sorting bound."],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-006",
+      "topic": "recursion-backtracking",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which of these recursive solutions benefits from memoisation?",
+      "options": [
+        "Generating all subsets of an array",
+        "Printing every root-to-leaf path in a tree",
+        "Generating all permutations",
+        "Counting the ways to climb n stairs taking 1 or 2 steps"
+      ],
+      "answer": [3],
+      "explanation": "Climbing stairs calls `ways(n-1)` and `ways(n-2)`, which overlap heavily, and the result depends only on n. Caching drops it from O(2ⁿ) to O(n). The other problems build a different partial answer on every path, so there is nothing to reuse.",
+      "optionNotes": [
+        "Each branch produces a different subset.",
+        "Each path is distinct; nothing repeats.",
+        "Each branch produces a different ordering.",
+        null
+      ],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-007",
+      "topic": "recursion-backtracking",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Subsets II sorts the input and skips duplicates. If the skip condition is written as `i > 0` instead of `i > start`, how many subsets does it return for `[1, 2, 2]`? (The correct answer is 6.)",
+      "code": "if (i > 0 && nums[i] == nums[i - 1]) continue;",
+      "codeLang": "csharp",
+      "options": ["4", "6", "8", "3"],
+      "answer": [0],
+      "explanation": "With `i > 0`, the second 2 is skipped even when it is the first choice at a deeper level, so `[1,2,2]` and `[2,2]` are lost. The result is `[], [1], [1,2], [2]`. With `i > start`, duplicates are only skipped among siblings at the same level.",
+      "optionNotes": [
+        null,
+        "That needs the `i > start` condition.",
+        "8 would include duplicate subsets; this code removes too many.",
+        "The empty set, [1], [1,2] and [2] all survive."
+      ],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-recursion-backtracking-008",
+      "topic": "recursion-backtracking",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In Word Search, a cell is marked `'#'` before exploring its neighbours and restored afterwards. What goes wrong if you forget to restore it?",
+      "options": [
+        "Cells used by a failed path stay blocked, so a valid path through them may be missed",
+        "The search revisits cells and loops forever",
+        "Nothing; the mark is only cosmetic",
+        "It throws IndexOutOfRangeException"
+      ],
+      "answer": [0],
+      "explanation": "The mark stops a single path from reusing a cell. Without the un-choose step, cells touched by an abandoned path remain blocked for every later path, which can wrongly return false. Restoring the state is what makes it backtracking.",
+      "optionNotes": [
+        null,
+        "The mark still prevents reuse, so there is no infinite loop.",
+        "The mark prevents reusing a cell within one path.",
+        "Bounds are checked before reading the cell."
+      ],
+      "readMore": "/dsa/recursion-backtracking/"
+    },
+    {
+      "id": "dsa-binary-search-001",
+      "topic": "binary-search",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What must be true of the data for a classic binary search over an array to work?",
+      "options": [
+        "It must be sorted",
+        "It must contain no duplicates",
+        "Its length must be a power of two",
+        "It must fit in the CPU cache"
+      ],
+      "answer": [0],
+      "explanation": "Binary search discards half the range after comparing with the middle, which is only valid if the order tells you which half can contain the target. Duplicates are allowed; you just need lower/upper bound to find a specific occurrence.",
+      "optionNotes": [
+        null,
+        "Duplicates are fine; use lower bound for the first one.",
+        "Any length works.",
+        "Cache size affects speed, not correctness."
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-binary-search-002",
+      "topic": "binary-search",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "About how many iterations does binary search need, at most, on a sorted array of 1,000,000 elements?",
+      "options": ["10", "20", "1,000", "500,000"],
+      "answer": [1],
+      "explanation": "Each iteration halves the range, and 2²⁰ ≈ 1,048,576, so about 20 halvings reduce a million elements to one.",
+      "optionNotes": [
+        "2¹⁰ is only about 1,000.",
+        null,
+        "That is roughly √n, not log n.",
+        "That is a linear scan of half the array."
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-binary-search-003",
+      "topic": "binary-search",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is `int mid = lo + (hi - lo) / 2;` preferred over `int mid = (lo + hi) / 2;` in C#?",
+      "options": [
+        "It rounds up instead of down",
+        "Division by 2 is slower than subtraction",
+        "`lo + hi` can overflow `int` for large values, producing a negative mid",
+        "It avoids an infinite loop when lo == hi"
+      ],
+      "answer": [2],
+      "explanation": "When `lo` and `hi` are both above about 1.07 billion (common when searching an answer space), their sum exceeds `int.MaxValue` and wraps negative. `hi - lo` never overflows, so the result is the same mid without the bug.",
+      "optionNotes": [
+        "Both round down for non-negative values.",
+        "Performance is not the concern.",
+        null,
+        "Loop termination depends on how lo and hi are updated."
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-binary-search-004",
+      "topic": "binary-search",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this lower-bound function return for `nums = [1, 2, 2, 2, 3]`, `target = 2`?",
+      "code": "int LowerBound(int[] nums, int target)\n{\n    int lo = 0, hi = nums.Length;\n    while (lo < hi)\n    {\n        int mid = lo + (hi - lo) / 2;\n        if (nums[mid] < target) lo = mid + 1;\n        else hi = mid;\n    }\n    return lo;\n}",
+      "codeLang": "csharp",
+      "options": ["1", "2", "3", "-1"],
+      "answer": [0],
+      "explanation": "Lower bound returns the first index whose value is ≥ target: index 1, the first 2. `hi = mid` keeps a matching `mid` in range so the search keeps narrowing towards the leftmost match.",
+      "optionNotes": [
+        null,
+        "That is just some occurrence, as a classic search might return.",
+        "That is the last occurrence.",
+        "This function never returns -1; for a missing target it returns the insertion point."
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-binary-search-005",
+      "topic": "binary-search",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Koko Eating Bananas (find the minimum eating speed to finish all piles in h hours), what does the binary search run over?",
+      "options": [
+        "The indices of the piles array, after sorting it",
+        "The prefix sums of the piles",
+        "The hours from 1 to h",
+        "Speeds from 1 to max(piles), with a monotonic feasibility check"
+      ],
+      "answer": [3],
+      "explanation": "This is binary search on the answer space. If speed s works, any faster speed works too, so the predicate is false...false, true...true over speeds, and you search for the first true. Each check is O(n).",
+      "optionNotes": [
+        "The answer is a speed, not a pile index.",
+        "Prefix sums do not express the per-pile ceiling.",
+        "Hours are the constraint, not the answer.",
+        null
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-binary-search-006",
+      "topic": "binary-search",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "When binary searching a rotated sorted array such as `[4,5,6,7,0,1,2]`, what is always true when you split at `mid`?",
+      "options": [
+        "At least one of the two halves is sorted",
+        "Both halves are sorted",
+        "The left half is always sorted",
+        "The minimum is always at mid"
+      ],
+      "answer": [0],
+      "explanation": "The rotation point can only be on one side of `mid`, so the other side is in order. Check which half is sorted, test whether the target lies within its range, and discard the other half.",
+      "optionNotes": [
+        null,
+        "The half containing the rotation point is not sorted.",
+        "For [6,7,0,1,2,4,5] with mid at 1, the left half is unsorted.",
+        "The minimum is at the rotation point, which can be anywhere."
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-binary-search-007",
+      "topic": "binary-search",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "When does this loop fail to terminate?",
+      "code": "while (lo < hi)\n{\n    int mid = lo + (hi - lo) / 2;\n    if (Condition(mid)) lo = mid;\n    else hi = mid - 1;\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Never; the range always shrinks",
+        "When `Condition` is false for every value",
+        "When `hi == lo + 1` and `Condition(mid)` is true",
+        "Only when the array is empty"
+      ],
+      "answer": [2],
+      "explanation": "With two elements left, `mid` rounds down to `lo`. If the condition is true, `lo = mid` leaves the range unchanged, forever. When moving `lo = mid`, round the midpoint up: `mid = lo + (hi - lo + 1) / 2`.",
+      "optionNotes": [
+        "`lo = mid` does not shrink the range when mid == lo.",
+        "`hi = mid - 1` always shrinks the range.",
+        null,
+        "With lo == hi the loop never starts."
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-binary-search-008",
+      "topic": "binary-search",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "int[] a = { 1, 3, 5, 7 };\nConsole.WriteLine(Array.BinarySearch(a, 4));",
+      "codeLang": "csharp",
+      "options": ["-1", "2", "-3", "It throws KeyNotFoundException"],
+      "answer": [2],
+      "explanation": "When the value is missing, `Array.BinarySearch` returns the bitwise complement of the index where it would be inserted. 4 belongs at index 2, and `~2` is -3. Use `~result` to recover the insertion point.",
+      "optionNotes": [
+        "It returns more information than a plain -1.",
+        "That is the insertion point, but it is returned as its complement.",
+        null,
+        "BinarySearch never throws for a missing value."
+      ],
+      "readMore": "/dsa/binary-search/"
+    },
+    {
+      "id": "dsa-sorting-001",
+      "topic": "sorting",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which of these sorting algorithms is stable?",
+      "options": ["Quick sort", "Heap sort", "Merge sort", "Selection sort"],
+      "answer": [2],
+      "explanation": "Merge sort keeps equal elements in their original order as long as the merge takes from the left half on ties (`<=`). Quick sort, heap sort and selection sort all swap elements across long distances, which can reorder equal keys.",
+      "optionNotes": [
+        "Partitioning swaps can reorder equal keys.",
+        "Heap operations reorder equal keys.",
+        null,
+        "Long-distance swaps break stability."
+      ],
+      "readMore": "/dsa/sorting/"
+    },
+    {
+      "id": "dsa-sorting-002",
+      "topic": "sorting",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the worst-case time complexity of quick sort?",
+      "options": ["O(n log n)", "O(n²)", "O(n)", "O(log n)"],
+      "answer": [1],
+      "explanation": "If every pivot is the smallest or largest element (e.g. a last-element pivot on sorted input), each partition removes only one element, giving n + (n-1) + ... = O(n²). The average case is O(n log n).",
+      "optionNotes": [
+        "That is the average case.",
+        null,
+        "No comparison sort is linear in the worst case.",
+        "Sorting must at least look at every element."
+      ],
+      "readMore": "/dsa/sorting/"
+    },
+    {
+      "id": "dsa-sorting-003",
+      "topic": "sorting",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which algorithm do `Array.Sort` and `List<T>.Sort` use in modern .NET?",
+      "options": [
+        "Merge sort (stable)",
+        "TimSort (stable)",
+        "Bubble sort for small arrays only",
+        "Introsort (unstable)"
+      ],
+      "answer": [3],
+      "explanation": "Introsort combines quick sort, insertion sort for small partitions (16 elements or fewer) and a heap sort fallback when recursion gets too deep. It is in place, O(n log n) in the worst case, and not stable.",
+      "optionNotes": [
+        "LINQ OrderBy is stable, but Array.Sort is not merge sort.",
+        "TimSort is what V8 uses for JavaScript.",
+        "Insertion sort, not bubble sort, handles small partitions.",
+        null
+      ],
+      "readMore": "/dsa/sorting/"
+    },
+    {
+      "id": "dsa-sorting-004",
+      "topic": "sorting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this JavaScript/TypeScript expression return?",
+      "code": "[10, 9, 1].sort()",
+      "codeLang": "ts",
+      "options": ["[1, 9, 10]", "[10, 9, 1]", "[1, 10, 9]", "[9, 10, 1]"],
+      "answer": [2],
+      "explanation": "Without a comparator, `sort` converts elements to strings and compares them as text, and \"10\" comes before \"9\". Always pass `(a, b) => a - b` for numbers.",
+      "optionNotes": [
+        "That needs a numeric comparator.",
+        "sort does reorder the array.",
+        null,
+        "\"1\" is smallest as a string."
+      ],
+      "readMore": "/dsa/sorting/"
+    },
+    {
+      "id": "dsa-sorting-005",
+      "topic": "sorting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A list of orders is already sorted by date. You must now sort it by customer while keeping each customer's orders in date order. Which C# approach guarantees this?",
+      "options": [
+        "`orders.Sort((a, b) => a.Customer.CompareTo(b.Customer))`",
+        "`Array.Sort(ordersArray, byCustomerComparer)`",
+        "`orders.OrderBy(o => o.Customer).ToList()`",
+        "`orders.Reverse()` followed by `orders.Sort(...)`"
+      ],
+      "answer": [2],
+      "explanation": "LINQ `OrderBy` is a stable sort, so orders with the same customer keep their existing (date) order. `List<T>.Sort` and `Array.Sort` use unstable introsort. Alternatively, sort once with `OrderBy(o => o.Customer).ThenBy(o => o.Date)`.",
+      "optionNotes": [
+        "List<T>.Sort is unstable.",
+        "Array.Sort is unstable.",
+        null,
+        "Reversing does not make an unstable sort stable."
+      ],
+      "readMore": "/dsa/sorting/"
+    },
+    {
+      "id": "dsa-sorting-006",
+      "topic": "sorting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the risk in this comparer for `int` values?",
+      "code": "list.Sort((a, b) => a - b);",
+      "codeLang": "csharp",
+      "options": [
+        "`a - b` can overflow for large magnitudes and return the wrong sign",
+        "It sorts in descending order",
+        "It is not allowed to return values other than -1, 0 and 1",
+        "Lambdas cannot be used as comparers"
+      ],
+      "answer": [0],
+      "explanation": "For example `int.MinValue - 1` wraps to a large positive number, inverting the order and breaking transitivity. Use `a.CompareTo(b)` or `Comparer<int>.Default`.",
+      "optionNotes": [
+        null,
+        "a - b sorts ascending when it doesn't overflow.",
+        "Any negative, zero or positive value is allowed.",
+        "`Comparison<T>` lambdas are accepted by List<T>.Sort."
+      ],
+      "readMore": "/dsa/sorting/"
+    },
+    {
+      "id": "dsa-sorting-007",
+      "topic": "sorting",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In Largest Number (arrange `[3, 30, 34, 5, 9]` into the largest possible number), which ordering rule is correct?",
+      "options": [
+        "Sort numerically, descending",
+        "Sort the digit strings in descending lexicographic order",
+        "Put `a` before `b` when the string `a + b` is greater than `b + a`",
+        "Sort by number of digits, then by value"
+      ],
+      "answer": [2],
+      "explanation": "Only the concatenation rule compares what actually matters: which order produces the bigger result. Plain string order puts \"30\" before \"3\" and builds \"303\" instead of \"330\". The result here is \"9534330\".",
+      "optionNotes": [
+        "Puts 34 and 30 before 9.",
+        "\"30\" sorts above \"3\" as text, which is wrong here.",
+        null,
+        "Digit count is unrelated to the best order."
+      ],
+      "readMore": "/dsa/sorting/"
+    },
+    {
+      "id": "dsa-sorting-008",
+      "topic": "sorting",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What are the average and worst-case time complexities of quickselect for finding the kth largest element?",
+      "options": [
+        "O(n log n) average, O(n log n) worst",
+        "O(n) average, O(n) worst",
+        "O(log n) average, O(n) worst",
+        "O(n) average, O(n²) worst"
+      ],
+      "answer": [3],
+      "explanation": "Quickselect partitions like quick sort but recurses into only one side, so the expected work is n + n/2 + n/4 + ... < 2n. Consistently bad pivots (or many duplicates with a two-way partition) still give O(n²).",
+      "optionNotes": [
+        "That is the cost of sorting first.",
+        "Guaranteed linear time needs median-of-medians, which plain quickselect does not use.",
+        "Partitioning alone looks at every element.",
+        null
+      ],
+      "readMore": "/dsa/sorting/"
+    }
+  ]
+}

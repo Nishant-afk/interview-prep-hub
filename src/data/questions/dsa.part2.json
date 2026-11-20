@@ -1,0 +1,1476 @@
+{
+  "section": "dsa",
+  "version": 1,
+  "questions": [
+    {
+      "id": "dsa-trees-bst-001",
+      "topic": "trees-bst",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does an inorder traversal of a valid binary search tree produce?",
+      "options": [
+        "The values in insertion order",
+        "The values in ascending sorted order",
+        "The values level by level from the root",
+        "The root first, then the left and right subtrees"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Inorder visits left subtree, node, right subtree. In a BST everything on the left is smaller and everything on the right is larger, so the output is sorted ascending.",
+      "optionNotes": [
+        "Traversal order depends on tree shape, not insertion order.",
+        null,
+        "That is level order (BFS).",
+        "That is preorder."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-trees-bst-002",
+      "topic": "trees-bst",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the extra space complexity of a recursive DFS over a binary tree of height h with n nodes?",
+      "options": [
+        "O(1)",
+        "O(log n) always",
+        "O(h)",
+        "O(n²)"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The call stack holds one frame per level on the current path, so space is O(h). That is O(log n) for a balanced tree but O(n) for a skewed one.",
+      "optionNotes": [
+        "Recursion uses stack frames.",
+        "Only true when the tree is balanced.",
+        null,
+        "Far too high; each node is on the stack at most once at a time."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-trees-bst-003",
+      "topic": "trees-bst",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "For the tree with root 4, left child 2 (children 1 and 3) and right child 6 (children 5 and 7), what does a **preorder** traversal output?",
+      "options": [
+        "1 2 3 4 5 6 7",
+        "4 2 1 3 6 5 7",
+        "1 3 2 5 7 6 4",
+        "4 2 6 1 3 5 7"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Preorder visits node, then left subtree, then right subtree: 4, then 2 1 3, then 6 5 7.",
+      "optionNotes": [
+        "That is inorder.",
+        null,
+        "That is postorder.",
+        "That is level order."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-trees-bst-004",
+      "topic": "trees-bst",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "This validator only compares each node with its direct children. What does it return for root 5, left 4, right 6, where 6 has left child 3 and right child 7?",
+      "code": "static bool Naive(Node? n)\n{\n    if (n is null) return true;\n    if (n.Left is not null && n.Left.Val >= n.Val) return false;\n    if (n.Right is not null && n.Right.Val <= n.Val) return false;\n    return Naive(n.Left) && Naive(n.Right);\n}",
+      "codeLang": "csharp",
+      "options": [
+        "false, because 3 is smaller than 5",
+        "true, even though the tree is not a valid BST",
+        "false, because 6 has two children",
+        "It throws a NullReferenceException"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Every local parent/child check passes (3 < 6 is fine locally), so it returns true. But 3 sits in the right subtree of 5, which breaks the BST rule. Pass a (low, high) range down to catch this.",
+      "optionNotes": [
+        "The code never compares 3 with 5; that is exactly the bug.",
+        null,
+        "Having two children is normal.",
+        "All child accesses are null-checked."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-trees-bst-005",
+      "topic": "trees-bst",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You need the **minimum depth** of a very wide, very unbalanced binary tree (distance from the root to the nearest leaf). Which approach can stop the earliest?",
+      "options": [
+        "Inorder DFS over the whole tree",
+        "BFS level by level, returning at the first leaf found",
+        "Postorder DFS computing the height of every subtree",
+        "Sorting the node values first"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "BFS explores nodes in order of depth, so the first leaf it dequeues is the nearest one and it can stop immediately. DFS may explore a very deep branch before finding a shallow leaf.",
+      "optionNotes": [
+        "DFS must explore everything to be sure.",
+        null,
+        "Visits every node; no early exit.",
+        "Node values are irrelevant to depth."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-trees-bst-006",
+      "topic": "trees-bst",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A diameter solution calls a separate `Height(node)` function (which walks the whole subtree) from every node. What is its worst-case time complexity on a skewed tree?",
+      "options": [
+        "O(n)",
+        "O(n log n)",
+        "O(n²)",
+        "O(h)"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Each Height call is O(size of subtree). On a skewed tree the sizes are n, n-1, ... 1, which sums to O(n²). Computing the height and the best diameter in the same postorder pass makes it O(n).",
+      "optionNotes": [
+        "Only the single-pass version is O(n).",
+        "That holds for a balanced tree, not a skewed one.",
+        null,
+        "h is the space for recursion, not the time."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-trees-bst-007",
+      "topic": "trees-bst",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why does the serialize solution write a marker such as `#` for every null child?",
+      "options": [
+        "To make the serialized string shorter and faster to send",
+        "Preorder alone cannot record the shape without them",
+        "Because int.Parse fails on empty strings between commas",
+        "To make the serialized output come out in sorted order"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Without null markers, the preorder sequence 1,2 could be 2 as a left child or as a right child. The markers record the shape, so preorder alone is enough to rebuild the tree. Without them you need two traversals (e.g. preorder + inorder with unique values).",
+      "optionNotes": [
+        "The markers make it longer.",
+        null,
+        "Empty tokens are not the issue being solved.",
+        "Preorder output is not sorted."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-trees-bst-008",
+      "topic": "trees-bst",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `SortedSet<T>` and `SortedDictionary<TKey,TValue>` in .NET are true? (Select all that apply)",
+      "options": [
+        "They are implemented as red-black trees",
+        "Insert, remove and lookup are O(log n)",
+        "Enumerating them returns items in sorted order",
+        "`SortedSet<T>` stores duplicate values in insertion order"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "Both are balanced (red-black) binary search trees, giving O(log n) operations and in-order (sorted) enumeration. A set rejects duplicates: `Add` returns false.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "A set never stores duplicates."
+      ],
+      "readMore": "/dsa/trees-bst/"
+    },
+    {
+      "id": "dsa-heaps-001",
+      "topic": "heaps",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "By default, what kind of heap is .NET's `PriorityQueue<TElement,TPriority>`?",
+      "options": [
+        "A max-heap: highest priority value first",
+        "A min-heap: lowest priority value first",
+        "A FIFO queue that ignores priority",
+        "A sorted list re-sorted on every insert"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "PriorityQueue dequeues the element with the smallest priority according to the comparer. For a max-heap, pass a reversed comparer such as `Comparer<int>.Create((a, b) => b.CompareTo(a))`.",
+      "optionNotes": [
+        "You need a reversed comparer for that.",
+        null,
+        "Priority determines the order.",
+        "It is an array-based binary heap with O(log n) operations."
+      ],
+      "readMore": "/dsa/heaps/"
+    },
+    {
+      "id": "dsa-heaps-002",
+      "topic": "heaps",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In an array-based binary heap, where are the children of the node at index i?",
+      "options": [
+        "i + 1 and i + 2",
+        "2i and 2i + 1 (0-based)",
+        "2i + 1 and 2i + 2 (0-based)",
+        "i / 2 and i / 2 + 1"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "With 0-based indexing, children are at 2i + 1 and 2i + 2 and the parent is at (i - 1) / 2. The 2i / 2i + 1 formula is for 1-based arrays.",
+      "optionNotes": [
+        "Those are siblings in the array, not children.",
+        "That is the 1-based formula.",
+        null,
+        "That is roughly the parent, not the children."
+      ],
+      "readMore": "/dsa/heaps/"
+    },
+    {
+      "id": "dsa-heaps-003",
+      "topic": "heaps",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var pq = new PriorityQueue<string, int>();\npq.Enqueue(\"a\", 3);\npq.Enqueue(\"b\", 1);\npq.Enqueue(\"c\", 2);\nConsole.WriteLine(pq.Dequeue() + pq.Dequeue());",
+      "codeLang": "csharp",
+      "options": [
+        "ab",
+        "bc",
+        "ac",
+        "cb"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "It is a min-heap by priority: \"b\" (1) comes out first, then \"c\" (2). \"a\" (3) is left in the queue.",
+      "optionNotes": [
+        "That is insertion order.",
+        null,
+        "That would be a max-heap order for the first item.",
+        "The smallest priority is dequeued first."
+      ],
+      "readMore": "/dsa/heaps/"
+    },
+    {
+      "id": "dsa-heaps-004",
+      "topic": "heaps",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "To find the k largest of n numbers with a heap, which setup gives O(n log k) time and O(k) space?",
+      "options": [
+        "A max-heap of all n numbers, then pop k times",
+        "A min-heap kept at size k, popping the smallest whenever it exceeds k",
+        "A max-heap kept at size k, popping the largest whenever it exceeds k",
+        "Sort the array descending and take k"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The min-heap holds the best k so far with the weakest of them on top, ready to be evicted. Each of n pushes costs O(log k). Its root is the kth largest.",
+      "optionNotes": [
+        "Works, but O(n) space and O(n + k log n) time.",
+        null,
+        "That would keep the k smallest.",
+        "O(n log n) time."
+      ],
+      "readMore": "/dsa/heaps/"
+    },
+    {
+      "id": "dsa-heaps-005",
+      "topic": "heaps",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In the two-heap running-median design, what does each heap hold?",
+      "options": [
+        "Both are min-heaps holding odd and even numbers",
+        "A max-heap with the smaller half and a min-heap with the larger half",
+        "A min-heap with the smaller half and a max-heap with the larger half",
+        "One heap holds all numbers, the other caches the median"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The max-heap's top is the largest of the low half and the min-heap's top is the smallest of the high half. Those two tops are exactly the middle values, so the median is O(1) to read.",
+      "optionNotes": [
+        "Parity of values is irrelevant.",
+        null,
+        "Reversed: the tops would then be the extremes, not the middle.",
+        "That does not allow O(log n) updates of the median."
+      ],
+      "readMore": "/dsa/heaps/"
+    },
+    {
+      "id": "dsa-heaps-006",
+      "topic": "heaps",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is the time complexity of merging k sorted linked lists with N total nodes using a min-heap of the current list heads?",
+      "options": [
+        "O(N k)",
+        "O(N log N)",
+        "O(N log k)",
+        "O(k log N)"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The heap never holds more than k nodes, so each of the N push/pop operations costs O(log k).",
+      "optionNotes": [
+        "That is merging lists one by one.",
+        "Correct but loose; the heap is only size k.",
+        null,
+        "Every node must be processed, so N must appear linearly."
+      ],
+      "readMore": "/dsa/heaps/"
+    },
+    {
+      "id": "dsa-heaps-007",
+      "topic": "heaps",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "After enqueuing 5, 1, 4, 2, 3 (each with priority equal to its value), what does `string.Join(\",\", pq.UnorderedItems.Select(t => t.Element))` print?",
+      "code": "var pq = new PriorityQueue<int, int>();\nforeach (var x in new[] { 5, 1, 4, 2, 3 }) pq.Enqueue(x, x);\nConsole.WriteLine(string.Join(\",\", pq.UnorderedItems.Select(t => t.Element)));",
+      "codeLang": "csharp",
+      "options": [
+        "1,2,3,4,5",
+        "5,1,4,2,3",
+        "1,5,4,2,3",
+        "5,4,3,2,1"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "UnorderedItems exposes the internal heap array. Only the root is guaranteed to be the minimum; the rest is in heap order, not sorted order. .NET's PriorityQueue is a 4-ary heap, which produces 1,5,4,2,3 here. Dequeue repeatedly to get sorted output.",
+      "optionNotes": [
+        "Sorted order only comes from repeated Dequeue.",
+        "Insertion order is lost once items sift up.",
+        null,
+        "It is a min-heap, and the array is not sorted anyway."
+      ],
+      "readMore": "/dsa/heaps/"
+    },
+    {
+      "id": "dsa-graphs-001",
+      "topic": "graphs",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which algorithm finds the shortest path (fewest edges) between two nodes in an **unweighted** graph?",
+      "options": [
+        "DFS",
+        "BFS",
+        "Topological sort",
+        "Union-find"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "BFS explores nodes in order of distance in edges, so the first time it reaches the target is via a shortest path. It runs in O(V + E).",
+      "optionNotes": [
+        "DFS can find a path, but not necessarily the shortest.",
+        null,
+        "Orders a DAG; does not find shortest paths.",
+        "Answers connectivity, not distance."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-graphs-002",
+      "topic": "graphs",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the space complexity of an adjacency list for a graph with V vertices and E edges?",
+      "options": [
+        "O(V)",
+        "O(E)",
+        "O(V + E)",
+        "O(V²)"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "One list per vertex (V) plus one entry per edge (E, or 2E for undirected). The adjacency matrix is the O(V²) representation.",
+      "optionNotes": [
+        "Ignores the edges stored in the lists.",
+        "Ignores the per-vertex lists.",
+        null,
+        "That is the adjacency matrix."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-graphs-003",
+      "topic": "graphs",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Kahn's algorithm for course schedule, how do you know the prerequisites contain a cycle?",
+      "options": [
+        "A node is visited twice",
+        "Fewer than numCourses nodes are processed when the queue empties",
+        "Some node has in-degree 0 at the start",
+        "The queue becomes empty"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Nodes in a cycle never reach in-degree 0, so they are never enqueued. If the processed count is below the number of nodes, the remainder form (or depend on) a cycle.",
+      "optionNotes": [
+        "Kahn's algorithm enqueues each node at most once.",
+        null,
+        "Nodes with in-degree 0 are the normal starting points.",
+        "The queue always empties eventually; what matters is how many were processed."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-graphs-004",
+      "topic": "graphs",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Using the multi-source BFS solution for Rotting Oranges, what is returned for the grid `[[0, 2]]` (one empty cell, one rotten orange, no fresh oranges)?",
+      "options": [
+        "0",
+        "1",
+        "-1",
+        "2"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "There are no fresh oranges, so no time needs to pass. The loop condition `fresh > 0` is false immediately and the answer is 0. Forgetting that check returns 1.",
+      "optionNotes": [
+        null,
+        "That is the off-by-one bug when the loop ignores the fresh count.",
+        "-1 means a fresh orange can never rot; there are none.",
+        "No BFS levels are needed."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-graphs-005",
+      "topic": "graphs",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A graph has some **negative** edge weights (but no negative cycles). Which shortest-path algorithm should you use?",
+      "options": [
+        "Dijkstra with a min-heap",
+        "BFS",
+        "Bellman-Ford",
+        "Kahn's topological sort"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Dijkstra assumes a popped node's distance is final, which a later negative edge can violate. Bellman-Ford relaxes every edge V-1 times in O(V·E) and handles negative weights (and detects negative cycles).",
+      "optionNotes": [
+        "Can give wrong answers with negative edges.",
+        "Ignores weights entirely.",
+        null,
+        "Gives an ordering, not distances (though DAG shortest paths use it as a step)."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-graphs-006",
+      "topic": "graphs",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why should BFS mark a node as visited when it is **enqueued** rather than when it is dequeued?",
+      "options": [
+        "Otherwise BFS returns wrong distances in every graph",
+        "To stop the same node being added to the queue many times by different neighbours",
+        "Because Queue<T> cannot hold duplicates",
+        "It makes BFS use O(1) space"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "If you mark on dequeue, a node can be enqueued once per incoming edge before it is processed, growing the queue to O(E) and repeating work. Marking on enqueue guarantees each node enters the queue once.",
+      "optionNotes": [
+        "Distances can still come out right; the issue is wasted work and memory.",
+        null,
+        "Queue<T> allows duplicates, which is the problem.",
+        "BFS still needs O(V) for the queue and visited set."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-graphs-007",
+      "topic": "graphs",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In the Dijkstra implementation, what is the purpose of `if (d > dist[node]) continue;` right after dequeuing?",
+      "code": "while (pq.TryDequeue(out int node, out int d))\n{\n    if (d > dist[node]) continue;\n    // relax edges...\n}",
+      "codeLang": "csharp",
+      "options": [
+        "It detects negative cycles in the graph and stops early",
+        "It skips stale entries, since PriorityQueue has no decrease-key",
+        "It stops the algorithm as soon as the target is reached",
+        "It prevents integer overflow when adding edge weights"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "When a shorter distance is found, the node is enqueued again instead of updating its old entry (lazy deletion). The old, larger entry is still in the heap and must be ignored when it is popped.",
+      "optionNotes": [
+        "Dijkstra cannot detect negative cycles.",
+        null,
+        "There is no target check in this line.",
+        "Overflow is unrelated to this comparison."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-graphs-008",
+      "topic": "graphs",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "With both path compression and union by rank, what is the amortised cost of a union-find operation?",
+      "options": [
+        "O(log n) per operation, amortised",
+        "O(α(n)), effectively constant",
+        "O(n) per operation in the worst case",
+        "O(1) exactly, for every single call"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Together the two optimisations give O(α(n)) amortised per operation, and α(n) is at most 4 for any realistic n. A single call can still be slower; the bound is amortised.",
+      "optionNotes": [
+        "That is the bound with only one of the optimisations.",
+        null,
+        "That is naive union-find on a degenerate chain.",
+        "Individual calls can take longer; the bound is amortised."
+      ],
+      "readMore": "/dsa/graphs/"
+    },
+    {
+      "id": "dsa-dynamic-programming-001",
+      "topic": "dynamic-programming",
+      "difficulty": "easy",
+      "type": "multi",
+      "question": "Which two properties make a problem a good fit for dynamic programming? (Select all that apply)",
+      "options": [
+        "Overlapping subproblems",
+        "Optimal substructure",
+        "The input is sorted",
+        "The greedy choice is always safe"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "DP needs the same subproblems to recur (so caching helps) and the optimal answer to be built from optimal answers of subproblems.",
+      "optionNotes": [
+        null,
+        null,
+        "Sorting is unrelated to DP applicability.",
+        "If greedy is provably safe, you don't need DP."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-dynamic-programming-002",
+      "topic": "dynamic-programming",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the space complexity of bottom-up Climbing Stairs that keeps only the previous two values?",
+      "options": [
+        "O(1)",
+        "O(log n)",
+        "O(n)",
+        "O(2^n)"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each state depends only on the previous two, so two variables are enough. Top-down memoisation would be O(n).",
+      "optionNotes": [
+        null,
+        "No halving is involved.",
+        "That is the full-table or memoised version.",
+        "That is the time of plain recursion."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-dynamic-programming-003",
+      "topic": "dynamic-programming",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Coins are `[1, 3, 4]` and the amount is 6. What is the minimum number of coins, and what does a greedy \"largest coin first\" approach give?",
+      "options": [
+        "Minimum 2; greedy gives 3",
+        "Minimum 3; greedy gives 3",
+        "Minimum 2; greedy gives 2",
+        "Minimum 1; greedy gives 2"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "3 + 3 uses 2 coins. Greedy takes 4, then 1, then 1, which is 3 coins. This counter-example is why coin change needs DP.",
+      "optionNotes": [
+        null,
+        "3 + 3 = 6 uses only 2 coins.",
+        "Greedy starts with 4 and gets stuck with 1 + 1.",
+        "No single coin equals 6."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-dynamic-programming-004",
+      "topic": "dynamic-programming",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the length of the longest strictly increasing subsequence of `[0, 1, 0, 3, 2, 3]`?",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "One answer is 0, 1, 2, 3 (indices 0, 1, 4, 5). A subsequence can skip elements but must keep their order.",
+      "optionNotes": [
+        "0, 1, 3 is valid but not the longest.",
+        null,
+        "No increasing subsequence of length 5 exists; 0 and 3 repeat.",
+        "The array itself is not increasing."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-dynamic-programming-005",
+      "topic": "dynamic-programming",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the time complexity of the Longest Common Subsequence table solution for strings of length m and n?",
+      "options": [
+        "O(m + n)",
+        "O(m · n)",
+        "O(2^(m+n))",
+        "O(max(m, n) log n)"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "There are (m + 1)(n + 1) states and each is filled in O(1) from its neighbours. Space can drop to O(n) with a rolling row.",
+      "optionNotes": [
+        "Too low; every pair of prefixes is a state.",
+        null,
+        "That is the plain recursion without memoisation.",
+        "No sorting or binary search is involved."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-dynamic-programming-006",
+      "topic": "dynamic-programming",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A top-down coin change solution memoises on the remaining amount. What is its time complexity for `amount` A and `coins` count C?",
+      "options": [
+        "O(A)",
+        "O(C)",
+        "O(A · C)",
+        "O(C^A)"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Rule of thumb: number of distinct states (A + 1 amounts) times the work per state (try C coins).",
+      "optionNotes": [
+        "Ignores the loop over coins in each state.",
+        "Ignores the number of amounts.",
+        null,
+        "That is the plain recursion without a cache."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-dynamic-programming-007",
+      "topic": "dynamic-programming",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Someone writes 0/1 knapsack with a 1-D array but iterates capacity **forwards**. What does it return for one item (weight 2, value 3) and capacity 4?",
+      "code": "int[] w = [2], v = [3];\nint cap = 4;\nvar dp = new int[cap + 1];\nfor (int i = 0; i < w.Length; i++)\n    for (int c = w[i]; c <= cap; c++)\n        dp[c] = Math.Max(dp[c], dp[c - w[i]] + v[i]);\nConsole.WriteLine(dp[cap]);",
+      "codeLang": "csharp",
+      "options": [
+        "0",
+        "3",
+        "6",
+        "12"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Going forwards, dp[2] is updated to 3 first, then dp[4] reads the already-updated dp[2] and adds 3 again, using the single item twice. That is unbounded knapsack. Iterating backwards gives the correct 0/1 answer, 3.",
+      "optionNotes": [
+        "The item fits, so the value is at least 3.",
+        "That is the correct 0/1 answer, which needs a backwards loop.",
+        null,
+        "Capacity 4 only fits the item twice."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-dynamic-programming-008",
+      "topic": "dynamic-programming",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In the O(n log n) LIS algorithm, what does `tails` contain after processing `[10, 9, 2, 5, 3, 7, 101, 18]`?",
+      "code": "var tails = new List<int>();\nforeach (var x in nums)\n{\n    int i = tails.BinarySearch(x);\n    if (i < 0) i = ~i;\n    if (i == tails.Count) tails.Add(x);\n    else tails[i] = x;\n}",
+      "codeLang": "csharp",
+      "options": [
+        "[2, 5, 7, 101]",
+        "[2, 3, 7, 18]",
+        "[10, 101]",
+        "[2, 3, 7, 101, 18]"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each value replaces the first tail that is greater than or equal to it, or is appended. 3 replaces 5 and 18 replaces 101, leaving [2, 3, 7, 18]. Its length (4) is the LIS length, even though it is not necessarily the actual subsequence.",
+      "optionNotes": [
+        "5 is later replaced by 3, and 101 by 18.",
+        null,
+        "10 is replaced by 9 and then by 2 early on.",
+        "tails length never exceeds the LIS length of 4."
+      ],
+      "readMore": "/dsa/dynamic-programming/"
+    },
+    {
+      "id": "dsa-greedy-intervals-001",
+      "topic": "greedy-intervals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the first step of the standard Merge Intervals solution?",
+      "options": [
+        "Sort the intervals by start",
+        "Sort the intervals by length",
+        "Build a hash map of starts",
+        "Use a max-heap of ends"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Sorting by start makes overlapping intervals adjacent, so one left-to-right sweep merges them in O(n) after the O(n log n) sort.",
+      "optionNotes": [
+        null,
+        "Length does not make overlapping intervals adjacent.",
+        "A map does not order intervals.",
+        "A heap of ends is used for meeting rooms, not merging."
+      ],
+      "readMore": "/dsa/greedy-intervals/"
+    },
+    {
+      "id": "dsa-greedy-intervals-002",
+      "topic": "greedy-intervals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Jump Game asks whether you can reach the last index. What is the greedy idea?",
+      "options": [
+        "Always jump the maximum distance",
+        "Track the farthest reachable index while scanning; fail if the scan passes it",
+        "Try every path with backtracking",
+        "Binary search on the number of jumps"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Keep `farthest = max(farthest, i + nums[i])`. If some index i is greater than farthest, it is unreachable. O(n) time and O(1) space.",
+      "optionNotes": [
+        "A long jump can land on a 0 that a shorter jump would avoid.",
+        null,
+        "Exponential.",
+        "Not needed for a yes/no reachability question."
+      ],
+      "readMore": "/dsa/greedy-intervals/"
+    },
+    {
+      "id": "dsa-greedy-intervals-003",
+      "topic": "greedy-intervals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "To remove the fewest intervals so the rest don't overlap, how should you sort before the greedy sweep?",
+      "options": [
+        "By start time ascending",
+        "By end time ascending",
+        "By length descending",
+        "By start time descending"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Keeping the interval that ends earliest leaves the most room for the remaining ones (activity selection). Sorting by start fails on inputs like [[1,100],[2,3],[4,5]].",
+      "optionNotes": [
+        "A long interval that starts first would be kept, blocking many others.",
+        null,
+        "Long intervals are the ones you usually want to drop.",
+        "Has the same flaw as ascending start in reverse."
+      ],
+      "readMore": "/dsa/greedy-intervals/"
+    },
+    {
+      "id": "dsa-greedy-intervals-004",
+      "topic": "greedy-intervals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With the heap-based Meeting Rooms II solution (a room is reused when `ends.Peek() <= start`), how many rooms do meetings `[1,5]` and `[5,10]` need?",
+      "options": [
+        "0",
+        "1",
+        "2",
+        "It depends on input order"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The first meeting ends at 5 and the second starts at 5, so the room is free (end ≤ start) and is reused. With a strict `<` check the answer would wrongly be 2.",
+      "optionNotes": [
+        "There are meetings to host.",
+        null,
+        "Only with a strict < comparison.",
+        "The solution sorts first, so input order does not matter."
+      ],
+      "readMore": "/dsa/greedy-intervals/"
+    },
+    {
+      "id": "dsa-greedy-intervals-005",
+      "topic": "greedy-intervals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this JavaScript/TypeScript expression return?",
+      "code": "[10, 9, 1].sort()",
+      "codeLang": "ts",
+      "options": [
+        "[1, 9, 10]",
+        "[10, 9, 1]",
+        "[1, 10, 9]",
+        "[9, 10, 1]"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Without a comparator, `Array.prototype.sort` converts values to strings and compares them, so \"10\" sorts before \"9\". Always pass `(a, b) => a - b` when sorting intervals by number.",
+      "optionNotes": [
+        "That needs a numeric comparator.",
+        "sort() does reorder the array.",
+        null,
+        "\"1\" is the smallest string, so 1 comes first."
+      ],
+      "readMore": "/dsa/greedy-intervals/"
+    },
+    {
+      "id": "dsa-greedy-intervals-006",
+      "topic": "greedy-intervals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Insert Interval receives a list that is already sorted and non-overlapping. What is the best time complexity?",
+      "options": [
+        "O(log n)",
+        "O(n)",
+        "O(n log n)",
+        "O(n²)"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "No sort is needed: copy intervals that end before the new one, absorb overlapping ones, then copy the rest, a single O(n) pass. Binary search can find the position in O(log n), but building the output is still O(n).",
+      "optionNotes": [
+        "Building the result list still touches every interval.",
+        null,
+        "Only if you append and re-sort, which is unnecessary.",
+        "Far too slow."
+      ],
+      "readMore": "/dsa/greedy-intervals/"
+    },
+    {
+      "id": "dsa-greedy-intervals-007",
+      "topic": "greedy-intervals",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A merge implementation writes `last[1] = cur[1]` instead of `last[1] = Math.Max(last[1], cur[1])`. What does it return for `[[1,4],[2,3]]`?",
+      "code": "Array.Sort(iv, (a, b) => a[0].CompareTo(b[0]));\nvar merged = new List<int[]> { iv[0] };\nforeach (var cur in iv.Skip(1))\n{\n    var last = merged[^1];\n    if (cur[0] <= last[1]) last[1] = cur[1];\n    else merged.Add(cur);\n}",
+      "codeLang": "csharp",
+      "options": [
+        "[[1,4]]",
+        "[[1,3]]",
+        "[[1,4],[2,3]]",
+        "[[2,3]]"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "[2,3] overlaps [1,4], so the code sets the end to 3, shrinking the interval. Contained intervals are why the end must be the max of both ends; the correct answer is [[1,4]].",
+      "optionNotes": [
+        "That is the correct answer, which needs Math.Max.",
+        null,
+        "They overlap, so they are merged into one.",
+        "The start stays 1 from the first interval."
+      ],
+      "readMore": "/dsa/greedy-intervals/"
+    },
+    {
+      "id": "dsa-bit-manipulation-001",
+      "topic": "bit-manipulation",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the XOR of all elements of `[4, 1, 2, 1, 2]`?",
+      "options": [
+        "0",
+        "1",
+        "4",
+        "10"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "XOR is commutative and `a ^ a = 0`, so the pairs of 1 and 2 cancel and 4 remains. This is the Single Number trick.",
+      "optionNotes": [
+        "Only if every value appeared an even number of times.",
+        "1 appears twice and cancels.",
+        null,
+        "That is the sum, not the XOR."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-bit-manipulation-002",
+      "topic": "bit-manipulation",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `n & (n - 1)` do?",
+      "options": [
+        "Sets the lowest zero bit",
+        "Clears the lowest set bit",
+        "Isolates the highest set bit",
+        "Flips all bits"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Subtracting 1 flips the lowest 1 bit and every 0 below it; ANDing with the original clears that lowest 1. Example: 12 (1100) & 11 (1011) = 8 (1000).",
+      "optionNotes": [
+        "That is `n | (n + 1)`.",
+        null,
+        "No single simple expression does that.",
+        "That is `~n`."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-bit-manipulation-003",
+      "topic": "bit-manipulation",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A power-of-two check is written as `(n & (n - 1)) == 0` without `n > 0`. What does it return for `n = 0`?",
+      "code": "int n = 0;\nConsole.WriteLine((n & (n - 1)) == 0);",
+      "codeLang": "csharp",
+      "options": [
+        "False",
+        "True",
+        "It throws OverflowException",
+        "It does not compile"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "0 & -1 is 0, so the check wrongly says 0 is a power of two. The `n > 0` guard also rejects negatives like int.MinValue, which has exactly one set bit.",
+      "optionNotes": [
+        "The expression evaluates to 0 == 0.",
+        null,
+        "0 - 1 = -1 is fine; no overflow.",
+        "It is valid C#."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-bit-manipulation-004",
+      "topic": "bit-manipulation",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In C#, what is the value of `1 << 33` for an `int`?",
+      "options": [
+        "0",
+        "2",
+        "8589934592",
+        "It throws an OverflowException"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "For int, C# masks the shift count to its low 5 bits (33 & 31 = 1), so `1 << 33` equals `1 << 1` = 2. Shifts never throw, even in a checked context.",
+      "optionNotes": [
+        "The bits are not shifted out because the count is masked.",
+        null,
+        "That would need a long: `1L << 33`.",
+        "Shift operators never throw."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-bit-manipulation-005",
+      "topic": "bit-manipulation",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In TypeScript, a bit-counting loop uses `n >>= 1` until `n === 0`. What happens when it is called with `-1`?",
+      "options": [
+        "It returns 32",
+        "It returns 0",
+        "It loops forever, because `>>` keeps copying the sign bit",
+        "It throws a RangeError"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The arithmetic shift `>>` fills from the left with the sign bit, so -1 stays -1 forever. Use the logical shift `>>>`, which fills with zeros.",
+      "optionNotes": [
+        "That is what the `>>>` version returns.",
+        "n never becomes 0.",
+        null,
+        "No error is thrown; it just never ends."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-bit-manipulation-006",
+      "topic": "bit-manipulation",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which expressions test whether bit i of the int `x` is set? (Select all that apply)",
+      "options": [
+        "`(x & (1 << i)) != 0`",
+        "`((x >> i) & 1) == 1`",
+        "`(x | (1 << i)) != 0`",
+        "`(x ^ (1 << i)) == 0`"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "AND with a mask isolates the bit, and shifting the bit down to position 0 then ANDing with 1 does the same. OR sets the bit, and XOR toggles it.",
+      "optionNotes": [
+        null,
+        null,
+        "OR sets the bit, so this is almost always true.",
+        "This is true only when x equals exactly 1 << i."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-bit-manipulation-007",
+      "topic": "bit-manipulation",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Given this `[Flags]` enum, what does `(Permissions.Read | Permissions.Write).ToString()` return?",
+      "code": "[Flags]\nenum Permissions { None = 0, Read = 1, Write = 2, Delete = 4, ReadWrite = Read | Write }",
+      "codeLang": "csharp",
+      "options": [
+        "\"3\"",
+        "\"Read, Write\"",
+        "\"ReadWrite\"",
+        "\"Read | Write\""
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "ToString first looks for a named member with the exact value. 3 matches `ReadWrite`, so that name is returned. Read | Delete (5) has no named member and prints \"Read, Delete\".",
+      "optionNotes": [
+        "Numbers are printed only when no combination of names matches.",
+        "Used when no single member has the combined value.",
+        null,
+        "ToString never uses the | symbol."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-bit-manipulation-008",
+      "topic": "bit-manipulation",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "For Missing Number (n distinct values from 0..n), why might you prefer the XOR solution over `n(n+1)/2 - sum`?",
+      "options": [
+        "XOR is O(1) while the sum is O(n)",
+        "XOR cannot overflow, while the sum formula can overflow int for large n",
+        "The sum formula fails when 0 is missing",
+        "XOR works on unsorted input and the sum does not"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Both are O(n) time and O(1) space and work on unsorted input. XOR only flips bits, so it never overflows; the intermediate n(n+1) overflows int once n passes about 46,000.",
+      "optionNotes": [
+        "Both must read every element: O(n).",
+        null,
+        "The sum formula handles a missing 0 correctly.",
+        "Neither needs sorted input."
+      ],
+      "readMore": "/dsa/bit-manipulation/"
+    },
+    {
+      "id": "dsa-csharp-coding-round-001",
+      "topic": "csharp-coding-round",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "There is only one salary in the list. What does this print?",
+      "code": "decimal[] salaries = [100m];\nvar second = salaries.Distinct().OrderByDescending(s => s).Skip(1).FirstOrDefault();\nConsole.WriteLine(second);",
+      "codeLang": "csharp",
+      "options": [
+        "null (empty line)",
+        "0",
+        "100",
+        "It throws InvalidOperationException"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "FirstOrDefault on an empty `IEnumerable<decimal>` returns default(decimal), which is 0, a plausible-looking but wrong answer. Use `.Cast<decimal?>().FirstOrDefault()` to get null for \"no second salary\".",
+      "optionNotes": [
+        "decimal is a value type; its default is 0, not null.",
+        null,
+        "Skip(1) removes the only element.",
+        "That would be First(), not FirstOrDefault()."
+      ],
+      "readMore": "/dsa/csharp-coding-round/"
+    },
+    {
+      "id": "dsa-csharp-coding-round-002",
+      "topic": "csharp-coding-round",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "When is the `ArgumentNullException` thrown?",
+      "code": "public static IEnumerable<T> WhereNot<T>(this IEnumerable<T> source, Func<T, bool> predicate)\n{\n    ArgumentNullException.ThrowIfNull(source);\n    foreach (var item in source)\n        if (!predicate(item)) yield return item;\n}\n\nIEnumerable<int>? data = null;\nvar query = data!.WhereNot(x => x > 0);   // line A\nvar list = query.ToList();               // line B",
+      "codeLang": "csharp",
+      "options": [
+        "At line A",
+        "At line B",
+        "Never, null is treated as empty",
+        "At compile time"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Iterator methods run nothing until the first MoveNext, so the check is deferred until ToList enumerates. The BCL validates eagerly by putting the yield loop in a separate private method or local function.",
+      "optionNotes": [
+        "Calling an iterator method only creates the state machine.",
+        null,
+        "foreach over null would throw anyway.",
+        "Nullability warnings are not exceptions, and `!` suppresses them."
+      ],
+      "readMore": "/dsa/csharp-coding-round/"
+    },
+    {
+      "id": "dsa-csharp-coding-round-003",
+      "topic": "csharp-coding-round",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What thread-safety does `new Lazy<T>(factory)` provide by default?",
+      "options": [
+        "None; you must wrap Value in a lock yourself",
+        "ExecutionAndPublication: the factory runs once",
+        "PublicationOnly: several threads may run the factory",
+        "None needed: the value is created eagerly in the constructor"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The default mode is LazyThreadSafetyMode.ExecutionAndPublication, which makes `Lazy<T>` the simplest correct thread-safe singleton.",
+      "optionNotes": [
+        "That is LazyThreadSafetyMode.None, which you must request explicitly.",
+        null,
+        "That mode exists but is not the default.",
+        "The whole point of Lazy is deferred creation."
+      ],
+      "readMore": "/dsa/csharp-coding-round/"
+    },
+    {
+      "id": "dsa-csharp-coding-round-004",
+      "topic": "csharp-coding-round",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a `Channel<T>` producer-consumer, the producer finishes writing but never calls `channel.Writer.Complete()`. What happens to consumers using `await foreach (var x in reader.ReadAllAsync())`?",
+      "options": [
+        "They finish normally once the buffer is empty",
+        "They throw ChannelClosedException",
+        "They wait forever for more items, so `Task.WhenAll(consumers)` never completes",
+        "They spin and use 100% CPU"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "ReadAllAsync ends only when the channel is completed and drained. Without Complete(), readers wait asynchronously forever. Call Complete() in a finally block of the producer.",
+      "optionNotes": [
+        "An empty buffer is not the same as a completed channel.",
+        "That is thrown when writing to a completed channel.",
+        null,
+        "Waiting is asynchronous; no thread spins."
+      ],
+      "readMore": "/dsa/csharp-coding-round/"
+    },
+    {
+      "id": "dsa-csharp-coding-round-005",
+      "topic": "csharp-coding-round",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In the retry helper, what happens on the last attempt when the action throws a `TimeoutException`?",
+      "code": "for (int attempt = 1; ; attempt++)\n{\n    try { return await action(ct); }\n    catch (Exception ex) when (attempt < maxAttempts && isTransient(ex))\n    {\n        await Task.Delay(backoff, ct);\n    }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "The loop runs forever, retrying without delay",
+        "The original exception propagates unchanged",
+        "The exception is swallowed and default(T) is returned",
+        "It is wrapped in an AggregateException and rethrown"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Exception filters run before the stack unwinds. When `attempt < maxAttempts` is false the catch block is skipped entirely and the exception leaves the method unchanged.",
+      "optionNotes": [
+        "The uncaught exception exits the loop.",
+        null,
+        "Nothing catches it on the last attempt.",
+        "await rethrows the original exception, not an AggregateException."
+      ],
+      "readMore": "/dsa/csharp-coding-round/"
+    },
+    {
+      "id": "dsa-csharp-coding-round-006",
+      "topic": "csharp-coding-round",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which of these sorts is **stable** (keeps equal elements in their original order)?",
+      "options": [
+        "`List<T>.Sort`",
+        "`Array.Sort`",
+        "LINQ `OrderBy`",
+        "`Array.Sort` with a custom `IComparer<T>`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "List.Sort and Array.Sort use introsort, which is unstable. LINQ OrderBy / ThenBy / Order is documented as stable. Adding a final tie-breaker makes either deterministic.",
+      "optionNotes": [
+        "Introsort is unstable.",
+        "Introsort is unstable.",
+        null,
+        "A comparer does not change the algorithm's stability."
+      ],
+      "readMore": "/dsa/csharp-coding-round/"
+    },
+    {
+      "id": "dsa-csharp-coding-round-007",
+      "topic": "csharp-coding-round",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An EF Core generic repository exposes `ListAsync(Func<T, bool> filter)` and calls `db.Set<T>().Where(filter).ToList()`. What is the problem?",
+      "options": [
+        "It does not compile because Where needs an Expression",
+        "The Func overload binds to Enumerable.Where, so the whole table is loaded and filtered in memory",
+        "EF Core throws because lambdas are not supported",
+        "There is no problem; EF translates the Func to SQL"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Only `Expression<Func<T, bool>>` binds to Queryable.Where and can be translated to SQL. A compiled Func forces the IEnumerable overload, pulling every row into memory first.",
+      "optionNotes": [
+        "DbSet is also IEnumerable, so the Enumerable overload compiles.",
+        null,
+        "It runs without error, which is why the bug is easy to miss.",
+        "A compiled delegate cannot be translated."
+      ],
+      "readMore": "/dsa/csharp-coding-round/"
+    },
+    {
+      "id": "dsa-angular-live-coding-001",
+      "topic": "angular-live-coding",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `readonly quantity = model(1);` create on a child component?",
+      "options": [
+        "A read-only input only",
+        "An input `quantity` plus an output `quantityChange`, enabling `[(quantity)]`",
+        "A FormControl bound to the template",
+        "A service-level shared signal"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`model()` is a writable signal input. When the child calls `set`/`update`, Angular emits `quantityChange`, so the parent can use banana-in-a-box two-way binding.",
+      "optionNotes": [
+        "That is `input()`.",
+        null,
+        "model() is unrelated to forms.",
+        "It is scoped to the component instance."
+      ],
+      "readMore": "/dsa/angular-live-coding/"
+    },
+    {
+      "id": "dsa-angular-live-coding-002",
+      "topic": "angular-live-coding",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "For a typeahead search box that calls an HTTP API on each (debounced) term, which flattening operator prevents stale results from overwriting newer ones?",
+      "options": [
+        "mergeMap",
+        "concatMap",
+        "switchMap",
+        "exhaustMap"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "switchMap unsubscribes from the previous inner observable when a new term arrives (HttpClient aborts the request), so only the latest term's response reaches the UI.",
+      "optionNotes": [
+        "Responses can arrive out of order and overwrite newer results.",
+        "Queues every request; the UI lags behind typing.",
+        null,
+        "Ignores new terms while a request is in flight."
+      ],
+      "readMore": "/dsa/angular-live-coding/"
+    },
+    {
+      "id": "dsa-angular-live-coding-003",
+      "topic": "angular-live-coding",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In the search pipeline, `catchError` is moved from the inner HTTP observable to the end of the outer `valueChanges` pipe. What happens after the first failed request?",
+      "options": [
+        "Nothing changes; errors are still handled per request",
+        "The outer stream completes, so later keystrokes never trigger a search",
+        "Angular retries the request automatically",
+        "The error is thrown to the console and the stream continues"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "An error terminates the observable it passes through. Caught on the outer stream, it replaces the whole `valueChanges` pipeline with the fallback, which completes. Catch inside switchMap so only that inner request is replaced.",
+      "optionNotes": [
+        "The position of catchError decides what gets replaced.",
+        null,
+        "There is no automatic retry without the retry operator.",
+        "An errored observable never emits again."
+      ],
+      "readMore": "/dsa/angular-live-coding/"
+    },
+    {
+      "id": "dsa-angular-live-coding-004",
+      "topic": "angular-live-coding",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A component does `this.todos().push(newTodo);` where `todos` is a `signal<Todo[]>`. Why does the `remaining` computed not update?",
+      "options": [
+        "Signals cannot hold arrays, only primitive values",
+        "push mutates the array; the reference never changes",
+        "computed only refreshes on the next animation frame",
+        "push is asynchronous and must be awaited first"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Signals notify consumers only through set/update, and compare values with Object.is. Use `todos.update(list => [...list, newTodo])` to produce a new array.",
+      "optionNotes": [
+        "Signals can hold any value.",
+        null,
+        "computed is recalculated lazily when read after a source changes; here no source changed.",
+        "push is synchronous."
+      ],
+      "readMore": "/dsa/angular-live-coding/"
+    },
+    {
+      "id": "dsa-angular-live-coding-005",
+      "topic": "angular-live-coding",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "When does Angular re-run a **pure** pipe's `transform` method?",
+      "options": [
+        "On every change detection cycle",
+        "Only when the input value reference or one of its arguments changes",
+        "Only once, when the component is created",
+        "Whenever any signal in the app changes"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Pure pipes (the default) are memoised on their inputs, so they are cheap. Impure pipes (`pure: false`) run every cycle and should be avoided for list filtering.",
+      "optionNotes": [
+        "That is an impure pipe.",
+        null,
+        "It re-runs whenever its inputs change.",
+        "Pipes are not tied to unrelated signals."
+      ],
+      "readMore": "/dsa/angular-live-coding/"
+    },
+    {
+      "id": "dsa-angular-live-coding-006",
+      "topic": "angular-live-coding",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Where should a \"password and confirm password must match\" validator be attached in a reactive form?",
+      "options": [
+        "On the confirm control, reading the password control's value",
+        "On the FormGroup that contains both controls, via `{ validators: passwordsMatch }`",
+        "In the submit handler only",
+        "As an async validator on the password control"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A group validator re-runs whenever either child changes. A validator on `confirm` alone would not re-validate when the password changes, leaving a stale error state.",
+      "optionNotes": [
+        "Goes stale when the password is edited after confirm.",
+        null,
+        "Users get no feedback while typing.",
+        "No server call is needed; it is a synchronous cross-field rule."
+      ],
+      "readMore": "/dsa/angular-live-coding/"
+    },
+    {
+      "id": "dsa-angular-live-coding-007",
+      "topic": "angular-live-coding",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An editable list uses `@for (item of items(); track $index)`. The user types into the third row's input, then the first row is deleted. What is the likely bug?",
+      "options": [
+        "Angular throws a duplicate-track error",
+        "DOM nodes are reused by position, so the typed text now appears on the wrong item",
+        "The whole list is re-rendered and focus is preserved correctly",
+        "Nothing; $index is the recommended track expression"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Tracking by index ties DOM nodes to positions, not items. After a delete, the node that was row 3 becomes row 2 with a different item, carrying its DOM state (input text, focus) with it. Track by a stable id.",
+      "optionNotes": [
+        "Indexes are unique, so no error is raised.",
+        null,
+        "Nodes are reused by position, not re-created per item.",
+        "Prefer a unique stable id such as `item.id`."
+      ],
+      "readMore": "/dsa/angular-live-coding/"
+    }
+  ]
+}

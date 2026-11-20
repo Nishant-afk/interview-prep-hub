@@ -1,0 +1,1616 @@
+{
+  "section": "patterns",
+  "version": 1,
+  "questions": [
+    {
+      "id": "patterns-solid-001",
+      "topic": "solid",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In the Single Responsibility Principle, what does \"one reason to change\" refer to?",
+      "options": [
+        "A class should have only one public method",
+        "A class should be changed by only one developer",
+        "A class should serve one actor or concern, so only one kind of requirement change affects it",
+        "A class should have only one dependency"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "SRP is about cohesion: group code that changes for the same reason (one stakeholder or concern) and separate code that changes for different reasons. A repository with ten query methods can still satisfy SRP.",
+      "optionNotes": [
+        "Method count is not the measure; a cohesive class can have many methods.",
+        "It is about reasons for change, not team ownership.",
+        null,
+        "A class can have several dependencies and still have one responsibility."
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-002",
+      "topic": "solid",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Every time the business adds a payment method, a developer edits this method and retests checkout. Which SOLID principle is violated?",
+      "code": "public Task<string> PayAsync(string method, decimal amount) => method switch\n{\n    \"card\" => ChargeCardAsync(amount),\n    \"upi\" => ChargeUpiAsync(amount),\n    \"wallet\" => ChargeWalletAsync(amount),\n    _ => throw new NotSupportedException(method)\n};",
+      "codeLang": "csharp",
+      "options": [
+        "Open/Closed Principle",
+        "Liskov Substitution Principle",
+        "Interface Segregation Principle",
+        "Dependency Inversion Principle"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The class must be modified for each new variant. Introducing an `IPaymentProvider` abstraction with one class per method, resolved from DI, lets new methods be added by extension instead of modification.",
+      "optionNotes": [
+        null,
+        "No subtype is breaking a base contract here.",
+        "No client is forced to depend on unused members.",
+        "DIP is related, but the core smell is the growing switch that must be edited."
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-003",
+      "topic": "solid",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Code written against `NotificationSender` sends long messages without problems until it receives an `SmsSender`. Which principle does `SmsSender` violate?",
+      "code": "public abstract class NotificationSender\n{\n    public abstract Task SendAsync(string to, string message);\n}\n\npublic class SmsSender : NotificationSender\n{\n    public override Task SendAsync(string to, string message)\n    {\n        if (message.Length > 160) throw new InvalidOperationException(\"Too long\");\n        return Task.CompletedTask;\n    }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Single Responsibility Principle",
+        "Open/Closed Principle",
+        "Interface Segregation Principle",
+        "Liskov Substitution Principle"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The subtype strengthens the precondition (messages must be 160 characters or fewer), so it can't be substituted for the base type without breaking callers. Fix it by honouring the contract (split the message) or by making the limit part of the base contract.",
+      "optionNotes": [
+        "The class has one job; the problem is its contract.",
+        "Nothing here forces modification of existing code to extend it.",
+        "The interface is small; no client depends on unused members.",
+        null
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-004",
+      "topic": "solid",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A read-only reporting class implements `IRepository<Sale>`, which has `GetAsync`, `ListAsync`, `AddAsync`, `DeleteAsync` and `BulkImportAsync`. Three of its methods throw `NotSupportedException`. Which principle does the **interface design** violate?",
+      "options": [
+        "Single Responsibility Principle",
+        "Interface Segregation Principle",
+        "Open/Closed Principle",
+        "Dependency Inversion Principle"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The fat interface forces clients and implementers to depend on members they don't use. Splitting it into `IReadRepository<T>`, `IWriteRepository<T>` and `IBulkImporter<T>` fixes it. The throwing implementations are also an LSP smell, which is a symptom of the same design problem.",
+      "optionNotes": [
+        "SRP is about reasons for a class to change, not the width of an interface its clients see.",
+        null,
+        "The problem isn't extension versus modification.",
+        "The class depends on an abstraction already; the abstraction is just too wide."
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-005",
+      "topic": "solid",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which statement best describes the Dependency Inversion Principle?",
+      "options": [
+        "Every class must be registered in an IoC container",
+        "Dependencies should always be passed as constructor parameters",
+        "High-level policy and low-level details should both depend on abstractions, owned by the high-level side",
+        "Low-level modules should call high-level modules through events"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "DIP is a design principle about the direction of dependencies. Dependency Injection (constructor injection) is a technique and an IoC container is a tool; you can use both and still depend on concrete classes.",
+      "optionNotes": [
+        "A container is a tool, not the principle.",
+        "That describes constructor injection, a technique that helps apply DIP.",
+        null,
+        "Events are unrelated to DIP."
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-006",
+      "topic": "solid",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these are warning signs of a Liskov Substitution violation? (Select all that apply)",
+      "options": [
+        "An override throws `NotSupportedException` for a method the base type supports",
+        "Callers contain checks like `if (sender is SmsSender) { ... }` before using the base type",
+        "A subclass adds a new public method that the base class doesn't have",
+        "An override returns a more specific type (covariant return) than the base declares"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "LSP is broken when a subtype can't be used through the base type without surprises: refusing supported operations or forcing callers to type-check. Adding members or returning a more derived type doesn't weaken the base contract.",
+      "optionNotes": [
+        null,
+        null,
+        "Extra members don't affect code that uses the base type.",
+        "A more specific return type still satisfies the base promise."
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-007",
+      "topic": "solid",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "This service can't be unit tested without a real database and SMTP server. Which principle is most directly violated?",
+      "code": "public class InvoiceService\n{\n    private readonly SqlInvoiceStore _store = new(\"Server=.;Database=Shop;\");\n    private readonly SmtpMailer _mailer = new(\"smtp.company.com\");\n\n    public async Task IssueAsync(Invoice invoice)\n    {\n        await _store.SaveAsync(invoice);\n        await _mailer.SendAsync(invoice.Email, \"Your invoice\");\n    }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Single Responsibility Principle",
+        "Interface Segregation Principle",
+        "Liskov Substitution Principle",
+        "Dependency Inversion Principle"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Business policy depends directly on concrete infrastructure classes it creates itself. Depending on `IInvoiceStore` and `IMailer` abstractions, injected through the constructor, fixes testability and lets implementations change.",
+      "optionNotes": [
+        "Issuing an invoice is one coherent job here.",
+        "There is no fat interface involved.",
+        "No inheritance hierarchy is being misused.",
+        null
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-008",
+      "topic": "solid",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In a Clean Architecture solution that applies DIP correctly, where is the `IOrderRepository` interface defined?",
+      "options": [
+        "In the Infrastructure project, next to `EfOrderRepository`",
+        "In the Application (or Domain) project that uses it",
+        "In the Web API project, because it registers the service",
+        "In a separate Contracts NuGet package referenced by every project"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Under DIP the high-level side owns the abstraction. The core defines what it needs, and Infrastructure references the core to implement it, so dependencies point inwards and the core has no reference to EF Core.",
+      "optionNotes": [
+        "Then the core would have to reference Infrastructure, which inverts nothing.",
+        null,
+        "The API is only the composition root; business code can't depend on it.",
+        "Unnecessary; it also hides who owns the abstraction."
+      ],
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-solid-009",
+      "topic": "solid",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "`Square` inherits from `Rectangle`, and setting `Width` on a square also changes its `Height`. Code that sets width and height independently on a `Rectangle` now computes the wrong area. Which principle is this the classic example of?",
+      "options": [
+        "Liskov Substitution Principle",
+        "Open/Closed Principle",
+        "Single Responsibility Principle",
+        "Interface Segregation Principle"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A `Square` can't be substituted for a `Rectangle` without breaking the base type's implied contract that width and height are independent. It shows that an \"is-a\" relationship in the real world isn't always a valid subtype in code.",
+      "readMore": "/patterns/solid/"
+    },
+    {
+      "id": "patterns-design-principles-001",
+      "topic": "design-principles",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does DRY (Don't Repeat Yourself) primarily target?",
+      "options": [
+        "Any two lines of code that look the same",
+        "Duplicated knowledge, such as a business rule defined in several places",
+        "Repeated method names across classes",
+        "Copying code between test projects"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "DRY says each piece of knowledge should have one authoritative representation. Code that looks similar but represents different concepts that change independently is not a DRY violation, and merging it creates coupling.",
+      "optionNotes": [
+        "Similar-looking code may represent different knowledge.",
+        null,
+        "Naming has nothing to do with DRY.",
+        "Test duplication is often acceptable for readability."
+      ],
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-design-principles-002",
+      "topic": "design-principles",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A shared helper has grown to this signature, with one flag added per caller. What is this most likely a sign of?",
+      "code": "public static decimal Calculate(decimal amount, bool isB2B, bool applyGst,\n    bool isRefund, bool roundForInvoice) { /* ... */ }",
+      "codeLang": "csharp",
+      "options": [
+        "Good DRY: all pricing is in one place",
+        "A Law of Demeter violation",
+        "Correct use of the Strategy pattern",
+        "The wrong abstraction: unrelated callers coupled through one method"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Each caller has bent the shared method with a flag, so every change risks the others. The usual fix is to inline it back into the callers and re-extract only the genuinely shared knowledge (for example a tax policy).",
+      "optionNotes": [
+        "Centralising different behaviours behind flags is coupling, not DRY.",
+        "No object graph is being navigated.",
+        "Strategy would replace the flags with separate implementations.",
+        null
+      ],
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-design-principles-003",
+      "topic": "design-principles",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does YAGNI advise?",
+      "options": [
+        "Don't build functionality until there is an actual need for it",
+        "Always write the interface before the implementation",
+        "Never refactor working code",
+        "Avoid third-party libraries"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "\"You Aren't Gonna Need It\": speculative features and abstractions cost time and complexity now for a benefit that often never comes. It doesn't mean ignoring known requirements.",
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-design-principles-004",
+      "topic": "design-principles",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which principle does this method most clearly violate?",
+      "code": "public decimal ShippingCost(Order order)\n{\n    var code = order.Customer.Address.Country.Code;\n    return code == \"IN\" ? 50m : 500m;\n}",
+      "codeLang": "csharp",
+      "options": [
+        "YAGNI",
+        "Liskov Substitution Principle",
+        "Law of Demeter",
+        "DRY"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The method reaches through `Order` into `Customer`, `Address` and `Country`, coupling itself to the whole object graph. Exposing `order.ShippingCountryCode` (or passing the code in) means it talks only to its immediate collaborator.",
+      "optionNotes": [
+        "Nothing speculative is being built.",
+        "No subtype substitution is involved.",
+        null,
+        "No knowledge is duplicated in this snippet."
+      ],
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-design-principles-005",
+      "topic": "design-principles",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A `WithdrawalService` reads `account.Balance` and `account.IsFrozen`, decides whether the withdrawal is allowed, then sets `account.Balance`. Which refactoring applies tell-don't-ask?",
+      "options": [
+        "Make `Balance` a public field instead of a property",
+        "Move the check into a static `AccountRules` helper",
+        "Add an `IsAllowed` property to the service",
+        "Add `Account.Withdraw(amount)` that enforces the rule and keeps `Balance` with a private setter"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Tell-don't-ask moves behaviour to the object that owns the data. `Account` then guards its own invariants and no caller can put it into an invalid state, which is the basis of a rich domain model.",
+      "optionNotes": [
+        "This exposes state even more.",
+        "The rule still lives outside the data it governs.",
+        "The decision still happens outside the account.",
+        null
+      ],
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-design-principles-006",
+      "topic": "design-principles",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which are valid reasons to prefer composition over inheritance? (Select all that apply)",
+      "options": [
+        "Behaviour can be swapped or combined at runtime",
+        "Composed objects always execute faster than inherited ones",
+        "It avoids a class explosion when variations combine (PDF + compressed + encrypted)",
+        "It allows a C# class to have multiple base classes"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Composition keeps components small and replaceable, avoids subclass-per-combination hierarchies and the fragile base class problem, and makes mocking easy. It has nothing to do with performance, and C# still allows only one base class.",
+      "optionNotes": [
+        null,
+        "There is no inherent performance advantage.",
+        null,
+        "C# doesn't support multiple class inheritance; composition sidesteps the need."
+      ],
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-design-principles-007",
+      "topic": "design-principles",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "When is designing ahead (despite YAGNI) most justified?",
+      "options": [
+        "Whenever a senior developer thinks the feature might be requested",
+        "For every class, so it can be mocked later",
+        "When the decision is expensive to change later, such as a public API contract or database schema, and the need is known",
+        "Never; YAGNI forbids any up-front design"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "YAGNI weighs the cost of building now against the cost of adding later. Known requirements and decisions that are costly to reverse (published APIs, schemas, data formats) deserve thought up front; cheap-to-add features should wait.",
+      "optionNotes": [
+        "\"Might be requested\" is exactly what YAGNI warns against.",
+        "Interfaces everywhere is speculative abstraction.",
+        null,
+        "YAGNI targets speculative features, not all design."
+      ],
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-design-principles-008",
+      "topic": "design-principles",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Composition over inheritance favours which kind of relationship?",
+      "options": [
+        "\"Has-a\": an object holds collaborators that provide behaviour",
+        "\"Is-a\": an object extends a base class",
+        "\"Uses-static\": an object calls static helpers",
+        "\"Friend\": an object accesses another's private members"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Composition builds behaviour by holding references to other objects, usually behind interfaces. Inheritance models \"is-a\" and couples the subclass to its base implementation.",
+      "readMore": "/patterns/design-principles/"
+    },
+    {
+      "id": "patterns-creational-patterns-001",
+      "topic": "creational-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What makes this Singleton thread-safe?",
+      "code": "public sealed class AppSettingsCache\n{\n    private static readonly Lazy<AppSettingsCache> _instance = new(() => new AppSettingsCache());\n    public static AppSettingsCache Instance => _instance.Value;\n    private AppSettingsCache() { }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "The `sealed` keyword",
+        "`Lazy<T>` defaults to thread-safe initialisation, so the factory runs only once",
+        "The private constructor",
+        "The `readonly` modifier locks the field"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Lazy<T>` uses `LazyThreadSafetyMode.ExecutionAndPublication` by default, guaranteeing one instance even when many threads access `Value` concurrently. `sealed` and the private constructor prevent other instances by design, not races.",
+      "optionNotes": [
+        "Sealing prevents subclassing, not concurrent creation.",
+        null,
+        "It stops outside `new`, not two threads racing inside the class.",
+        "`readonly` only prevents reassignment after construction."
+      ],
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-creational-patterns-002",
+      "topic": "creational-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A service registered with `AddSingleton` takes `AppDbContext` (registered as scoped) in its constructor. What is the problem?",
+      "options": [
+        "None; the container creates a new DbContext for every method call on the singleton",
+        "The app fails to compile because lifetimes are checked by the compiler",
+        "Captive dependency: one DbContext is shared by all requests for the app lifetime",
+        "The singleton is silently downgraded to a scoped lifetime by the container"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A longer-lived service captures a shorter-lived one. `DbContext` is not thread-safe and its change tracker grows forever. Scope validation (on in Development) throws at startup. Use `IServiceScopeFactory` or `IDbContextFactory<T>` instead.",
+      "optionNotes": [
+        "The constructor runs once, so the same DbContext is kept.",
+        "It compiles; the error appears at runtime or not at all in Production.",
+        null,
+        "Lifetimes are never upgraded or downgraded automatically."
+      ],
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-creational-patterns-003",
+      "topic": "creational-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which pattern does this ADO.NET code illustrate?",
+      "code": "DbProviderFactory factory = SqlClientFactory.Instance;\nusing var conn = factory.CreateConnection();\nusing var cmd = factory.CreateCommand();\nvar p = factory.CreateParameter();",
+      "codeLang": "csharp",
+      "options": [
+        "Builder",
+        "Prototype",
+        "Singleton only",
+        "Abstract Factory"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "One factory object creates a family of related products (connection, command, parameter) that must match the same provider. Swapping the factory swaps the whole family. `Instance` is a singleton, but the pattern being shown is Abstract Factory.",
+      "optionNotes": [
+        "No step-by-step construction of one complex object.",
+        "Nothing is cloned.",
+        "`Instance` is a singleton, but that isn't what the code demonstrates.",
+        null
+      ],
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-creational-patterns-004",
+      "topic": "creational-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "`WebApplication.CreateBuilder(args)` followed by `builder.Build()` is an example of which pattern?",
+      "options": [
+        "Builder",
+        "Adapter",
+        "Observer",
+        "Prototype"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "You configure a complex object (services, configuration, logging, host) step by step on a builder, then call `Build()` to get the finished `WebApplication`. `StringBuilder` and `SqlConnectionStringBuilder` are other .NET builders.",
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-creational-patterns-005",
+      "topic": "creational-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "public record EmailTemplate(string Subject, List<string> Cc);\n\nvar a = new EmailTemplate(\"Welcome\", [\"ops@shop.in\"]);\nvar b = a with { Subject = \"Offers\" };\nb.Cc.Add(\"marketing@shop.in\");\nConsole.WriteLine(a.Cc.Count);",
+      "codeLang": "csharp",
+      "options": [
+        "1",
+        "2",
+        "0",
+        "It doesn't compile because records are immutable"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`with` makes a shallow copy: `b.Cc` references the same `List<string>` as `a.Cc`, so adding through `b` changes the list `a` sees. Copy mutable members explicitly (`Cc = [.. a.Cc]`) or use immutable collections.",
+      "optionNotes": [
+        "That would require a deep copy of the list.",
+        null,
+        "Nothing removes the original item.",
+        "Positional records are shallowly immutable; the list itself is mutable."
+      ],
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-creational-patterns-006",
+      "topic": "creational-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In double-checked locking, why must the null check be repeated **inside** the lock?",
+      "code": "if (_instance is null)\n{\n    lock (_sync)\n    {\n        _instance ??= new LegacySingleton();\n    }\n}\nreturn _instance;",
+      "codeLang": "csharp",
+      "options": [
+        "Because `lock` resets the field to null each time a thread enters it",
+        "So that the outer check can be removed later without changing behaviour",
+        "Two threads can pass the outer check; the second must see the first one's instance",
+        "Because the JIT compiler removes the outer check in Release builds"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The outer check avoids taking the lock on the hot path. Without the inner check, a thread that waited on the lock would create a second instance. The field should also be `volatile` (or use `Lazy<T>`) so other threads see a fully constructed object.",
+      "optionNotes": [
+        "`lock` doesn't modify fields.",
+        "The outer check is what keeps the common path lock-free.",
+        null,
+        "The compiler doesn't remove it."
+      ],
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-creational-patterns-007",
+      "topic": "creational-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In .NET 8+, what is the built-in way to register several `INotificationSender` implementations and resolve one by a channel value at runtime?",
+      "options": [
+        "Register them all with `AddSingleton` and the last one wins",
+        "Use `Activator.CreateInstance` with a type name from configuration",
+        "Write a `switch` that calls `new EmailSender()` or `new SmsSender()`",
+        "Keyed services: `AddKeyedScoped` and `GetRequiredKeyedService` or `[FromKeyedServices]`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Keyed services let a factory resolve implementations by key while DI still controls lifetimes and dependencies. Injecting `IEnumerable<INotificationSender>` and selecting by a property is another common option.",
+      "optionNotes": [
+        "The last registration wins for single resolution, which isn't selection by key.",
+        "Bypasses DI, lifetimes and constructor injection.",
+        "Using `new` bypasses DI and its lifetimes.",
+        null
+      ],
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-creational-patterns-008",
+      "topic": "creational-patterns",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Why is `services.AddSingleton<ISettingsCache, SettingsCache>()` usually preferred over a classic static `Instance` singleton in ASP.NET Core? (Select all that apply)",
+      "options": [
+        "The container makes the class thread-safe automatically",
+        "Consumers depend on an interface through the constructor, so it can be replaced in tests",
+        "It avoids allocating the object",
+        "The lifetime is a registration decision that can change in one place"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "A DI singleton is a normal class: dependencies are explicit, it can be mocked, and its lifetime is set in the composition root. Thread safety is still your responsibility, and the object is still allocated once.",
+      "optionNotes": [
+        "Shared instances must still be written to be thread-safe.",
+        null,
+        "One instance is allocated either way.",
+        null
+      ],
+      "readMore": "/patterns/creational-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-001",
+      "topic": "structural-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "`new StreamReader(stream)` lets code read text lines from a byte-oriented `Stream`. Which pattern is `StreamReader` an example of?",
+      "options": [
+        "Adapter",
+        "Composite",
+        "Facade",
+        "Prototype"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`StreamReader` converts one interface (bytes from a `Stream`) into another that clients expect (`TextReader` with `ReadLine`). Changing the interface is what distinguishes Adapter from Decorator.",
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-002",
+      "topic": "structural-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which pattern is this?",
+      "code": "public class CachedProductRepository(IProductRepository inner, IMemoryCache cache)\n    : IProductRepository\n{\n    public async Task<Product?> GetAsync(int id, CancellationToken ct) =>\n        await cache.GetOrCreateAsync($\"product:{id}\", _ => inner.GetAsync(id, ct));\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Adapter",
+        "Facade",
+        "Decorator",
+        "Template Method"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The class implements the same interface as the object it wraps and adds behaviour (caching) before delegating. Callers keep using `IProductRepository` and don't know about the cache.",
+      "optionNotes": [
+        "The interface isn't converted; it's the same one.",
+        "A facade simplifies several subsystems behind a new interface.",
+        null,
+        "No base class defines algorithm steps here."
+      ],
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-003",
+      "topic": "structural-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How do you register a decorator for `IProductRepository` with the built-in ASP.NET Core container?",
+      "options": [
+        "Call `services.AddDecorator<>()`, which ships with Microsoft.Extensions.DependencyInjection",
+        "Scrutor's `Decorate<IProductRepository, CachedProductRepository>()`, or a factory lambda",
+        "Register both classes as `IProductRepository`; the container chains them in order",
+        "You can't; decorators require a third-party container such as Autofac"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The built-in container has no decoration API. Scrutor adds `Decorate`, or you register the concrete class and then `AddScoped<IProductRepository>(sp => new CachedProductRepository(sp.GetRequiredService<ProductRepository>(), ...))`.",
+      "optionNotes": [
+        "No such built-in method exists.",
+        null,
+        "Multiple registrations resolve as `IEnumerable<T>`, not as a chain.",
+        "They can, with a factory registration or Scrutor."
+      ],
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-004",
+      "topic": "structural-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Decorator and Proxy have the same structure (same interface, wrapping a real object). What distinguishes them?",
+      "options": [
+        "A proxy must use reflection",
+        "A decorator always changes the interface",
+        "A proxy can only wrap remote objects",
+        "Intent: a decorator adds behaviour, while a proxy controls access to the subject"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Decorators are about adding responsibilities and are designed to be stacked. Proxies are about controlling access: lazy creation, authorisation, remote calls or caching. The code can look identical.",
+      "optionNotes": [
+        "Hand-written proxies need no reflection.",
+        "Changing the interface is Adapter.",
+        "Virtual and protection proxies are local.",
+        null
+      ],
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-005",
+      "topic": "structural-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A `CheckoutFacade.PlaceOrderAsync(cart)` method calls inventory, payment, shipping and email services in the right order so the controller makes one call. What is the main purpose of a Facade?",
+      "options": [
+        "To convert one interface into another",
+        "To create families of related objects",
+        "To provide one simple entry point over a complex subsystem",
+        "To let objects be treated as a tree"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A facade hides the subsystem's complexity and coordination behind a simpler interface. It shouldn't become a god class or a pass-through that adds nothing.",
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-006",
+      "topic": "structural-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "With `UseLazyLoadingProxies()`, a Web API loops over 100 orders and reads `order.Customer.Name` for each. What happens?",
+      "options": [
+        "Up to 100 extra queries run (N+1), one per navigation access",
+        "EF Core batches all customer loads into one query automatically",
+        "A compile error, because navigation properties must be `virtual`",
+        "Customer is always null because lazy loading is disabled in APIs"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Lazy-loading proxies are runtime subclasses that override virtual navigations and query on first access. In a loop that becomes N+1 queries. Prefer `Include` or a projection with `Select` for API endpoints.",
+      "optionNotes": [
+        null,
+        "Lazy loading loads each navigation separately.",
+        "Non-virtual navigations cause a runtime configuration error, not a compile error, and the scenario implies they are virtual.",
+        "Lazy loading works in APIs when enabled; that's the danger."
+      ],
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-007",
+      "topic": "structural-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which pattern is this?",
+      "code": "public interface ICartItem { decimal Price(); }\n\npublic record SingleProduct(decimal UnitPrice) : ICartItem\n{\n    public decimal Price() => UnitPrice;\n}\n\npublic class Bundle(decimal discount) : ICartItem\n{\n    private readonly List<ICartItem> _children = [];\n    public void Add(ICartItem item) => _children.Add(item);\n    public decimal Price() => _children.Sum(c => c.Price()) * (1 - discount);\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Decorator",
+        "Composite",
+        "Chain of Responsibility",
+        "Iterator"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Leaves (`SingleProduct`) and containers (`Bundle`) share one interface, and a bundle can hold other bundles. Callers compute the price of a single item or a whole tree the same way.",
+      "optionNotes": [
+        "A decorator wraps exactly one object to add behaviour.",
+        null,
+        "Nothing is passed along until one handler takes it.",
+        "No traversal abstraction is exposed."
+      ],
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-structural-patterns-008",
+      "topic": "structural-patterns",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these .NET types are examples of the Decorator pattern? (Select all that apply)",
+      "options": [
+        "`GZipStream` wrapping another `Stream`",
+        "`StreamReader` wrapping a `Stream`",
+        "`SqlClientFactory`",
+        "A custom `DelegatingHandler` in an `HttpClient` pipeline"
+      ],
+      "answer": [
+        0,
+        3
+      ],
+      "explanation": "`GZipStream` is a `Stream` that wraps a `Stream` and adds compression. A `DelegatingHandler` is an `HttpMessageHandler` wrapping the inner handler to add headers, logging or retries. `StreamReader` changes the interface (Adapter), and `SqlClientFactory` is an Abstract Factory.",
+      "optionNotes": [
+        null,
+        "It converts bytes to text: an Adapter.",
+        "It creates families of ADO.NET objects: Abstract Factory.",
+        null
+      ],
+      "readMore": "/patterns/structural-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-001",
+      "topic": "behavioral-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the intent of the Strategy pattern?",
+      "options": [
+        "Notify many objects when one changes",
+        "Define a family of interchangeable algorithms behind one interface and choose one at runtime",
+        "Fix the steps of an algorithm in a base class",
+        "Change an object's behaviour when its internal state changes"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Strategy encapsulates each algorithm (discount rule, payment provider, sort comparison) in its own class or delegate so the context can switch them without conditionals.",
+      "optionNotes": [
+        "That is Observer.",
+        null,
+        "That is Template Method.",
+        "That is State."
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-002",
+      "topic": "behavioral-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which pattern does this middleware illustrate?",
+      "code": "public async Task InvokeAsync(HttpContext context)\n{\n    if (context.Request.Headers[\"X-Api-Key\"] != _expectedKey)\n    {\n        context.Response.StatusCode = 401;\n        return;\n    }\n    await _next(context);\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Observer",
+        "Command",
+        "Chain of Responsibility",
+        "Mediator"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Each middleware decides whether to handle the request (short-circuit with a 401) or pass it to the next handler. The sender doesn't know which handler will finally respond.",
+      "optionNotes": [
+        "No subscribers are being notified.",
+        "The request isn't turned into a queued object.",
+        null,
+        "There is no central object routing between colleagues."
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-003",
+      "topic": "behavioral-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which pattern is this?",
+      "code": "public abstract class ImportJob\n{\n    public async Task<int> RunAsync(Stream file)\n    {\n        var valid = ReadRows(file).Where(IsValid).ToList();\n        await SaveAsync(valid);\n        return valid.Count;\n    }\n    protected abstract IEnumerable<string[]> ReadRows(Stream file);\n    protected abstract bool IsValid(string[] row);\n    private Task SaveAsync(List<string[]> rows) => Task.CompletedTask;\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Template Method",
+        "Strategy",
+        "Builder",
+        "Decorator"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The base class fixes the algorithm (read, validate, save) and subclasses supply specific steps by overriding abstract methods. `BackgroundService.ExecuteAsync` is the same pattern in .NET.",
+      "optionNotes": [
+        null,
+        "Strategy injects the algorithm via composition, not inheritance.",
+        "Nothing is constructed step by step.",
+        "Nothing wraps an object of the same interface."
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-004",
+      "topic": "behavioral-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "State and Strategy have nearly identical class diagrams. What is the key difference?",
+      "options": [
+        "State must use abstract classes, while Strategy must always use interfaces",
+        "Strategy objects can't be resolved through dependency injection",
+        "State is only meant for UI code such as button enable/disable logic",
+        "State objects trigger their own transitions; a strategy is picked by the client"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Both delegate behaviour to an object behind an abstraction. With State, behaviour changes as the object moves through its lifecycle (Pending to Paid to Shipped), and transitions are driven by the states themselves.",
+      "optionNotes": [
+        "Either can use interfaces or abstract classes.",
+        "Strategies are commonly resolved from DI.",
+        "State is widely used for order and workflow lifecycles.",
+        null
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-005",
+      "topic": "behavioral-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "C# `event` declarations with `+=` and `-=` subscriptions are a language-level implementation of which pattern?",
+      "options": [
+        "Command",
+        "Observer",
+        "Iterator",
+        "Proxy"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The publisher keeps a list of handlers (a multicast delegate) and notifies all of them when something happens, without knowing who they are. `IObservable<T>` and RxJS Subjects are other forms of Observer.",
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-006",
+      "topic": "behavioral-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A short-lived page object subscribes to an event on a singleton service and never unsubscribes. What happens?",
+      "options": [
+        "Nothing; the garbage collector removes stale subscribers automatically",
+        "The event handler is invoked twice every time the event is raised",
+        "The publisher keeps a reference to the subscriber, so it is never collected",
+        "Raising the event throws ObjectDisposedException once the page is disposed"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Delegates hold strong references to their target objects. A long-lived publisher keeps every subscriber alive until they unsubscribe. Unsubscribe with `-=`, use disposable subscriptions, or `takeUntilDestroyed()` in Angular.",
+      "optionNotes": [
+        "The publisher's reference keeps the subscriber reachable.",
+        "Subscribing once means one invocation per raise.",
+        null,
+        "Nothing throws; it silently leaks."
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-007",
+      "topic": "behavioral-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "IEnumerable<int> Numbers()\n{\n    Console.Write(\"A\");\n    yield return 1;\n    Console.Write(\"B\");\n    yield return 2;\n}\n\nvar n = Numbers();\nConsole.Write(\"X\");\nforeach (var i in n) Console.Write(i);",
+      "codeLang": "csharp",
+      "options": [
+        "A1B2X",
+        "XA1B2",
+        "AX1B2",
+        "X12AB"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Iterator methods are deferred: calling `Numbers()` only creates the enumerator, so `X` prints first. Each `MoveNext()` runs until the next `yield return`, interleaving `A1` then `B2`.",
+      "optionNotes": [
+        "Nothing in the iterator runs until enumeration starts.",
+        null,
+        "`A` isn't printed when `Numbers()` is called.",
+        "Output is interleaved with each `MoveNext()`, not batched."
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-008",
+      "topic": "behavioral-patterns",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these are implementations of Chain of Responsibility? (Select all that apply)",
+      "options": [
+        "The ASP.NET Core middleware pipeline",
+        "A chain of `DelegatingHandler`s on an `HttpClient`",
+        "`IOptionsMonitor<T>.OnChange` callbacks",
+        "Angular functional HTTP interceptors registered with `withInterceptors([...])`"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "In all three, each handler receives the request plus a `next` and may handle, modify, or pass it on. `OnChange` notifies listeners of configuration changes, which is Observer.",
+      "optionNotes": [
+        null,
+        null,
+        "Change notifications to subscribers are Observer.",
+        null
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-behavioral-patterns-009",
+      "topic": "behavioral-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main benefit of the Command pattern?",
+      "options": [
+        "It removes the need for interfaces",
+        "It makes method calls faster",
+        "It guarantees exactly-once execution",
+        "A request becomes an object that can be queued, logged, retried or undone"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Turning a request into an object decouples the invoker from the receiver and lets you store, schedule or replay it. MediatR requests, Hangfire jobs and MAUI `ICommand` all build on this idea.",
+      "optionNotes": [
+        "Commands are typically defined by an interface.",
+        "It adds a small amount of indirection, not speed.",
+        "Delivery guarantees depend on the queue, not on the pattern.",
+        null
+      ],
+      "readMore": "/patterns/behavioral-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-001",
+      "topic": "enterprise-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In EF Core, what plays the role of the Unit of Work?",
+      "options": [
+        "`DbContext` and its `SaveChangesAsync()`",
+        "`DbSet<T>` and its `Add()` method",
+        "`IQueryable<T>` and deferred execution",
+        "The `__EFMigrationsHistory` table"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`DbContext` tracks every change across all `DbSet`s and writes them in one transaction on `SaveChangesAsync()`. `DbSet<T>` plays the repository role.",
+      "optionNotes": [
+        null,
+        "`DbSet<T>` is the repository-like collection.",
+        "It represents a query, not a set of pending changes.",
+        "It records applied migrations only."
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-002",
+      "topic": "enterprise-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Each repository method in a project calls `db.SaveChangesAsync()` itself. A use case adds an order via `OrderRepository` and updates stock via `ProductRepository`. What is the risk?",
+      "options": [
+        "None; EF Core always wraps both calls in one transaction",
+        "Deadlocks, because two repositories share one DbContext",
+        "Partial writes: the order can be saved while the stock update fails, because they commit separately",
+        "The second save throws because the context was already saved"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Each `SaveChanges` is its own transaction. The use case should commit once at the end through a unit of work so all changes succeed or fail together.",
+      "optionNotes": [
+        "Each SaveChanges call is a separate transaction unless you open one explicitly.",
+        "Sharing a scoped DbContext sequentially doesn't deadlock.",
+        null,
+        "A context can be saved many times."
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-003",
+      "topic": "enterprise-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A specification exposes its criteria as `Func<Product, bool>` and the repository calls `db.Products.Where(spec.Criteria).ToList()`. What happens?",
+      "options": [
+        "EF Core translates the delegate into a SQL WHERE clause",
+        "EF Core loads every product row and the filter runs in memory",
+        "EF Core throws a translation exception at runtime",
+        "The filter runs in SQL only for simple lambdas"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A `Func` can't bind to `Queryable.Where` (which needs an expression tree), so `Enumerable.Where` is used: the whole table is fetched and filtered client-side. (With `ToListAsync()` it doesn't even compile, because the result is `IEnumerable<T>`.) Use `Expression<Func<T, bool>>` so EF Core translates the filter to SQL.",
+      "optionNotes": [
+        "Compiled delegates can't be translated; only expression trees can.",
+        null,
+        "It binds to LINQ to Objects, so there is no EF translation step to fail.",
+        "A Func is never translated, however simple."
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-004",
+      "topic": "enterprise-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A `BackgroundService` (singleton) needs configuration values that may change in `appsettings.json` while the app runs. Which interface should it inject?",
+      "options": [
+        "`IOptions<T>`",
+        "`IOptionsSnapshot<T>`",
+        "`IConfiguration` and re-bind on every loop",
+        "`IOptionsMonitor<T>`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`IOptionsMonitor<T>` is a singleton whose `CurrentValue` reflects reloads and supports `OnChange`. `IOptions<T>` never updates, and `IOptionsSnapshot<T>` is scoped, so it can't be injected into a singleton.",
+      "optionNotes": [
+        "It is computed once and never reflects changes.",
+        "It is scoped; injecting it into a singleton fails scope validation.",
+        "Works but loses typed validation and is the manual version of what the monitor does.",
+        null
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-005",
+      "topic": "enterprise-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is this class, and what does it achieve?",
+      "code": "public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)\n    : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull\n{\n    public async Task<TResponse> Handle(TRequest request,\n        RequestHandlerDelegate<TResponse> next, CancellationToken ct)\n    {\n        var errors = validators.Select(v => v.Validate(request))\n            .SelectMany(r => r.Errors).ToList();\n        if (errors.Count > 0) throw new ValidationException(errors);\n        return await next();\n    }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "A MediatR request handler that validates one specific command",
+        "An ASP.NET Core action filter",
+        "A MediatR pipeline behavior that wraps every handler, so validation runs once for all requests",
+        "A FluentValidation validator for all request types"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Pipeline behaviors are decorators around every handler. Registered once as an open generic (`AddOpenBehavior`), this one resolves the validators for each request type and short-circuits before the handler if any fail.",
+      "optionNotes": [
+        "Handlers implement `IRequestHandler`; this is generic over all requests.",
+        "Action filters implement `IActionFilter` and run in MVC, not MediatR.",
+        null,
+        "It runs validators; it isn't one."
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-006",
+      "topic": "enterprise-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the core idea of CQRS?",
+      "options": [
+        "Store every change as an event",
+        "Separate the model used to change state (commands) from the model used to read it (queries)",
+        "Use a message queue between the API and the database",
+        "Put all SQL in stored procedures"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Commands go through the domain model and rules; queries use projections shaped for the screen. Event sourcing, queues and separate databases are optional additions, not CQRS itself.",
+      "optionNotes": [
+        "That's event sourcing, often paired with CQRS but separate.",
+        null,
+        "Messaging is optional.",
+        "Unrelated to CQRS."
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-007",
+      "topic": "enterprise-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "When is returning a `Result<T>` more appropriate than throwing an exception?",
+      "options": [
+        "For expected business outcomes, such as insufficient stock or a product not found",
+        "When the database connection is lost",
+        "For bugs such as a null reference",
+        "Never; exceptions are always preferred in .NET"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Results make expected failures explicit in the signature, are cheap, and map cleanly to 400/404 responses. Unexpected failures (infrastructure down, bugs) remain exceptions handled globally with ProblemDetails.",
+      "optionNotes": [
+        null,
+        "Infrastructure failures are unexpected; let them throw.",
+        "Bugs should surface as exceptions.",
+        "Both have a place; consistency within a codebase matters most."
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-008",
+      "topic": "enterprise-patterns",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about CQRS are true? (Select all that apply)",
+      "options": [
+        "It requires event sourcing",
+        "Query handlers should not change state",
+        "It requires MediatR",
+        "Commands and queries can use the same SQL Server database"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "The common, pragmatic form is separate command and query handlers over one database, with `AsNoTracking` projections for reads. Event sourcing, MediatR and separate read stores are optional.",
+      "optionNotes": [
+        "Event sourcing is a separate, optional pattern.",
+        null,
+        "Plain classes or any dispatcher work.",
+        null
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-enterprise-patterns-009",
+      "topic": "enterprise-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An order is saved to SQL Server and then `OrderPlaced` is published to Azure Service Bus. Occasionally the publish fails after the commit. How does the transactional outbox fix this?",
+      "options": [
+        "It wraps the database and the broker in one distributed (two-phase) transaction",
+        "It publishes the message first and saves the order only if publishing succeeded",
+        "The message is saved in the same DB transaction and published later by a worker",
+        "It retries the publish call three times inside the HTTP request before giving up"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The order and the outgoing message are committed atomically in one database. A background process publishes pending outbox rows and marks them sent; duplicates are possible, so consumers must be idempotent.",
+      "optionNotes": [
+        "Distributed transactions are generally unavailable or avoided with modern brokers.",
+        "Publishing first just moves the inconsistency to the other side.",
+        null,
+        "Retries can still all fail, or the process can crash between commit and publish."
+      ],
+      "readMore": "/patterns/enterprise-patterns/"
+    },
+    {
+      "id": "patterns-architecture-styles-001",
+      "topic": "architecture-styles",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does the Dependency Rule in Clean Architecture state?",
+      "options": [
+        "The domain depends on infrastructure so it can save itself",
+        "Every project references every other project",
+        "Source code dependencies point only inwards, towards the domain",
+        "The UI layer must not reference the application layer"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Inner layers (Domain, Application) know nothing about outer layers (Infrastructure, Web). Infrastructure implements interfaces defined by the inner layers.",
+      "optionNotes": [
+        "That's the N-layer direction Clean Architecture inverts.",
+        "That would create circular dependencies.",
+        null,
+        "The UI calls application use cases, which is an inward dependency."
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-architecture-styles-002",
+      "topic": "architecture-styles",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a Clean Architecture solution, the `Shop.Domain` project adds a reference to Microsoft.EntityFrameworkCore so entities can use `[Index]` attributes and `DbSet` properties. What is wrong?",
+      "options": [
+        "It breaks the Dependency Rule: the domain now depends on an infrastructure framework",
+        "Nothing; attributes don't create dependencies",
+        "EF Core attributes don't work in class libraries",
+        "It violates the Interface Segregation Principle"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The domain should have no infrastructure references. Configure EF mappings in the Infrastructure project with `IEntityTypeConfiguration<T>` so the domain model stays persistence-ignorant.",
+      "optionNotes": [
+        null,
+        "An attribute needs a package reference, which is a dependency.",
+        "They work anywhere; the problem is the direction of the dependency.",
+        "No interface is involved."
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-architecture-styles-003",
+      "topic": "architecture-styles",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "`Money(100, \"INR\")` is immutable and two instances with the same amount and currency are considered equal. In DDD, what is `Money`?",
+      "options": [
+        "An entity",
+        "An aggregate root",
+        "A domain service",
+        "A value object"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Value objects are defined by their values, have no identity, and are immutable. C# records are a natural fit because they provide value equality and `with` expressions.",
+      "optionNotes": [
+        "Entities have an identity that persists while attributes change.",
+        "An aggregate root is an entity that guards a consistency boundary.",
+        "Domain services hold behaviour, not values.",
+        null
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-architecture-styles-004",
+      "topic": "architecture-styles",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How does Vertical Slice architecture organise code?",
+      "options": [
+        "By technical layer: Controllers, Services, Repositories folders",
+        "By feature or use case: request, validator, handler and endpoint together",
+        "One microservice per database table",
+        "All code in `Program.cs`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each slice contains everything for one use case, minimising coupling between features. Shared business rules should still live in the domain model so slices don't duplicate them.",
+      "optionNotes": [
+        "That's layered (horizontal) organisation.",
+        null,
+        "Slices are inside one application.",
+        "Slices are separate files or folders per feature."
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-architecture-styles-005",
+      "topic": "architecture-styles",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How should an `Order` aggregate refer to the `Customer` aggregate?",
+      "options": [
+        "Through a navigation property loaded with the order every time",
+        "By copying all customer fields into the order",
+        "By the customer's id only",
+        "Through a static `CustomerRegistry`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Referencing other aggregates by id keeps aggregates small and avoids changing two aggregates in one transaction. Load the customer separately when a use case needs it.",
+      "optionNotes": [
+        "Navigation properties pull another aggregate into the order's boundary.",
+        "Snapshotting a few fields (shipping address) is fine; copying everything is not.",
+        null,
+        "A global registry is hidden coupling."
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-architecture-styles-006",
+      "topic": "architecture-styles",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In Hexagonal (Ports and Adapters) architecture, what is an ASP.NET Core controller that receives HTTP requests and calls an application use case?",
+      "options": [
+        "A driving (primary) adapter",
+        "A driven (secondary) adapter",
+        "A port",
+        "A domain service"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Driving adapters (controllers, message consumers, tests) call into the application through its input ports. Driven adapters (EF repositories, payment clients) implement the output ports the application needs.",
+      "optionNotes": [
+        null,
+        "Driven adapters are called by the application, like an EF repository.",
+        "Ports are the interfaces; the controller is an implementation detail outside them.",
+        "Domain services live in the core and know nothing about HTTP."
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-architecture-styles-007",
+      "topic": "architecture-styles",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which are recommended aggregate design rules? (Select all that apply)",
+      "options": [
+        "Keep aggregates small",
+        "Expose child collections as public `List<T>` so services can add items",
+        "Reference other aggregates by id",
+        "Modify one aggregate per transaction and use domain events for the rest"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "Small aggregates load fast and conflict less. The root should expose read-only collections and methods like `AddLine()` so it can enforce invariants. Cross-aggregate changes are coordinated through domain events and eventual consistency.",
+      "optionNotes": [
+        null,
+        "Public mutable collections let callers bypass the root's invariants.",
+        null,
+        null
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-architecture-styles-008",
+      "topic": "architecture-styles",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an e-commerce system, \"Product\" means images and descriptions to the catalog team, but warehouse and quantity to the inventory team. What DDD concept addresses this?",
+      "options": [
+        "Value objects",
+        "The Repository pattern",
+        "Aggregates",
+        "Bounded contexts, each with its own model of Product"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A bounded context is a boundary within which a model and its language are consistent. Catalog and Inventory each get their own model and integrate through contracts or events instead of sharing one giant class.",
+      "optionNotes": [
+        "Value objects are building blocks within a model.",
+        "Repositories persist aggregates; they don't split models.",
+        "Aggregates are consistency boundaries inside one context.",
+        null
+      ],
+      "readMore": "/patterns/architecture-styles/"
+    },
+    {
+      "id": "patterns-angular-patterns-001",
+      "topic": "angular-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which best describes a presentational (dumb) component?",
+      "options": [
+        "It injects HttpClient and loads the data it needs in its constructor",
+        "It gets data via inputs, emits intents via outputs, and injects no data services",
+        "It is always a routed page component that owns a URL segment",
+        "It owns the application's global state and exposes it to child components"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Presentational components know how to display, not where data comes from. That makes them reusable, easy to test, and a natural fit for `OnPush` change detection.",
+      "optionNotes": [
+        "That's a smart (container) component.",
+        null,
+        "Routed pages are usually containers.",
+        "Global state belongs to root services or a store."
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    },
+    {
+      "id": "patterns-angular-patterns-002",
+      "topic": "angular-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which pattern does this service implement?",
+      "code": "@Injectable({ providedIn: 'root' })\nexport class ProductsFacade {\n  private readonly http = inject(HttpClient);\n  private readonly state = signal({ products: [] as Product[], loading: false });\n\n  readonly products = computed(() => this.state().products);\n  readonly loading = computed(() => this.state().loading);\n\n  async load(): Promise<void> { /* calls http, updates state */ }\n}",
+      "codeLang": "ts",
+      "options": [
+        "Adapter",
+        "Composite",
+        "Singleton only",
+        "Facade"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "It gives components a simple API (read-only signals and methods) while hiding HTTP calls and state handling. Components can stay unchanged if the implementation later moves to NgRx or a signal store.",
+      "optionNotes": [
+        "It isn't converting one interface to another.",
+        "There is no tree of uniform parts.",
+        "`providedIn: 'root'` makes it a singleton, but that isn't the pattern being shown.",
+        null
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    },
+    {
+      "id": "patterns-angular-patterns-003",
+      "topic": "angular-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a core / shared / features structure, where do the auth interceptor and auth guard belong?",
+      "options": [
+        "core, because they are app-wide singletons used once",
+        "shared, because many features use them",
+        "Inside every feature folder that needs authentication",
+        "In `main.ts`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "core holds application-wide services, interceptors, guards and layout that are set up once. shared is for reusable presentational pieces (UI components, pipes, directives) without business logic.",
+      "optionNotes": [
+        null,
+        "shared should contain reusable UI with no app-level logic.",
+        "Duplicating them per feature breaks DRY.",
+        "`main.ts` only bootstraps; providers live in `app.config.ts`."
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    },
+    {
+      "id": "patterns-angular-patterns-004",
+      "topic": "angular-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main advantage of feature-based folders over `components/`, `services/` and `models/` folders?",
+      "options": [
+        "Angular requires it for standalone components",
+        "It makes the bundle smaller automatically",
+        "Code for one business feature lives together, so it's easier to change, lazy-load and own",
+        "It removes the need for routing"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Grouping by feature keeps related code close (like vertical slices on the back end), supports one lazy-loaded route per feature, and lets teams own folders. Type-based folders grow huge and spread one feature everywhere.",
+      "optionNotes": [
+        "Angular doesn't enforce a folder structure.",
+        "Bundle size depends on lazy loading, which feature folders make easier but don't do by themselves.",
+        null,
+        "Routing is still needed."
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    },
+    {
+      "id": "patterns-angular-patterns-005",
+      "topic": "angular-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A cart service exposes `readonly items = signal<Item[]>([])`. Several components call `cart.items.set(...)` directly and the cart total is sometimes wrong. What is the best fix?",
+      "options": [
+        "Switch the components back to `ChangeDetectionStrategy.Default`",
+        "Keep the writable signal private; expose a read-only signal and an `add()` method",
+        "Wrap every `set` call in `setTimeout` so updates are applied in order",
+        "Add an `effect()` in each component that recalculates the total"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "State should have a single owner. Exposing a read-only signal and mutation methods means every change goes through one place, which can enforce rules and keep derived values (like the total) consistent.",
+      "optionNotes": [
+        "Change detection isn't the problem; uncontrolled writes are.",
+        null,
+        "Timing hacks hide the ownership problem.",
+        "Effects for derived state are an anti-pattern; use `computed` in the owner."
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    },
+    {
+      "id": "patterns-angular-patterns-006",
+      "topic": "angular-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Where should the current page number, sort order and search term of a product list be owned so that refresh and shared links keep them?",
+      "options": [
+        "In a component field",
+        "In `localStorage`",
+        "In the URL (route or query params), read through the router",
+        "In a root singleton service"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Navigational state belongs in the URL: it survives refresh, works with back/forward, and can be shared. With `withComponentInputBinding()` query params can be bound directly to component inputs.",
+      "optionNotes": [
+        "Lost on refresh and navigation.",
+        "Not shareable and can go stale across tabs.",
+        null,
+        "Lost on refresh and not shareable via link."
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    },
+    {
+      "id": "patterns-angular-patterns-007",
+      "topic": "angular-patterns",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "What does Nx add to a large Angular codebase? (Select all that apply)",
+      "options": [
+        "Library tags with a lint rule that enforces module boundaries",
+        "Automatic conversion of NgModules to standalone components",
+        "It removes the need for lazy loading",
+        "`nx affected` to build and test only projects impacted by a change"
+      ],
+      "answer": [
+        0,
+        3
+      ],
+      "explanation": "Nx organises code into libraries (feature, ui, data-access, util), enforces which may import which, and uses the dependency graph plus caching to speed up CI. Lazy loading and standalone migration are separate concerns.",
+      "optionNotes": [
+        null,
+        "That's the Angular CLI standalone migration schematic.",
+        "Lazy loading is still configured in routes.",
+        null
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    },
+    {
+      "id": "patterns-angular-patterns-008",
+      "topic": "angular-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the design problem with this component, which is meant to be a reusable product card?",
+      "code": "@Component({ selector: 'app-product-card', template: `...` })\nexport class ProductCard {\n  private readonly http = inject(HttpClient);\n  readonly productId = input.required<number>();\n  readonly product = signal<Product | null>(null);\n\n  constructor() {\n    effect(() => {\n      this.http.get<Product>(`/api/products/${this.productId()}`)\n        .subscribe((p) => this.product.set(p));\n    });\n  }\n}",
+      "codeLang": "ts",
+      "options": [
+        "The presentational card fetches its own data: not reusable, and 50 cards = 50 calls",
+        "`input.required` signals can't be read inside an `effect()`",
+        "Standalone components are not allowed to inject `HttpClient`",
+        "The selector must end in `-component` for the template to compile"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The card mixes presentation with data access. A container (or facade) should load the products once and pass each one to a dumb card through `input()`, which also avoids N+1 HTTP requests.",
+      "optionNotes": [
+        null,
+        "Reading inputs inside effects is allowed.",
+        "They can; the point is that presentational ones shouldn't.",
+        "No such rule exists."
+      ],
+      "readMore": "/patterns/angular-patterns/"
+    }
+  ]
+}

@@ -1,0 +1,1538 @@
+{
+  "section": "system-design",
+  "version": 1,
+  "questions": [
+    {
+      "id": "system-design-case-url-shortener-001",
+      "topic": "case-url-shortener",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A URL shortener will create about **6 billion** links over its lifetime. What is the minimum base62 code length that can give every link a unique code?",
+      "options": [
+        "5 characters",
+        "6 characters",
+        "7 characters",
+        "8 characters"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "62^5 is about 916 million, which is too small. 62^6 is about 56.8 billion, which covers 6 billion links. Many designs still pick 7 characters (3.5 trillion) for headroom and to make guessing harder.",
+      "optionNotes": [
+        "62^5 ≈ 916 M, fewer than 6 B links.",
+        null,
+        "Works, but it is not the minimum.",
+        "Far more than needed."
+      ],
+      "readMore": "/system-design/case-url-shortener/"
+    },
+    {
+      "id": "system-design-case-url-shortener-002",
+      "topic": "case-url-shortener",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Marketing needs accurate click counts per link and the ability to disable a link later. Which redirect response should the service return?",
+      "options": [
+        "301 Moved Permanently",
+        "308 Permanent Redirect",
+        "302 Found",
+        "200 OK with an HTML meta refresh"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A 302 (or 307) is not cached permanently by browsers, so every click reaches the service. That keeps analytics accurate and lets you expire or disable the link. A 301 reduces load but browsers cache it, so later clicks are never seen.",
+      "optionNotes": [
+        "Browsers cache 301s; repeat clicks bypass you, breaking analytics and disabling.",
+        "Also permanent and cacheable, with the same problem as 301.",
+        null,
+        "Slower, worse for SEO and clients, and still not needed."
+      ],
+      "readMore": "/system-design/case-url-shortener/"
+    },
+    {
+      "id": "system-design-case-url-shortener-003",
+      "topic": "case-url-shortener",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Link creation runs on several API instances. You need short codes, **no collisions**, and minimal load on the database. Which ID generation approach fits best?",
+      "options": [
+        "MD5 of the long URL, truncated to 7 base62 characters",
+        "Snowflake-style 64-bit IDs, base62-encoded",
+        "A new GUID per link, base62-encoded",
+        "Each instance reserves a block of IDs from a database sequence and base62-encodes them"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Range allocation gives globally unique numbers with one database call per block (e.g. 1,000 IDs), and base62 keeps them at 6-7 characters. Permuting the number before encoding hides the sequence.",
+      "optionNotes": [
+        "Truncated hashes collide, so every insert needs a uniqueness check and a retry path.",
+        "A 64-bit ID is about 11 base62 characters: unique but long.",
+        "A 128-bit GUID is about 22 base62 characters: not short.",
+        null
+      ],
+      "readMore": "/system-design/case-url-shortener/"
+    },
+    {
+      "id": "system-design-case-url-shortener-004",
+      "topic": "case-url-shortener",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "One short link goes viral at **50,000 clicks per second**. Redirects use cache-aside with Redis in front of Azure SQL. Which component is under the most pressure first?",
+      "options": [
+        "The Azure SQL primary",
+        "The ID allocator",
+        "The single Redis key (and its shard) holding that code",
+        "The link creation API"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Every redirect for that code reads the same Redis key, so one shard takes all the load. The database is barely touched because the key is cached. The fix is a short-lived in-process cache on each redirect node (and optionally edge caching).",
+      "optionNotes": [
+        "The key is cached, so the database sees almost none of this traffic.",
+        "The allocator is only used when creating links.",
+        null,
+        "Creation traffic does not change with clicks."
+      ],
+      "readMore": "/system-design/case-url-shortener/"
+    },
+    {
+      "id": "system-design-case-url-shortener-005",
+      "topic": "case-url-shortener",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "To make codes non-sequential, you transform each allocated ID before base62 encoding. What property must the transformation have?",
+      "options": [
+        "It must be a bijection over the ID space, so distinct IDs always map to distinct codes",
+        "It must be a cryptographic hash such as SHA-256",
+        "It must preserve the ordering of IDs",
+        "It must always produce 11-character output"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A one-to-one mapping (e.g. multiplying by a constant coprime to 62^7 modulo 62^7, or a small Feistel network) keeps codes unique with no collision checks, while making them look random.",
+      "optionNotes": [
+        null,
+        "A hash is not reversible and can collide once truncated.",
+        "Preserving order would keep codes guessable, defeating the purpose.",
+        "Length is a separate concern; 11 characters would be too long."
+      ],
+      "readMore": "/system-design/case-url-shortener/"
+    },
+    {
+      "id": "system-design-case-url-shortener-006",
+      "topic": "case-url-shortener",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Why send click events asynchronously instead of running `UPDATE Links SET Clicks = Clicks + 1` inside the redirect request? (Select all that apply)",
+      "options": [
+        "It avoids row-lock contention on popular links",
+        "It keeps redirect latency low",
+        "It guarantees exactly-once click counting",
+        "It lets analytics be aggregated in a separate store"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Per-click updates serialise on a hot row and add a database write to the critical path. Events batched to Event Hubs and aggregated elsewhere keep redirects fast and isolate analytics. They give eventually consistent counts, not exactly-once.",
+      "optionNotes": [
+        null,
+        null,
+        "Event pipelines are typically at-least-once; counts are approximate and eventually consistent.",
+        null
+      ],
+      "readMore": "/system-design/case-url-shortener/"
+    },
+    {
+      "id": "system-design-case-url-shortener-007",
+      "topic": "case-url-shortener",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Estimates show about 40 link creations/s and 4,000 redirects/s. What gives the biggest win first?",
+      "options": [
+        "A cache in front of the database for redirect lookups",
+        "Sharding the links database",
+        "A message queue for link creation",
+        "Multi-master database replication"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The workload is read-heavy (100:1) and links never change after creation, so a cache serves most redirects and the database barely notices. Sharding and multi-master solve problems this system does not have yet.",
+      "optionNotes": [
+        null,
+        "The data fits on one server for years; sharding adds complexity for no gain.",
+        "Writes are tiny; a queue does not help reads.",
+        "Adds conflict handling without addressing the read load."
+      ],
+      "readMore": "/system-design/case-url-shortener/"
+    },
+    {
+      "id": "system-design-case-notification-system-001",
+      "topic": "case-notification-system",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why does the Notification API return `202 Accepted` instead of `200 OK`?",
+      "options": [
+        "The notification has already been delivered to the device",
+        "The provider temporarily rejected the request",
+        "The request is durably queued and will be processed asynchronously",
+        "The caller must poll before the notification is queued"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "202 means \"accepted for processing\". The API validates the request, records it and enqueues it, then returns immediately. Rendering and calling providers happen later in workers.",
+      "optionNotes": [
+        "Delivery happens later, possibly minutes later.",
+        "A rejection would be an error status, not 202.",
+        null,
+        "The notification is already queued when 202 is returned."
+      ],
+      "readMore": "/system-design/case-notification-system/"
+    },
+    {
+      "id": "system-design-case-notification-system-002",
+      "topic": "case-notification-system",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A 20-million-recipient marketing campaign is delaying OTP SMS messages. What is the best fix?",
+      "options": [
+        "Increase MaxConcurrentCalls on the shared queue",
+        "Send OTPs synchronously from the auth service to the SMS provider",
+        "Add more partitions to the notification log store",
+        "Use a separate queue and worker pool for transactional messages, and pace the campaign"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Priority isolation (a bulkhead) keeps OTPs out of the campaign backlog, and pacing stops a campaign from flooding the system and the provider quota.",
+      "optionNotes": [
+        "More concurrency on a shared queue still processes OTPs behind millions of campaign messages, and may hit provider limits.",
+        "Loses retries, tracking and preferences, and couples auth to a flaky provider.",
+        "The log is not the bottleneck.",
+        null
+      ],
+      "readMore": "/system-design/case-notification-system/"
+    },
+    {
+      "id": "system-design-case-notification-system-003",
+      "topic": "case-notification-system",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The order service calls the Notification API for \"order shipped\". Where should the `Idempotency-Key` come from?",
+      "options": [
+        "A new GUID generated for each HTTP call",
+        "The Service Bus message sequence number",
+        "The current timestamp rounded to the second",
+        "The business event, e.g. order id + event type"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A key derived from the business event is identical on every retry and on event replays, so the API can return the original notification instead of creating a duplicate.",
+      "optionNotes": [
+        "A retried call gets a different GUID, so duplicates are not detected.",
+        "It is assigned by the broker per message and differs on replays.",
+        "Retries a few seconds apart get different keys; unrelated events in the same second collide.",
+        null
+      ],
+      "readMore": "/system-design/case-notification-system/"
+    },
+    {
+      "id": "system-design-case-notification-system-004",
+      "topic": "case-notification-system",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An email worker crashes after the provider accepted the email but before it completed the Service Bus message. What happens next, and what prevents a duplicate email?",
+      "options": [
+        "Service Bus deletes the message on lock expiry, so nothing more happens",
+        "The message moves straight to the dead-letter queue because the lock was lost",
+        "Service Bus duplicate detection recognises the MessageId and blocks the redelivery",
+        "It is redelivered when the lock expires; a dedup claim and provider idempotency id stop a resend"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Peek-lock is at-least-once: an uncompleted message becomes visible again when the lock expires. Duplicate detection only applies to messages being *sent* with the same MessageId, not to redeliveries. Idempotent processing must prevent the second email.",
+      "optionNotes": [
+        "Uncompleted messages are not deleted; that is the point of peek-lock.",
+        "It goes to the DLQ only after MaxDeliveryCount is exceeded.",
+        "Duplicate detection filters enqueues, not redelivery of the same message.",
+        null
+      ],
+      "readMore": "/system-design/case-notification-system/"
+    },
+    {
+      "id": "system-design-case-notification-system-005",
+      "topic": "case-notification-system",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The SMS provider responds \"invalid phone number\" for a message. What should the worker do?",
+      "options": [
+        "Mark the delivery as permanently failed, flag the contact, and not retry",
+        "Abandon the message so it is retried up to MaxDeliveryCount",
+        "Retry with exponential backoff for 24 hours",
+        "Fail over to the secondary SMS provider and retry"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "This is a permanent error: retrying cannot succeed. Retries are for transient failures (timeouts, 429, 5xx). Flagging the contact stops future sends to a bad number.",
+      "optionNotes": [
+        null,
+        "Wastes attempts and fills the DLQ with messages that can never succeed.",
+        "Backoff does not fix an invalid number.",
+        "The number is invalid for every provider."
+      ],
+      "readMore": "/system-design/case-notification-system/"
+    },
+    {
+      "id": "system-design-case-notification-system-006",
+      "topic": "case-notification-system",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which storage choices are sensible for this notification system? (Select all that apply)",
+      "options": [
+        "Cosmos DB with a TTL for the high-volume notification log",
+        "A Redis cache for user preferences read on every send",
+        "The notification log in the same SQL database as preferences, kept forever",
+        "Azure SQL for templates, contacts and preferences"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "The log is about 100 GB/day of append-only writes looked up by id, which suits a partitioned NoSQL store with expiry. Preferences and templates are small and relational, so they go in SQL with a cache in front.",
+      "optionNotes": [
+        null,
+        null,
+        "Mixing 100 GB/day of log writes with hot preference reads hurts both, and unbounded retention grows to tens of TB a year.",
+        null
+      ],
+      "readMore": "/system-design/case-notification-system/"
+    },
+    {
+      "id": "system-design-case-notification-system-007",
+      "topic": "case-notification-system",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "With Azure Service Bus, why might a worker complete the message and schedule a new copy (`ScheduledEnqueueTime = now + backoff`) instead of abandoning it when the provider returns 429?",
+      "options": [
+        "Abandon makes the message available again immediately, so it retries without a real delay and uses up its delivery count",
+        "Abandon deletes the message from the queue",
+        "Scheduled messages skip the provider rate limit",
+        "Abandon sends the message straight to the dead-letter queue"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Abandon releases the lock and the message can be received again right away, which hot-loops against a throttled provider. Re-scheduling a copy gives a real backoff delay and keeps control of the attempt count (store it in a message property).",
+      "optionNotes": [
+        null,
+        "Abandon keeps the message; it just unlocks it.",
+        "The rate limit still applies; scheduling only delays the attempt.",
+        "Dead-lettering happens only after MaxDeliveryCount is exceeded."
+      ],
+      "readMore": "/system-design/case-notification-system/"
+    },
+    {
+      "id": "system-design-case-rate-limiter-001",
+      "topic": "case-rate-limiter",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which algorithm allows short bursts up to a fixed size while enforcing an average rate over time?",
+      "options": [
+        "Fixed window counter",
+        "Leaky bucket",
+        "Token bucket",
+        "Sliding window log"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Tokens refill at the sustained rate up to a capacity. A client that has been idle can spend the whole capacity at once (a burst), then is limited to the refill rate.",
+      "optionNotes": [
+        "Allows up to 2× bursts at window edges, but has no explicit burst size.",
+        "Smooths output to a constant rate; no bursts.",
+        null,
+        "Counts exact requests in a rolling window; it does not model bursts separately."
+      ],
+      "readMore": "/system-design/case-rate-limiter/"
+    },
+    {
+      "id": "system-design-case-rate-limiter-002",
+      "topic": "case-rate-limiter",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API runs on **5 instances** behind a load balancer and uses ASP.NET Core's built-in `AddRateLimiter` with a 100 requests/minute per-user policy. Roughly what limit does a user actually get?",
+      "options": [
+        "Up to about 500 requests/minute, depending on how requests spread",
+        "Exactly 100 requests/minute",
+        "20 requests/minute",
+        "No limit at all"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The built-in limiter keeps counters in each process. Every instance allows 100/min for that user, so the effective limit is up to 5×. A shared store such as Redis is needed for a global limit.",
+      "optionNotes": [
+        null,
+        "That needs shared state across instances.",
+        "The limit is not divided automatically.",
+        "Each instance still enforces its own 100/min."
+      ],
+      "readMore": "/system-design/case-rate-limiter/"
+    },
+    {
+      "id": "system-design-case-rate-limiter-003",
+      "topic": "case-rate-limiter",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the main correctness problem with this limiter under concurrent requests?",
+      "code": "var count = (int?)await db.StringGetAsync(key) ?? 0;\nif (count >= limit) return Results.StatusCode(429);\nawait db.StringSetAsync(key, count + 1, TimeSpan.FromMinutes(1));",
+      "codeLang": "csharp",
+      "options": [
+        "Two requests can read the same count and both be allowed, exceeding the limit",
+        "Redis cannot store integer values",
+        "The key is never created",
+        "`StringSetAsync` blocks the thread pool"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Read, check and write are three separate steps. Concurrent requests interleave between them. Use a Lua script (atomic) or an atomic `INCR`. This code also resets the TTL on every write, which turns the fixed window into one that never expires under steady traffic.",
+      "optionNotes": [
+        null,
+        "Redis stores the value as a string and parses integers fine.",
+        "The first `StringSetAsync` creates it.",
+        "It is async; blocking is not the issue."
+      ],
+      "readMore": "/system-design/case-rate-limiter/"
+    },
+    {
+      "id": "system-design-case-rate-limiter-004",
+      "topic": "case-rate-limiter",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Lua script that updates both `rl:user42:min` and `rl:user42:hour` fails on Redis Cluster with a `CROSSSLOT` error. What is the right fix?",
+      "options": [
+        "Use hash tags such as `rl:{user42}:min` and `rl:{user42}:hour` so both keys map to the same slot",
+        "Wrap the calls in MULTI/EXEC instead of Lua",
+        "Call EVAL instead of EVALSHA",
+        "Store both counters in a local in-memory dictionary"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Redis Cluster hashes only the part inside `{}` when present, so keys sharing a hash tag live in the same slot, and multi-key scripts and transactions on them are allowed.",
+      "optionNotes": [
+        null,
+        "MULTI/EXEC has the same single-slot restriction in cluster mode.",
+        "Both have the same key-slot rule.",
+        "Loses the shared, cross-instance state."
+      ],
+      "readMore": "/system-design/case-rate-limiter/"
+    },
+    {
+      "id": "system-design-case-rate-limiter-005",
+      "topic": "case-rate-limiter",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Redis is unreachable. How should the limiter behave for the **login** endpoint and for the **product listing** endpoint?",
+      "options": [
+        "Fail open for both endpoints until Redis is back",
+        "Fail closed for both endpoints until Redis is back",
+        "Fail closed for login; fail open for listing, with an in-memory fallback limiter",
+        "Fail open for login; fail closed for the product listing"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "For login, unlimited attempts is the attack, so blocking is safer. For general reads, availability matters more, and a per-instance in-memory limiter still gives rough protection.",
+      "optionNotes": [
+        "Opens the door to credential stuffing during the outage.",
+        "Turns a Redis blip into a full outage of the catalogue.",
+        null,
+        "Exactly backwards."
+      ],
+      "readMore": "/system-design/case-rate-limiter/"
+    },
+    {
+      "id": "system-design-case-rate-limiter-006",
+      "topic": "case-rate-limiter",
+      "difficulty": "easy",
+      "type": "multi",
+      "question": "What should a response to a rate-limited request include? (Select all that apply)",
+      "options": [
+        "Status `429 Too Many Requests`",
+        "A `Retry-After` header",
+        "Status `503 Service Unavailable`",
+        "A remaining-quota header such as `X-RateLimit-Remaining: 0`"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "429 tells the client it exceeded a limit, `Retry-After` says when to try again, and limit/remaining headers let well-behaved clients pace themselves.",
+      "optionNotes": [
+        null,
+        null,
+        "503 signals the server is unavailable, which is misleading and may trigger the wrong retry logic.",
+        null
+      ],
+      "readMore": "/system-design/case-rate-limiter/"
+    },
+    {
+      "id": "system-design-case-rate-limiter-007",
+      "topic": "case-rate-limiter",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You run 3 regions and enforce a global 300 requests/minute limit by giving each region 100/minute (split quota). What is the main downside?",
+      "options": [
+        "A client whose traffic all lands in one region is limited to 100/minute",
+        "Every request pays cross-region latency",
+        "It requires a single global Redis instance",
+        "Clients can make 900 requests/minute in total"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Split quotas need no cross-region coordination, but they assume traffic spreads evenly. A client served by one region only gets that region's share. Home-region routing or local counting with async sync are the alternatives.",
+      "optionNotes": [
+        null,
+        "Each region checks its own local counters.",
+        "Each region has its own Redis.",
+        "The total across regions is still at most 300."
+      ],
+      "readMore": "/system-design/case-rate-limiter/"
+    },
+    {
+      "id": "system-design-case-chat-system-001",
+      "topic": "case-chat-system",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why do chat systems use WebSockets rather than polling the server every second?",
+      "options": [
+        "WebSockets encrypt messages end to end automatically",
+        "The server can push messages over one long-lived, bidirectional connection without empty polls",
+        "Polling cannot work through load balancers",
+        "WebSockets store messages when the user is offline"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "With 10 M clients, polling each second is 10 M requests/s that mostly return nothing, plus up to a second of latency. A WebSocket lets the server push the moment a message arrives.",
+      "optionNotes": [
+        "TLS protects the connection; end-to-end encryption is a separate protocol.",
+        null,
+        "Polling is plain HTTP and works fine through load balancers.",
+        "Offline storage is the backend's job, not the transport's."
+      ],
+      "readMore": "/system-design/case-chat-system/"
+    },
+    {
+      "id": "system-design-case-chat-system-002",
+      "topic": "case-chat-system",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How should the order of messages in a conversation be decided so every member sees the same order?",
+      "options": [
+        "By the sender device's timestamp",
+        "By the wall-clock time on whichever hub server received the message",
+        "By a per-conversation sequence number assigned by the server when the message is persisted",
+        "By the order in which the recipient's device receives messages"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A server-assigned, monotonically increasing seq per conversation (Redis `INCR` or a single writer) gives one order everyone agrees on. Clocks are only used for display.",
+      "optionNotes": [
+        "Device clocks are skewed or wrong, especially for offline phones.",
+        "Different servers' clocks disagree, so two servers can order messages differently.",
+        null,
+        "Each device can receive messages in a different order."
+      ],
+      "readMore": "/system-design/case-chat-system/"
+    },
+    {
+      "id": "system-design-case-chat-system-003",
+      "topic": "case-chat-system",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "When should the sender see the single \"sent\" tick?",
+      "options": [
+        "When the hub receives the message",
+        "When the recipient opens the conversation",
+        "When the recipient's device receives the message",
+        "After the message is durably persisted and assigned its seq"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Acknowledging only after persisting means a \"sent\" message cannot be lost. If the hub crashed after receiving but before persisting, the client would wrongly believe the message was safe.",
+      "optionNotes": [
+        "A crash before persisting would lose a message the user thinks was sent.",
+        "That is the \"read\" receipt.",
+        "That is the \"delivered\" tick.",
+        null
+      ],
+      "readMore": "/system-design/case-chat-system/"
+    },
+    {
+      "id": "system-design-case-chat-system-004",
+      "topic": "case-chat-system",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The sender's app did not receive the ack (network drop) and resends the same message. How do you avoid storing it twice?",
+      "options": [
+        "Unique key on (conversation_id, client_message_id); a repeat returns the existing seq",
+        "Rely on Service Bus duplicate detection between the hub and the store",
+        "Drop any message whose body matches one sent in the last 5 seconds",
+        "Compare the client timestamps of both copies and keep the earliest"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Idempotent writes keyed by a client message id make retries safe: the second insert finds the existing row and the client gets the original seq back.",
+      "optionNotes": [
+        null,
+        "Messages go through the hub to the store, not through a queue with duplicate detection.",
+        "Users legitimately send the same text twice (\"ok\", \"ok\").",
+        "Timestamps are neither unique nor reliable."
+      ],
+      "readMore": "/system-design/case-chat-system/"
+    },
+    {
+      "id": "system-design-case-chat-system-005",
+      "topic": "case-chat-system",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You self-host SignalR on 3 servers. User A is on server 1 and user B on server 2. `Clients.User(\"B\")` called on server 1 never reaches B. What is the fix?",
+      "options": [
+        "Enable sticky sessions on the load balancer",
+        "Ask B to reconnect until they land on server 1",
+        "Use `Clients.All` instead",
+        "Add a backplane (Redis) or move connections to Azure SignalR Service"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Each server only knows its own connections. A backplane broadcasts the send to all servers so the one holding B delivers it. Azure SignalR Service holds all connections centrally, which solves the same problem.",
+      "optionNotes": [
+        "Sticky sessions keep one client on one server; they do not route messages between servers.",
+        "Not a real solution at scale.",
+        "Sends to everyone, and still only on the local server.",
+        null
+      ],
+      "readMore": "/system-design/case-chat-system/"
+    },
+    {
+      "id": "system-design-case-chat-system-006",
+      "topic": "case-chat-system",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which techniques reduce presence write and broadcast load? (Select all that apply)",
+      "options": [
+        "Derive online status from connect/disconnect events instead of every heartbeat",
+        "Send presence updates only to users currently viewing that contact",
+        "Write `lastSeen` to the database on every WebSocket ping",
+        "Debounce \"offline\" by a few seconds for flapping mobile connections"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "10 M online users heartbeating every 30 s is about 333,000 writes/s. Event-driven presence, subscriber-scoped broadcasts and debouncing cut that dramatically.",
+      "optionNotes": [
+        null,
+        null,
+        "That is exactly the heavy write pattern to avoid.",
+        null
+      ],
+      "readMore": "/system-design/case-chat-system/"
+    },
+    {
+      "id": "system-design-case-chat-system-007",
+      "topic": "case-chat-system",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "How should read receipts be stored for groups of up to 500 members?",
+      "options": [
+        "One row per message per reader",
+        "An array of reader ids inside each message document",
+        "A `last_read_seq` watermark per member per conversation",
+        "Only in client memory"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A watermark means \"read everything up to seq N\". One integer per member replaces messages × members rows, and a single update covers all earlier messages.",
+      "optionNotes": [
+        "500 rows per message explodes storage and write volume.",
+        "The message document grows with every reader and is rewritten constantly.",
+        null,
+        "Lost on reinstall and not visible to other devices."
+      ],
+      "readMore": "/system-design/case-chat-system/"
+    },
+    {
+      "id": "system-design-case-file-upload-001",
+      "topic": "case-file-upload",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main reason to upload files directly to blob storage with a SAS URL instead of through the API?",
+      "options": [
+        "File bytes stay off the API servers, so compute does not scale with bandwidth",
+        "Blob storage compresses files automatically",
+        "SAS URLs never expire",
+        "It removes the need for a metadata database"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The API only issues a scoped, short-lived SAS and records metadata. Storage handles the heavy transfer, which keeps the API small and avoids request size limits and timeouts.",
+      "optionNotes": [
+        null,
+        "Not true, and not the reason.",
+        "They should expire quickly.",
+        "You still need metadata for ownership, status and sharing."
+      ],
+      "readMore": "/system-design/case-file-upload/"
+    },
+    {
+      "id": "system-design-case-file-upload-002",
+      "topic": "case-file-upload",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which SAS should the API issue for an upload?",
+      "options": [
+        "A container-level SAS with read, write and delete, valid for 7 days",
+        "The storage account key, embedded in the Angular app",
+        "Anonymous public write access on the container",
+        "A single-blob SAS with create and write only, expiring in about 15 minutes, signed with a user delegation key"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Least privilege: one blob path, only the permissions needed to upload, short expiry, and no account key involved (user delegation keys come from Entra ID via managed identity).",
+      "optionNotes": [
+        "A leak would expose every file in the container for a week.",
+        "Full control of the account to anyone who views the source.",
+        "Anyone could upload anything.",
+        null
+      ],
+      "readMore": "/system-design/case-file-upload/"
+    },
+    {
+      "id": "system-design-case-file-upload-003",
+      "topic": "case-file-upload",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A 2 GB upload in 8 MB blocks fails at 70% because of a network drop. What should the client do?",
+      "options": [
+        "Restart the upload from the beginning",
+        "Upload the remaining 30% as a new blob and concatenate later",
+        "Ask the API to download the pieces and stitch them together",
+        "Get the uncommitted block list, upload only the missing blocks, then commit the block list"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Blocks are stored as uncommitted until `Put Block List`. Resuming means uploading only what is missing (requesting a fresh SAS if the old one expired), then committing the full list.",
+      "optionNotes": [
+        "Throws away about 1.4 GB of completed work.",
+        "Block blobs are assembled by committing a block list, not by concatenating blobs.",
+        "Puts the bytes back through your servers.",
+        null
+      ],
+      "readMore": "/system-design/case-file-upload/"
+    },
+    {
+      "id": "system-design-case-file-upload-004",
+      "topic": "case-file-upload",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How do you make sure nobody can download a file before the malware scan finishes?",
+      "options": [
+        "Scan the file in the browser with a JavaScript scanner before uploading",
+        "Scan the file the first time someone requests a download of it",
+        "Upload to a quarantine container and copy to the serving container only after a clean scan",
+        "Rely on antivirus software on downloaders' machines"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The quarantine container is never served and never gets a read SAS. Only files that passed the scan move to the serving container and get the `Available` status the download endpoint checks.",
+      "optionNotes": [
+        "Client-side checks can be bypassed.",
+        "The first downloader would get the unscanned file.",
+        null,
+        "Shifts the risk to users and is not a control."
+      ],
+      "readMore": "/system-design/case-file-upload/"
+    },
+    {
+      "id": "system-design-case-file-upload-005",
+      "topic": "case-file-upload",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why serve user-uploaded files from a separate download domain with `Content-Disposition: attachment`?",
+      "options": [
+        "It stops uploaded HTML or SVG files from running scripts in your main site's origin (stored XSS)",
+        "It makes downloads faster because the separate domain uses HTTP/2",
+        "It is required for SAS URLs to work with browsers",
+        "It reduces storage costs by enabling cheaper access tiers"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A malicious HTML or SVG file opened inline on your domain can run script with access to your cookies and origin. A separate domain plus `attachment` and `nosniff` isolate it.",
+      "optionNotes": [
+        null,
+        "Not related to performance.",
+        "SAS works on any domain.",
+        "Has no effect on storage cost."
+      ],
+      "readMore": "/system-design/case-file-upload/"
+    },
+    {
+      "id": "system-design-case-file-upload-006",
+      "topic": "case-file-upload",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these belong in the SQL metadata database? (Select all that apply)",
+      "options": [
+        "File name, size, owner and status",
+        "Share link tokens with expiry and revocation flag",
+        "The file bytes in a `VARBINARY(MAX)` column",
+        "Download audit records"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Metadata is relational, transactional and small. Bytes belong in blob storage, where they are cheaper, tiered and served without going through the database.",
+      "optionNotes": [
+        null,
+        null,
+        "Bloats the database, backups and memory; blob storage is designed for this.",
+        null
+      ],
+      "readMore": "/system-design/case-file-upload/"
+    },
+    {
+      "id": "system-design-case-file-upload-007",
+      "topic": "case-file-upload",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "The system receives **1 million uploads per day** averaging **5 MB**. What is the average ingest bandwidth?",
+      "options": [
+        "About 5.8 MB/s",
+        "About 58 MB/s",
+        "About 580 MB/s",
+        "About 5.8 GB/s"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "1 M × 5 MB = 5 TB per day. 5,000,000 MB ÷ 86,400 s ≈ 58 MB/s, about 460 Mbps, which is why the bytes should bypass the API.",
+      "optionNotes": [
+        "Off by 10×.",
+        null,
+        "Off by 10× the other way.",
+        "Off by 100×."
+      ],
+      "readMore": "/system-design/case-file-upload/"
+    },
+    {
+      "id": "system-design-case-ecommerce-orders-001",
+      "topic": "case-ecommerce-orders",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which approach prevents two concurrent checkouts from both buying the last unit?",
+      "options": [
+        "Read the stock in C#, and if it is enough, run an UPDATE to decrement it",
+        "Read stock with `NOLOCK` so the availability check is faster and never blocks",
+        "A single conditional `UPDATE ... WHERE Sku = @sku AND Available >= @qty`, checking rows affected",
+        "Decrement stock after payment succeeds, without any availability check"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The conditional UPDATE checks and decrements in one atomic statement, so concurrent requests cannot both pass. A `CHECK (Available >= 0)` constraint is a good safety net.",
+      "optionNotes": [
+        "Two requests can both read 1 and both decrement: a classic race.",
+        "Dirty reads make the race worse, not better.",
+        null,
+        "Oversells, and charges customers for stock you may not have."
+      ],
+      "readMore": "/system-design/case-ecommerce-orders/"
+    },
+    {
+      "id": "system-design-case-ecommerce-orders-002",
+      "topic": "case-ecommerce-orders",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The call to the payment gateway to create a payment times out. What should the payment service do?",
+      "options": [
+        "Retry with the same idempotency key",
+        "Retry with a new idempotency key",
+        "Mark the order failed and ask the user to pay again",
+        "Retry through a different payment gateway"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The first call may have succeeded. With the same idempotency key the gateway returns the original result instead of creating a second charge. If retries keep failing, leave the order pending for the webhook or reconciliation job.",
+      "optionNotes": [
+        null,
+        "A new key tells the gateway this is a new payment: possible double charge.",
+        "The first attempt may have succeeded; the user could be charged twice.",
+        "The first gateway may already have charged the user."
+      ],
+      "readMore": "/system-design/case-ecommerce-orders/"
+    },
+    {
+      "id": "system-design-case-ecommerce-orders-003",
+      "topic": "case-ecommerce-orders",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The order service commits the order with `SaveChanges`, then crashes before publishing `OrderPlaced` to Service Bus. Which pattern prevents this lost event?",
+      "options": [
+        "Two-phase commit between SQL Server and Service Bus",
+        "Publish the event before saving the order",
+        "Write the event to an outbox table in the same transaction and publish it from a relay",
+        "Publish inside a `finally` block"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The outbox makes the order and its event commit atomically. A relay publishes outbox rows afterwards (at least once), so a crash only delays the event.",
+      "optionNotes": [
+        "Not supported in practice between a database and a cloud broker, and it hurts availability.",
+        "Produces phantom events for orders that roll back.",
+        null,
+        "A crash or kill still skips the `finally` block."
+      ],
+      "readMore": "/system-design/case-ecommerce-orders/"
+    },
+    {
+      "id": "system-design-case-ecommerce-orders-004",
+      "topic": "case-ecommerce-orders",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Checkout has four steps (reserve stock, create order, take payment, commit stock), each with a compensation. Which saga style fits best?",
+      "options": [
+        "Choreography: each service reacts to the previous service's events",
+        "A distributed transaction across the three databases",
+        "Orchestration: the order service holds the saga state and drives each step",
+        "No saga: retry each step until it succeeds"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Orchestration makes a multi-step flow with compensations explicit and easy to debug (\"where is order X stuck?\"). Choreography suits simple reactions like sending an email when an order is paid.",
+      "optionNotes": [
+        "Works, but the flow becomes implicit and hard to follow as steps grow.",
+        "No distributed transactions across services and brokers.",
+        null,
+        "Some failures (payment declined) are permanent and need compensation."
+      ],
+      "readMore": "/system-design/case-ecommerce-orders/"
+    },
+    {
+      "id": "system-design-case-ecommerce-orders-005",
+      "topic": "case-ecommerce-orders",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A flash sale puts about **16,700 requests/s** on one SKU with 10,000 units. Which protection should come first?",
+      "options": [
+        "Scale the SQL database up to the largest tier",
+        "Optimistic concurrency with rowversion and retries",
+        "Run reservations under SERIALIZABLE isolation",
+        "A Redis `DECR` gate holding the stock count, so only winners reach the database reservation"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "One row can take only a few hundred serialized updates per second. An atomic Redis counter answers \"sold out\" in microseconds for the losers, and only about 10,000 winners proceed to SQL, which can be queued and paced.",
+      "optionNotes": [
+        "More hardware does not remove serialization on one row.",
+        "Under heavy contention almost every attempt conflicts and retries.",
+        "Adds even more locking to the hot row.",
+        null
+      ],
+      "readMore": "/system-design/case-ecommerce-orders/"
+    },
+    {
+      "id": "system-design-case-ecommerce-orders-006",
+      "topic": "case-ecommerce-orders",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which measures help prevent charging a customer twice? (Select all that apply)",
+      "options": [
+        "An `Idempotency-Key` on `POST /orders` with a unique index on (user_id, idempotency_key)",
+        "An idempotency key on the gateway's create-payment call",
+        "Deduplicating webhooks by the gateway event id",
+        "Treating the browser redirect after payment as proof of payment"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "Each layer stops a different duplicate: client retries, timeout retries to the gateway, and repeated webhook deliveries. The browser redirect is not proof of anything; the signed webhook is.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "The redirect can be lost or forged; it does not prevent double charges."
+      ],
+      "readMore": "/system-design/case-ecommerce-orders/"
+    },
+    {
+      "id": "system-design-case-ecommerce-orders-007",
+      "topic": "case-ecommerce-orders",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "When is the usual time to reserve stock?",
+      "options": [
+        "At checkout, with an expiry such as 15 minutes",
+        "When the item is added to the cart, with no expiry",
+        "After the order is delivered",
+        "Never; check availability at shipping time"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Reserving at checkout with a TTL is fair to buyers who are paying, and avoids carts hoarding stock. Unpaid reservations are released automatically.",
+      "optionNotes": [
+        null,
+        "Abandoned carts would lock up stock indefinitely.",
+        "Far too late; you would already have sold stock you do not have.",
+        "Leads to overselling and cancellations."
+      ],
+      "readMore": "/system-design/case-ecommerce-orders/"
+    },
+    {
+      "id": "system-design-case-job-scheduler-001",
+      "topic": "case-job-scheduler",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Many workers poll the same SQL Server `Job` table. Which approach lets them claim different due jobs without blocking each other?",
+      "options": [
+        "`SELECT ... WITH (NOLOCK)` followed by an `UPDATE`",
+        "A single `UPDATE ... OUTPUT` over a `TOP (n)` CTE with `ROWLOCK, UPDLOCK, READPAST`",
+        "`SERIALIZABLE` isolation with `TABLOCKX`",
+        "A `SELECT` and an `UPDATE` in two separate transactions"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "One statement selects and marks rows atomically. `UPDLOCK` stops others claiming the same rows, and `READPAST` makes other workers skip locked rows instead of waiting.",
+      "optionNotes": [
+        "Two workers can read and claim the same rows.",
+        null,
+        "Serializes every worker on the whole table.",
+        "Race between the read and the write."
+      ],
+      "readMore": "/system-design/case-job-scheduler/"
+    },
+    {
+      "id": "system-design-case-job-scheduler-002",
+      "topic": "case-job-scheduler",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What execution guarantee can a distributed job scheduler honestly offer?",
+      "options": [
+        "Exactly-once execution",
+        "At-most-once, so no job runs twice",
+        "At-least-once, with idempotent job handlers",
+        "Exactly-once, provided leases are long enough"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A worker can finish the work and crash before recording success, and the job runs again. Combine at-least-once execution with idempotent handlers to get an exactly-once *effect*.",
+      "optionNotes": [
+        "Not achievable in general with crashes and timeouts.",
+        "Possible, but jobs can be lost, which is usually unacceptable.",
+        null,
+        "Longer leases delay retries; they do not remove the crash-after-work window."
+      ],
+      "readMore": "/system-design/case-job-scheduler/"
+    },
+    {
+      "id": "system-design-case-job-scheduler-003",
+      "topic": "case-job-scheduler",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Worker A pauses for a long GC past its lease. Worker B reclaims the job and starts attempt 2. Worker A then wakes and tries to mark the job complete. How do you stop A's stale write?",
+      "options": [
+        "Make the completion `UPDATE` include `WHERE lease_owner = @me AND attempts = @attempt`",
+        "Use much longer leases so a pause never outlasts the lease",
+        "Restart any worker that pauses for a long GC",
+        "Synchronise all worker clocks with NTP"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "This is fencing: the update only succeeds for the current owner and attempt, so A's write affects 0 rows. The job handler should still be idempotent, because A may already have performed side effects.",
+      "optionNotes": [
+        null,
+        "Pauses can always exceed any lease length.",
+        "You cannot reliably detect or prevent pauses.",
+        "Clock sync does not stop a stale owner from writing."
+      ],
+      "readMore": "/system-design/case-job-scheduler/"
+    },
+    {
+      "id": "system-design-case-job-scheduler-004",
+      "topic": "case-job-scheduler",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Jobs arrive at **116 per second** and each runs for **2 seconds** on average. About how many jobs are running at any moment?",
+      "options": [
+        "58",
+        "116",
+        "232",
+        "2,320"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Little's law: L = λ × W = 116/s × 2 s ≈ 232 concurrent executions. Divide by slots per worker to size the worker pool.",
+      "optionNotes": [
+        "That is λ ÷ W, not λ × W.",
+        "That ignores the runtime.",
+        null,
+        "That would be the top-of-hour peak at 10×."
+      ],
+      "readMore": "/system-design/case-job-scheduler/"
+    },
+    {
+      "id": "system-design-case-job-scheduler-005",
+      "topic": "case-job-scheduler",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A recurring \"09:00 every weekday\" report for London users is stored as a cron expression in UTC. What goes wrong?",
+      "options": [
+        "Nothing; UTC is always correct for cron",
+        "The job runs twice every day",
+        "Cron cannot express weekdays",
+        "The report runs at 10:00 local time for part of the year, because of daylight saving"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "London is UTC+1 in summer, so 09:00 UTC is 10:00 local. Store the time zone with the cron expression and compute the next run in that zone (e.g. Cronos with `TimeZoneInfo`).",
+      "optionNotes": [
+        "Correct only for time zones without daylight saving.",
+        "Runs once per day, just at the wrong local time for half the year.",
+        "`1-5` in the day-of-week field expresses weekdays.",
+        null
+      ],
+      "readMore": "/system-design/case-job-scheduler/"
+    },
+    {
+      "id": "system-design-case-job-scheduler-006",
+      "topic": "case-job-scheduler",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are good retry practices for failed jobs? (Select all that apply)",
+      "options": [
+        "Exponential backoff with jitter",
+        "A maximum attempt count, then a dead-letter state with alerting",
+        "Retrying validation errors immediately until they succeed",
+        "Treating permanent errors differently from transient ones"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Backoff with jitter avoids synchronized retry storms. Capped attempts and a dead-letter state stop poison jobs. Permanent errors should not be retried at all.",
+      "optionNotes": [
+        null,
+        null,
+        "A validation error will fail every time; immediate retries just add load.",
+        null
+      ],
+      "readMore": "/system-design/case-job-scheduler/"
+    },
+    {
+      "id": "system-design-case-job-scheduler-007",
+      "topic": "case-job-scheduler",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A serverless app needs one fixed nightly cleanup job. What is the simplest good choice?",
+      "options": [
+        "A custom distributed scheduler with leases",
+        "A `Timer` running in every web app instance",
+        "An Azure Functions timer trigger",
+        "An SQS queue with a delay of 24 hours"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A timer trigger is one cron expression, runs as a singleton through a lease, and needs no infrastructure. Custom schedulers are for dynamic, high-volume jobs.",
+      "optionNotes": [
+        "Overkill for one fixed schedule.",
+        "Every instance would run the job: N instances, N runs.",
+        null,
+        "SQS delays are capped at 15 minutes."
+      ],
+      "readMore": "/system-design/case-job-scheduler/"
+    },
+    {
+      "id": "system-design-case-news-feed-001",
+      "topic": "case-news-feed",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With pure fan-out on write, what happens when an account with **10 million followers** posts?",
+      "options": [
+        "One write to the posts table, and followers pull it on read",
+        "The post is rejected for exceeding the follower limit",
+        "10 million feed-cache writes, delaying the post for many followers",
+        "Only online followers receive it, everyone else never sees it"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Push copies the post id into every follower's feed. At around 100,000 writes/s that one post takes about 100 seconds and competes with normal fan-out. This is why the hybrid pulls celebrity posts at read time.",
+      "optionNotes": [
+        "That describes fan-out on read.",
+        "No such limit exists in the design.",
+        null,
+        "Offline followers still get it in their cached feed."
+      ],
+      "readMore": "/system-design/case-news-feed/"
+    },
+    {
+      "id": "system-design-case-news-feed-002",
+      "topic": "case-news-feed",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does the **hybrid** feed approach do?",
+      "options": [
+        "Fans out on write for normal authors, and merges celebrity posts at read time",
+        "Fans out on write for every author, but only on weekends",
+        "Fans out on read for every author, with a bigger cache",
+        "Precomputes feeds only for celebrities"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Normal authors are cheap to push. Celebrity posts are pulled (and cached per author) when a feed is built, because each user follows only a few celebrities.",
+      "optionNotes": [
+        null,
+        "Not a real strategy.",
+        "That is pure pull, which is slow for users following many accounts.",
+        "Backwards: celebrities are the ones not pushed."
+      ],
+      "readMore": "/system-design/case-news-feed/"
+    },
+    {
+      "id": "system-design-case-news-feed-003",
+      "topic": "case-news-feed",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why use cursor pagination for an infinite-scroll feed instead of page numbers (`OFFSET`)?",
+      "options": [
+        "Cursors make the response smaller",
+        "Cursors allow jumping to page 50 directly",
+        "OFFSET is not supported by Redis",
+        "New posts arriving at the top shift offsets, causing duplicates or skipped posts; a cursor is stable"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A cursor like \"older than (timestamp, id)\" always continues exactly where the last page ended, and it is an efficient seek. Large offsets also scan and discard rows.",
+      "optionNotes": [
+        "Size is the same.",
+        "Random page access is what offsets do well, and cursors do not.",
+        "Sorted-set range commands do support offsets; that is not the reason.",
+        null
+      ],
+      "readMore": "/system-design/case-news-feed/"
+    },
+    {
+      "id": "system-design-case-news-feed-004",
+      "topic": "case-news-feed",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does the feed cache store post **ids** rather than full post content?",
+      "options": [
+        "Fan-out writes stay tiny, and edits, deletes and like counts are read fresh at hydration time",
+        "Ids can be compressed better",
+        "Redis cannot store strings longer than 1 KB",
+        "It removes the need for a posts database"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Copying full posts into millions of feeds multiplies storage and makes every edit or delete a mass update. Ids plus batched hydration keep content current.",
+      "optionNotes": [
+        null,
+        "Not the reason.",
+        "Redis strings can be up to 512 MB.",
+        "Hydration reads content from the posts store or its cache."
+      ],
+      "readMore": "/system-design/case-news-feed/"
+    },
+    {
+      "id": "system-design-case-news-feed-005",
+      "topic": "case-news-feed",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "10 M posts are created per day and the average author has 200 followers. Roughly how many feed-cache writes per second does fan-out on write produce?",
+      "options": [
+        "About 2,300/s",
+        "About 23,000/s",
+        "About 230,000/s",
+        "About 2.3 M/s"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "10 M × 200 = 2 B writes per day. 2 B ÷ 86,400 s ≈ 23,000 writes/s on average, which is manageable, unlike a single 10 M-follower post.",
+      "optionNotes": [
+        "Off by 10×.",
+        null,
+        "Off by 10× the other way.",
+        "Off by 100×."
+      ],
+      "readMore": "/system-design/case-news-feed/"
+    },
+    {
+      "id": "system-design-case-news-feed-006",
+      "topic": "case-news-feed",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which techniques reduce fan-out cost? (Select all that apply)",
+      "options": [
+        "Skip fan-out to followers who have been inactive for weeks",
+        "Pull celebrity posts at read time instead of pushing them",
+        "Store full post bodies in every follower's feed",
+        "Trim each cached feed to the newest N ids"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Inactive users' feeds are rebuilt by pull when they return, celebrities are handled by the hybrid, and trimming bounds memory per feed.",
+      "optionNotes": [
+        null,
+        null,
+        "Makes each fan-out write much larger.",
+        null
+      ],
+      "readMore": "/system-design/case-news-feed/"
+    },
+    {
+      "id": "system-design-case-news-feed-007",
+      "topic": "case-news-feed",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A post is deleted after it was already fanned out to 50,000 feeds. What is the most practical handling?",
+      "options": [
+        "Synchronously remove it from all 50,000 feeds before confirming the delete",
+        "Rebuild every feed nightly",
+        "Mark it deleted; hydration drops deleted posts when feeds are read",
+        "It cannot be handled with fan-out on write"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Feeds hold ids only, so the hydrator checks the post and skips deleted ones. Stale ids age out of the trimmed cache. Optionally clean up lazily in the background.",
+      "optionNotes": [
+        "Slow and fragile for a user-facing action.",
+        "Expensive and leaves deleted posts visible for up to a day.",
+        null,
+        "It is handled at read time."
+      ],
+      "readMore": "/system-design/case-news-feed/"
+    },
+    {
+      "id": "system-design-case-autocomplete-001",
+      "topic": "case-autocomplete",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In an Angular typeahead, which RxJS operator cancels the in-flight request when the user types another character?",
+      "options": [
+        "mergeMap",
+        "concatMap",
+        "switchMap",
+        "exhaustMap"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`switchMap` unsubscribes from the previous inner observable (cancelling the HTTP request) when a new value arrives, so stale responses cannot overwrite fresh ones.",
+      "optionNotes": [
+        "Runs all requests concurrently; responses can arrive out of order.",
+        "Queues requests one after another; slow and stale.",
+        null,
+        "Ignores new input while a request is in flight."
+      ],
+      "readMore": "/system-design/case-autocomplete/"
+    },
+    {
+      "id": "system-design-case-autocomplete-002",
+      "topic": "case-autocomplete",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why precompute the top 10 completions on every trie node instead of running `SELECT TOP 10 ... WHERE query LIKE @prefix + '%' ORDER BY score DESC` per keystroke?",
+      "options": [
+        "LIKE with a trailing wildcard can never use an index seek",
+        "Tries always use less memory than the equivalent SQL tables",
+        "SQL Server does not support ORDER BY together with TOP in one query",
+        "Short prefixes match millions of rows that must be sorted per request; precomputed lists avoid that"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "An index finds the matching range, but ranking top-k still means reading every match. Precomputing per prefix moves that cost offline, leaving a tiny lookup on the hot path.",
+      "optionNotes": [
+        "A trailing-wildcard LIKE can use an index seek.",
+        "A trie with top-k lists uses more memory; the gain is latency.",
+        "It does.",
+        null
+      ],
+      "readMore": "/system-design/case-autocomplete/"
+    },
+    {
+      "id": "system-design-case-autocomplete-003",
+      "topic": "case-autocomplete",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The trie with top-k lists is estimated at about **8 GB**. How should it be served?",
+      "options": [
+        "Load a full copy into memory on every serving node and scale by adding replicas",
+        "Shard it by first letter across 26 servers",
+        "Store it in SQL Server and query per request",
+        "Rebuild it from logs on each request"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "It fits in one machine's memory, so full replication is simplest: no routing, no skew, linear read scaling. Shard only if it stops fitting.",
+      "optionNotes": [
+        null,
+        "Uneven (\"s\" is far bigger than \"x\") and unnecessary at this size.",
+        "Adds latency and loses the precomputation benefit.",
+        "Building is an offline job that takes minutes or hours."
+      ],
+      "readMore": "/system-design/case-autocomplete/"
+    },
+    {
+      "id": "system-design-case-autocomplete-004",
+      "topic": "case-autocomplete",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The index no longer fits on one machine. What is wrong with sharding by the first letter of the prefix?",
+      "options": [
+        "Letters are not valid partition keys in most data stores",
+        "Letter frequencies are skewed, so some shards (like \"s\") get far more data and traffic than others (\"x\")",
+        "Every lookup would need to query all the shards and merge",
+        "It prevents responses from being cached at the CDN edge"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Natural-language distributions are uneven. Shard by locale first, then by prefix ranges sized by measured volume, or by a hash of the first few characters.",
+      "optionNotes": [
+        "Any string can be a partition key.",
+        null,
+        "A prefix maps to exactly one shard.",
+        "CDN caching is unaffected by backend sharding."
+      ],
+      "readMore": "/system-design/case-autocomplete/"
+    },
+    {
+      "id": "system-design-case-autocomplete-005",
+      "topic": "case-autocomplete",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Suggestions must reflect trending searches within minutes, but the trie is rebuilt daily. What is the usual design?",
+      "options": [
+        "Update the serving trie in place on every search request",
+        "Disable caching so that results are always fresh",
+        "Rebuild the full trie from all logs every minute",
+        "Keep the daily rebuild and merge in trending queries from a streaming last-hour count"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The batch layer gives stable, decayed popularity. A small real-time layer (stream job to Redis) handles spikes without rebuilding or mutating the trie under load.",
+      "optionNotes": [
+        "Concurrent writes on the hot read path, plus no blocklist check.",
+        "Caching is not what makes results stale; the build schedule is.",
+        "Builds take far longer than a minute at this size.",
+        null
+      ],
+      "readMore": "/system-design/case-autocomplete/"
+    },
+    {
+      "id": "system-design-case-autocomplete-006",
+      "topic": "case-autocomplete",
+      "difficulty": "easy",
+      "type": "multi",
+      "question": "Which client-side techniques reduce autocomplete traffic? (Select all that apply)",
+      "options": [
+        "`debounceTime` of about 200 ms",
+        "`distinctUntilChanged` on the input",
+        "A new `mergeMap` request for every keystroke",
+        "Caching responses per prefix"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Debounce waits for a pause, distinctUntilChanged skips repeats, and a prefix cache answers repeats locally. Together they cut requests several-fold.",
+      "optionNotes": [
+        null,
+        null,
+        "Sends every keystroke and lets responses race.",
+        null
+      ],
+      "readMore": "/system-design/case-autocomplete/"
+    },
+    {
+      "id": "system-design-case-autocomplete-007",
+      "topic": "case-autocomplete",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "100 M searches per day, about 20 characters each. With **no debounce** (one request per keystroke), what is the average request rate?",
+      "options": [
+        "About 4,600/s",
+        "About 23,000/s",
+        "About 46,000/s",
+        "About 230,000/s"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "100 M × 20 = 2 B requests/day. 2 B ÷ 86,400 ≈ 23,000/s, about 5× the ~4,600/s you get with debounce (around 4 requests per search).",
+      "optionNotes": [
+        "That is the debounced rate.",
+        null,
+        "Double the correct value.",
+        "Off by 10×."
+      ],
+      "readMore": "/system-design/case-autocomplete/"
+    }
+  ]
+}

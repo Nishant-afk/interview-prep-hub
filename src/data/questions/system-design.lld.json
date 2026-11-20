@@ -1,0 +1,1552 @@
+{
+  "section": "system-design",
+  "version": 1,
+  "questions": [
+    {
+      "id": "system-design-lld-approach-001",
+      "topic": "lld-approach",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In a 45-minute LLD round, what should you do in the first five minutes?",
+      "options": [
+        "Clarify requirements, list what is in and out of scope, and state assumptions",
+        "Start coding the main service so there is something to show",
+        "Draw the complete class diagram with every field",
+        "List all the design patterns you plan to use"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Clarifying requirements first prevents building the wrong thing. Questions that change the model (actors, concurrency, single vs many instances) and an explicit out-of-scope list keep the rest of the round focused.",
+      "optionNotes": [
+        null,
+        "Coding before clarifying usually forces a rewrite later.",
+        "The diagram comes after entities and relationships are known, and only key members are shown.",
+        "Patterns should follow from the problem, not be chosen up front."
+      ],
+      "readMore": "/system-design/lld-approach/"
+    },
+    {
+      "id": "system-design-lld-approach-002",
+      "topic": "lld-approach",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A candidate creates `SmallSpot`, `MediumSpot` and `LargeSpot` subclasses of `ParkingSpot` that differ only in a size value. What is the better modelling choice?",
+      "options": [
+        "Make `ParkingSpot` abstract and keep the subclasses",
+        "Add an interface per spot size",
+        "Use a Singleton per spot size",
+        "Use one `ParkingSpot` class with a `Size` enum property"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Subclasses earn their place when behaviour differs. When only data differs, an enum property is simpler, and adding a size does not create a new class. This is composition over inheritance.",
+      "optionNotes": [
+        "Still a subclass per data value with no behaviour difference.",
+        "Interfaces with no different behaviour add ceremony, not flexibility.",
+        "There are many spots of each size; Singleton makes no sense here.",
+        null
+      ],
+      "readMore": "/system-design/lld-approach/"
+    },
+    {
+      "id": "system-design-lld-approach-003",
+      "topic": "lld-approach",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "The prompt says \"pricing differs by vehicle type and may change for weekends\". Which pattern fits best?",
+      "options": [
+        "Builder",
+        "Singleton",
+        "Strategy",
+        "Adapter"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A rule that varies and is likely to change is the textbook case for Strategy: an `IPricingStrategy` interface with one class per pricing rule, injected into the service.",
+      "optionNotes": [
+        "Builder constructs complex objects step by step.",
+        "Singleton controls instance count, not varying behaviour.",
+        null,
+        "Adapter converts one interface to another."
+      ],
+      "readMore": "/system-design/lld-approach/"
+    },
+    {
+      "id": "system-design-lld-approach-004",
+      "topic": "lld-approach",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a class diagram, `Order *-- OrderLine` means:",
+      "options": [
+        "Order inherits from OrderLine",
+        "Order owns its OrderLines; they do not exist without the Order",
+        "Order holds a reference to OrderLines that live independently",
+        "Order uses OrderLine only as a method parameter"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The filled diamond (`*--`) is composition: the whole owns the parts and their life cycle. The hollow diamond (`o--`) is aggregation, where parts can live independently. Inheritance is `<|--` and a temporary dependency is `..>`.",
+      "optionNotes": [
+        "Inheritance uses the triangle arrow `<|--`.",
+        null,
+        "That describes aggregation (`o--`).",
+        "That is a dependency, drawn as `..>`."
+      ],
+      "readMore": "/system-design/lld-approach/"
+    },
+    {
+      "id": "system-design-lld-approach-005",
+      "topic": "lld-approach",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are good reasons to inject `TimeProvider` into a domain service instead of calling `DateTime.Now`? (Select all that apply)",
+      "options": [
+        "Tests can advance a fake clock to check fines, pricing or expiry",
+        "It makes the code run faster",
+        "Time-dependent rules become deterministic and repeatable",
+        "It is required for async code to compile"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "`TimeProvider` (built into .NET 8+) is an abstraction over the clock. Injecting it makes time-based logic testable and deterministic. It has nothing to do with performance or async compilation.",
+      "optionNotes": [
+        null,
+        "There is no meaningful performance difference.",
+        null,
+        "Async code compiles fine with `DateTime.Now`."
+      ],
+      "readMore": "/system-design/lld-approach/"
+    },
+    {
+      "id": "system-design-lld-approach-006",
+      "topic": "lld-approach",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A `ReservationService` method does `if (seat.IsFree) { seat.Book(user); }` and is called from many threads. What is the core problem?",
+      "options": [
+        "It is a check-then-act race: two threads can both see the seat free and both book it",
+        "`IsFree` should be a method, not a property",
+        "The method should be `async`",
+        "`Book` violates the Liskov Substitution Principle"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Between the check and the action another thread can change the state. The check and the action must be one atomic operation: a lock around both, an atomic compare-and-set, or a conditional update in the database.",
+      "optionNotes": [
+        null,
+        "Syntax does not change the race.",
+        "Async does not make the sequence atomic.",
+        "LSP is about substitutable subtypes, unrelated here."
+      ],
+      "readMore": "/system-design/lld-approach/"
+    },
+    {
+      "id": "system-design-lld-approach-007",
+      "topic": "lld-approach",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You have 5 minutes left and only half of the classes are coded. What is the best move?",
+      "options": [
+        "Quickly add empty classes for everything remaining in the diagram",
+        "Switch to drawing a more detailed diagram",
+        "Ask the interviewer for 15 more minutes",
+        "Make sure the main flow compiles end to end, then explain the rest against the diagram"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A working happy path plus a clear explanation of how the remaining pieces plug in scores better than many half-written classes. Keep secondary features as stubs behind interfaces.",
+      "optionNotes": [
+        "Empty classes show no design thinking.",
+        "The diagram should already exist; code is what is missing.",
+        "Timeboxing is part of what is assessed.",
+        null
+      ],
+      "readMore": "/system-design/lld-approach/"
+    },
+    {
+      "id": "system-design-lld-parking-lot-001",
+      "topic": "lld-parking-lot",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In the parking lot design, why are spot allocation and pricing behind interfaces (`ISpotAllocationStrategy`, `IPricingStrategy`)?",
+      "options": [
+        "Interfaces make method calls faster",
+        "C# requires an interface for every class that is injected",
+        "They are rules likely to change, so new rules become new classes without editing the service",
+        "So that the spots can be stored in a database"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "This is Strategy plus the Open/Closed Principle: nearest-first vs best-fit allocation, hourly vs weekend pricing are swapped or added without modifying `ParkingLotService`.",
+      "optionNotes": [
+        "Interface dispatch is not faster.",
+        "DI can inject concrete classes too.",
+        null,
+        "Persistence is unrelated to these strategies."
+      ],
+      "readMore": "/system-design/lld-parking-lot/"
+    },
+    {
+      "id": "system-design-lld-parking-lot-002",
+      "topic": "lld-parking-lot",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Two entry gates call `Park` at the same time. Where must the lock be to prevent both cars getting the same spot?",
+      "options": [
+        "Only inside `ParkingSpot.Assign`",
+        "Around both finding the free spot and assigning it",
+        "Only inside `FindSpot` of the allocation strategy",
+        "No lock is needed if spots are stored in a `List`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The race is between the check (find a free spot) and the act (assign it). Locking only one of the steps still allows both threads to pick the same spot before either assigns it.",
+      "optionNotes": [
+        "Both threads may already have chosen the same spot before reaching Assign.",
+        null,
+        "The spot is still unassigned when FindSpot returns, so another thread can pick it.",
+        "`List` is not thread-safe at all."
+      ],
+      "readMore": "/system-design/lld-parking-lot/"
+    },
+    {
+      "id": "system-design-lld-parking-lot-003",
+      "topic": "lld-parking-lot",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With `HourlyPricing` billing every started hour (minimum one hour) at 2.50 per hour for cars, what does a car parked for 2 hours 15 minutes pay?",
+      "options": [
+        "7.50",
+        "5.63",
+        "5.00",
+        "2.50"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "2h15m rounds up to 3 started hours with `Math.Ceiling`, so 3 x 2.50 = 7.50.",
+      "optionNotes": [
+        null,
+        "That is pro-rata billing, which this strategy does not do.",
+        "That ignores the started third hour.",
+        "That is the one-hour minimum, not this duration."
+      ],
+      "readMore": "/system-design/lld-parking-lot/"
+    },
+    {
+      "id": "system-design-lld-parking-lot-004",
+      "topic": "lld-parking-lot",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The business adds \"first hour free on weekends\" on top of hourly pricing. Which change best follows the Open/Closed Principle?",
+      "options": [
+        "Add an `if (isWeekend)` branch inside `HourlyPricing.Calculate`",
+        "Add a `IsWeekend` flag to `Ticket` and check it in `ParkingLotService`",
+        "Subclass `ParkingLotService` and override `Unpark`",
+        "Write a decorator `WeekendFirstHourFree(IPricingStrategy inner)` and wire it at composition time"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A decorator adds the new rule around the existing strategy without editing it, and rules can be stacked. The other options modify existing classes or spread pricing logic into the wrong places.",
+      "optionNotes": [
+        "Edits existing, tested code for every new rule.",
+        "Leaks pricing rules into the ticket and the coordinator.",
+        "Inheritance on the service to change pricing mixes responsibilities.",
+        null
+      ],
+      "readMore": "/system-design/lld-parking-lot/"
+    },
+    {
+      "id": "system-design-lld-parking-lot-005",
+      "topic": "lld-parking-lot",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why is the vehicle type modelled as an enum on a `Vehicle` record instead of `Car`, `Truck` and `Motorcycle` subclasses?",
+      "options": [
+        "Records cannot be inherited",
+        "Enums are required for switch expressions",
+        "The types differ only in data (required spot size), not in behaviour",
+        "Subclasses cannot be stored in a dictionary"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Inheritance is worth it when subclasses behave differently. Here they only map to a spot size, so an enum plus a computed `RequiredSize` property is simpler and easier to extend.",
+      "optionNotes": [
+        "Records can inherit from other records.",
+        "Switch expressions work on types too (type patterns).",
+        null,
+        "Subclasses can be stored like any object."
+      ],
+      "readMore": "/system-design/lld-parking-lot/"
+    },
+    {
+      "id": "system-design-lld-parking-lot-006",
+      "topic": "lld-parking-lot",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "The lot grows to thousands of spots and many gates, and `Park` becomes a bottleneck. Which changes help? (Select all that apply)",
+      "options": [
+        "Keep a free-spot queue per size so claiming a spot is an O(1) atomic dequeue",
+        "Remove the lock, since races are rare",
+        "Use one lock per floor instead of one for the whole lot",
+        "Make `ParkingLotService` a static class"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Indexing free spots by size removes the O(n log n) scan, and a concurrent queue's `TryDequeue` is an atomic claim. Finer-grained locks (per floor) reduce contention. Removing the lock reintroduces the double-booking race; static classes change nothing about contention.",
+      "optionNotes": [
+        null,
+        "Rare races still double-book spots, which is a correctness bug.",
+        null,
+        "Static vs instance does not affect locking or complexity."
+      ],
+      "readMore": "/system-design/lld-parking-lot/"
+    },
+    {
+      "id": "system-design-lld-parking-lot-007",
+      "topic": "lld-parking-lot",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Display boards at the entrance must update whenever a spot is taken or freed. Which approach keeps `ParkingLotService` decoupled from the boards?",
+      "options": [
+        "Boards poll `FreeSpots` every 10 ms",
+        "The service raises a `SpotChanged` event that boards subscribe to (Observer)",
+        "The service holds a list of `DisplayBoard` objects and calls them directly",
+        "Boards read the private spot list via reflection"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Observer lets any number of subscribers react to changes without the service knowing their concrete types. Direct calls couple the service to boards; polling wastes CPU and lags.",
+      "optionNotes": [
+        "Wasteful and still delayed.",
+        null,
+        "Couples the coordinator to a UI concern.",
+        "Breaks encapsulation completely."
+      ],
+      "readMore": "/system-design/lld-parking-lot/"
+    },
+    {
+      "id": "system-design-lld-elevator-001",
+      "topic": "lld-elevator",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In the elevator design, what is the difference between dispatching and scheduling?",
+      "options": [
+        "Dispatching picks which car serves a hall call; scheduling orders the stops of one car",
+        "They are two names for the same thing",
+        "Dispatching moves the car; scheduling opens the doors",
+        "Scheduling picks the car; dispatching sends the car to the lobby"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Dispatching is a decision across cars (`IDispatchStrategy`). Scheduling is the order in which a single car serves its stops (LOOK inside `ElevatorCar`). Separating them lets each change independently.",
+      "optionNotes": [
+        null,
+        "Treating them as one leads to a god class.",
+        "Movement and doors are state transitions, not these decisions.",
+        "The definitions are swapped."
+      ],
+      "readMore": "/system-design/lld-elevator/"
+    },
+    {
+      "id": "system-design-lld-elevator-002",
+      "topic": "lld-elevator",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A car at floor 4 is moving up with stops at 6 and 9. A passenger inside presses 2. Under the LOOK algorithm, in what order are the floors served?",
+      "options": [
+        "2, 6, 9",
+        "9, 6, 2",
+        "6, 2, 9",
+        "6, 9, 2"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "LOOK keeps the current direction while there are stops ahead (6, then 9) and only then reverses to serve 2. It does not travel to the top floor first, unlike SCAN.",
+      "optionNotes": [
+        "That reverses immediately, which is first-come-first-served style zig-zagging.",
+        "Serving 9 before 6 while moving up is impossible.",
+        "That reverses in the middle of the sweep.",
+        null
+      ],
+      "readMore": "/system-design/lld-elevator/"
+    },
+    {
+      "id": "system-design-lld-elevator-003",
+      "topic": "lld-elevator",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The building wants an energy-saving dispatch mode at night. With the given design, what changes?",
+      "options": [
+        "Edit `ElevatorCar.Step` to check the time",
+        "Add a `NightMode` flag to every `HallCall`",
+        "Add a new `IDispatchStrategy` implementation and swap it in",
+        "Subclass `ElevatorController` and override `Step`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Choosing a car is the strategy's only job. A new strategy, or a composite that selects one by time of day, adds the behaviour without editing cars or the controller.",
+      "optionNotes": [
+        "Step is the car's scheduling, not dispatching.",
+        "Requests should not carry dispatch policy.",
+        null,
+        "Inheritance is not needed to change an injected policy."
+      ],
+      "readMore": "/system-design/lld-elevator/"
+    },
+    {
+      "id": "system-design-lld-elevator-004",
+      "topic": "lld-elevator",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Floor displays need to update when a car arrives at a floor. Which pattern does the `Arrived` event implement?",
+      "options": [
+        "Command",
+        "Observer",
+        "State",
+        "Facade"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "C# events are the built-in Observer: the car publishes `Arrived`, and any number of subscribers (displays, loggers) react without the car knowing them.",
+      "optionNotes": [
+        "Command encapsulates a request as an object.",
+        null,
+        "State changes behaviour based on internal state.",
+        "Facade simplifies access to a subsystem."
+      ],
+      "readMore": "/system-design/lld-elevator/"
+    },
+    {
+      "id": "system-design-lld-elevator-005",
+      "topic": "lld-elevator",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why does the cost function in `NearestCarStrategy` add a building-height penalty when a car is not \"on the way\"?",
+      "options": [
+        "A car moving away must finish its sweep first, so distance alone underestimates the wait",
+        "To make idle cars always lose against moving cars",
+        "To balance the number of trips evenly between all cars",
+        "Because `MinBy` cannot handle ties between equal distances"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Distance alone would choose a nearby car that is heading away and will reach the caller only after serving its other stops. The penalty approximates that extra travel so a car that is idle or approaching in the right direction wins.",
+      "optionNotes": [
+        null,
+        "Idle cars count as on the way and get no penalty.",
+        "Load balancing would need a term for pending stops.",
+        "`MinBy` returns the first minimum; ties are not the issue."
+      ],
+      "readMore": "/system-design/lld-elevator/"
+    },
+    {
+      "id": "system-design-lld-elevator-006",
+      "topic": "lld-elevator",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Why does the skeleton simulate movement with a `Step()` tick instead of threads and `Thread.Sleep`? (Select all that apply)",
+      "options": [
+        "Tests are deterministic: call Step N times and assert floors",
+        "Threads cannot update an integer floor number",
+        "No real time passes in tests, so they run fast",
+        "`Thread.Sleep` is not available in .NET 10"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "A tick-based simulation makes behaviour a pure function of the number of steps, which is deterministic and fast to test. In production a timer (for example `PeriodicTimer` in a `BackgroundService`) can call `Step()`.",
+      "optionNotes": [
+        null,
+        "Threads can, but sharing it would need synchronisation.",
+        null,
+        "It is still available; it just makes tests slow and flaky."
+      ],
+      "readMore": "/system-design/lld-elevator/"
+    },
+    {
+      "id": "system-design-lld-elevator-007",
+      "topic": "lld-elevator",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Hall buttons are pressed from many threads while a timer thread calls `Step()`. What does the controller's single lock protect?",
+      "options": [
+        "Only the `Arrived` event subscriptions",
+        "Nothing; `SortedSet` is thread-safe",
+        "The dispatch strategy object, which is immutable",
+        "The stop sets of the cars, which both button presses and ticks mutate"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`AddStop` and `Step` both read and modify a car's `SortedSet` of stops, which is not thread-safe. Serialising requests and ticks in the controller keeps \"choose a car and add the stop\" atomic as well.",
+      "optionNotes": [
+        "Event subscription is set up once at startup.",
+        "`SortedSet` is not thread-safe.",
+        "An immutable strategy needs no lock.",
+        null
+      ],
+      "readMore": "/system-design/lld-elevator/"
+    },
+    {
+      "id": "system-design-lld-library-001",
+      "topic": "lld-library",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why does the library design separate `Book` from `BookCopy`?",
+      "options": [
+        "C# records cannot have a mutable status property",
+        "To make title and author search run faster",
+        "A title (ISBN) is shared catalogue data; each physical copy has its own barcode and status",
+        "Because each member needs a private copy object of each book"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Members search and hold titles, but borrow physical items. Separating them lets a library own several copies of one title, each with its own life cycle (available, on loan, on hold, lost).",
+      "optionNotes": [
+        "Records can have mutable properties; that is not the reason.",
+        "Search performance is not what drives the split.",
+        null,
+        "Copies are shared library items, not per member."
+      ],
+      "readMore": "/system-design/lld-library/"
+    },
+    {
+      "id": "system-design-lld-library-002",
+      "topic": "lld-library",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The library adds a rule: reference books cannot be borrowed. With the `ILoanRule` design, what is the change?",
+      "options": [
+        "Add an `if` in `LibraryService.Checkout`",
+        "Add a new `NoReferenceBooksRule : ILoanRule` and register it",
+        "Add a `CanBorrow` flag to `Member`",
+        "Override `Checkout` in a subclass of `LibraryService`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each rule is a separate class evaluated by the service, so a new rule is a new class plus registration (Open/Closed). The service code does not change. (The rule would need the copy as input, a small signature extension.)",
+      "optionNotes": [
+        "This grows the service with every new rule.",
+        null,
+        "The rule is about the book, not the member.",
+        "Subclassing the service for one rule does not scale."
+      ],
+      "readMore": "/system-design/lld-library/"
+    },
+    {
+      "id": "system-design-lld-library-003",
+      "topic": "lld-library",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`PerDayFinePolicy(0.5m, 10m)` is applied to a loan returned 30 days late. What is the fine?",
+      "options": [
+        "10.00",
+        "15.00",
+        "0.50",
+        "5.00"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "30 days x 0.50 = 15.00, but the policy caps the fine at 10.00 with `Math.Min`.",
+      "optionNotes": [
+        null,
+        "That ignores the cap.",
+        "That is the daily rate only.",
+        "That is 10 days of fines, not 30."
+      ],
+      "readMore": "/system-design/lld-library/"
+    },
+    {
+      "id": "system-design-lld-library-004",
+      "topic": "lld-library",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Three members place holds on the same title. A copy is returned. What does the design do?",
+      "options": [
+        "Marks the copy Available and notifies all three members",
+        "Randomly picks one member",
+        "Lets the first member to call Checkout take it",
+        "Dequeues the first member, marks the copy OnHold for them, and notifies only that member"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Holds are a FIFO queue per ISBN. On return the next member is dequeued, the copy is held for them, and only they can check it out. Notifying everyone would cause a race and unfairness.",
+      "optionNotes": [
+        "Notifying all creates a race and breaks FIFO fairness.",
+        "Holds are first-come, first-served.",
+        "Ignores the hold queue entirely.",
+        null
+      ],
+      "readMore": "/system-design/lld-library/"
+    },
+    {
+      "id": "system-design-lld-library-005",
+      "topic": "lld-library",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which pattern does `INotifier` represent when the library tells a member that a held book is ready?",
+      "options": [
+        "Prototype",
+        "Builder",
+        "Observer",
+        "Composite"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The library raises a notification without knowing whether it is delivered by email, SMS or push; the notifier is the subscriber side of an Observer, injected through an interface (DIP).",
+      "optionNotes": [
+        "Prototype clones objects.",
+        "Builder constructs complex objects.",
+        null,
+        "Composite treats groups and single objects uniformly."
+      ],
+      "readMore": "/system-design/lld-library/"
+    },
+    {
+      "id": "system-design-lld-library-006",
+      "topic": "lld-library",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "The library moves to a database with several librarians working concurrently. Which practices keep checkout correct? (Select all that apply)",
+      "options": [
+        "Update the copy status with a row version (optimistic concurrency) in the same transaction as inserting the loan",
+        "Keep the in-process `lock` as the only protection across multiple app servers",
+        "Publish notifications via an outbox so a failed email does not roll back the return",
+        "Compute fines with `DateTime.Now` in the SQL query"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "With several servers an in-process lock no longer protects shared data, so the database must enforce atomicity (transaction plus concurrency token). An outbox decouples side effects like emails from the transaction. Clock handling is unrelated to correctness of concurrent checkout.",
+      "optionNotes": [
+        null,
+        "A lock in one process does nothing for other servers.",
+        null,
+        "Unrelated to concurrency, and hurts testability."
+      ],
+      "readMore": "/system-design/lld-library/"
+    },
+    {
+      "id": "system-design-lld-library-007",
+      "topic": "lld-library",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Where should the fine amount for a late return be stored?",
+      "options": [
+        "On the `BookCopy`",
+        "On the `Loan`, and added to the member's unpaid balance",
+        "On the `Book` record",
+        "Nowhere; recompute it whenever needed"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The fine belongs to a specific borrowing transaction, so it is recorded on the loan (history) and accumulated on the member (what they owe). The copy and the book should not know about money.",
+      "optionNotes": [
+        "A copy is lent many times; the fine belongs to one loan.",
+        null,
+        "Catalogue data has nothing to do with fines.",
+        "Policies can change; history should keep what was charged."
+      ],
+      "readMore": "/system-design/lld-library/"
+    },
+    {
+      "id": "system-design-lld-splitwise-001",
+      "topic": "lld-splitwise",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which type should you use for amounts in an expense-sharing app?",
+      "options": [
+        "decimal",
+        "float",
+        "double",
+        "int for whole rupees only"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`decimal` is base-10, so values like 0.10 are exact and sums don't drift. `double` and `float` are binary floating point. Integer cents are also valid, but whole units lose the paise/cents.",
+      "optionNotes": [
+        null,
+        "Even less precise than double.",
+        "Binary floating point cannot represent 0.1 exactly.",
+        "Loses fractional amounts."
+      ],
+      "readMore": "/system-design/lld-splitwise/"
+    },
+    {
+      "id": "system-design-lld-splitwise-002",
+      "topic": "lld-splitwise",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An expense of 100.00 is split equally among three people using the cents-based `EqualSplit`. What are the shares?",
+      "options": [
+        "33.33, 33.33, 33.33",
+        "34.00, 33.00, 33.00",
+        "33.333..., 33.333..., 33.333...",
+        "33.34, 33.33, 33.33"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "10000 cents / 3 = 3333 with remainder 1. The remainder cent goes to the first participant, so the shares add back to exactly 100.00.",
+      "optionNotes": [
+        "Sums to 99.99: a cent is lost.",
+        "Rounds to whole units for no reason.",
+        "Money is settled in cents; unrounded decimals can't be paid.",
+        null
+      ],
+      "readMore": "/system-design/lld-splitwise/"
+    },
+    {
+      "id": "system-design-lld-splitwise-003",
+      "topic": "lld-splitwise",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is each split type (`EqualSplit`, `ExactSplit`, `PercentSplit`) its own class implementing `ISplitStrategy`?",
+      "options": [
+        "Because C# enums cannot be used in a switch statement",
+        "To allow multiple inheritance between the split types",
+        "Each type has its own inputs and validation, so new types don't edit the service",
+        "Because records cannot hold dictionaries as properties"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "With a `switch` in the service, every new split type needs new optional parameters and an edited method. Strategy objects carry their own inputs and validation, and the service just calls `Compute(amount)`.",
+      "optionNotes": [
+        "Enums work in switches; the issue is design, not syntax.",
+        "Interfaces are not about multiple inheritance here.",
+        null,
+        "Records can hold any type."
+      ],
+      "readMore": "/system-design/lld-splitwise/"
+    },
+    {
+      "id": "system-design-lld-splitwise-004",
+      "topic": "lld-splitwise",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Asha owes Ben 50. Then Ben owes Asha 30 from a new expense. What does the `BalanceSheet` store afterwards?",
+      "options": [
+        "Asha owes Ben 50 and Ben owes Asha 30",
+        "Asha owes Ben 20",
+        "Ben owes Asha 20",
+        "Asha owes Ben 80"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Record` nets the new debt against the reverse direction: 50 - 30 = 20, still owed by Asha. Only one direction per pair is ever non-zero.",
+      "optionNotes": [
+        "Storing both directions is the classic mistake the design avoids.",
+        null,
+        "The direction is reversed.",
+        "Debts in opposite directions cancel, they don't add."
+      ],
+      "readMore": "/system-design/lld-splitwise/"
+    },
+    {
+      "id": "system-design-lld-splitwise-005",
+      "topic": "lld-splitwise",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does the greedy simplify-debts algorithm (largest debtor pays largest creditor) guarantee for n users with non-zero balances?",
+      "options": [
+        "At most n - 1 transfers, in O(n log n) time",
+        "The minimum possible number of transfers",
+        "Exactly n transfers",
+        "At most n / 2 transfers"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each step settles at least one user, so there are at most n - 1 transfers, and heap operations make it O(n log n). Finding the true minimum is NP-hard, so greedy is a heuristic, not optimal in every case.",
+      "optionNotes": [
+        null,
+        "The minimum is NP-hard; greedy does not always achieve it.",
+        "It can always do better than n.",
+        "Not guaranteed; e.g. one creditor and many debtors needs n - 1."
+      ],
+      "readMore": "/system-design/lld-splitwise/"
+    },
+    {
+      "id": "system-design-lld-splitwise-006",
+      "topic": "lld-splitwise",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "A user wants to fix a wrongly entered expense. Which approaches keep balances consistent and auditable? (Select all that apply)",
+      "options": [
+        "Record a reversing expense, then add the corrected one",
+        "Edit the amount in the existing `Expense` record in place and leave balances as they are",
+        "Recompute balances from the full immutable expense log after appending the correction",
+        "Delete the user's balance entries and start over"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Treat expenses as an append-only history: corrections are new entries, and balances follow from the log. Editing in place without updating balances leaves them wrong, and deleting balances loses everyone else's debts.",
+      "optionNotes": [
+        null,
+        "Balances no longer match the history.",
+        null,
+        "Destroys valid debts with other users."
+      ],
+      "readMore": "/system-design/lld-splitwise/"
+    },
+    {
+      "id": "system-design-lld-splitwise-007",
+      "topic": "lld-splitwise",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In `SimplifyDebts`, why are creditor amounts enqueued with a negated priority into `PriorityQueue`?",
+      "options": [
+        "Because `PriorityQueue` only accepts negative numbers",
+        "To avoid decimal rounding",
+        "To convert credits into debts",
+        "Because .NET's `PriorityQueue` is a min-heap, and we want the largest creditor first"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`PriorityQueue` dequeues the smallest priority first. Negating the amount turns it into a max-heap by amount, so the largest creditor is matched first.",
+      "optionNotes": [
+        "Any comparable priority works.",
+        "Negation has nothing to do with rounding.",
+        "The sign is only for ordering; amounts are restored when used.",
+        null
+      ],
+      "readMore": "/system-design/lld-splitwise/"
+    },
+    {
+      "id": "system-design-lld-vending-machine-001",
+      "topic": "lld-vending-machine",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which design pattern is the vending machine problem primarily testing?",
+      "options": [
+        "Builder",
+        "Adapter",
+        "State",
+        "Prototype"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The same input (insert coin, select, cancel) behaves differently depending on whether the machine is idle, has money or is dispensing. The State pattern puts each state's behaviour in its own class.",
+      "optionNotes": [
+        "Builder is for step-by-step construction.",
+        "Adapter converts interfaces.",
+        null,
+        "Prototype clones objects."
+      ],
+      "readMore": "/system-design/lld-vending-machine/"
+    },
+    {
+      "id": "system-design-lld-vending-machine-002",
+      "topic": "lld-vending-machine",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The machine has a `switch (state)` in each of `InsertCoin`, `Select`, `Cancel` and `Refill`. A `Maintenance` state is added. Which SOLID principle is this design violating?",
+      "options": [
+        "Liskov Substitution",
+        "Open/Closed",
+        "Interface Segregation",
+        "Dependency Inversion"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Adding a state forces edits to every method. With the State pattern, a new state is a new class plus the transitions into it, leaving existing state classes unchanged.",
+      "optionNotes": [
+        "No subtype substitution is involved.",
+        null,
+        "Interface size is not the issue.",
+        "Dependencies on abstractions are not the main problem here."
+      ],
+      "readMore": "/system-design/lld-vending-machine/"
+    },
+    {
+      "id": "system-design-lld-vending-machine-003",
+      "topic": "lld-vending-machine",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why can each state object (`IdleState`, `HasMoneyState`, `DispensingState`) be created once and reused for every transition?",
+      "options": [
+        "Because they hold no data; balance, coins and inventory live in the machine (context)",
+        "Because they are structs",
+        "Because the garbage collector cannot collect interface instances",
+        "Because states are registered as static classes"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The states only contain behaviour and receive the machine as a parameter. With no per-transaction data, one instance per state is enough and transitions allocate nothing.",
+      "optionNotes": [
+        null,
+        "They are classes.",
+        "The GC collects any unreachable object.",
+        "Static classes cannot implement interfaces."
+      ],
+      "readMore": "/system-design/lld-vending-machine/"
+    },
+    {
+      "id": "system-design-lld-vending-machine-004",
+      "topic": "lld-vending-machine",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Coin denominations are 1, 3 and 4 and the machine must return 6. What does greedy change making return?",
+      "options": [
+        "3 + 3",
+        "Six 1-coins",
+        "It fails to find any change",
+        "4 + 1 + 1"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Greedy takes the largest coin first: 4, then 1, then 1 (three coins), while the optimum is 3 + 3 (two coins). Greedy is optimal only for canonical coin systems such as 5/10/25/100; otherwise use dynamic programming.",
+      "optionNotes": [
+        "That is the optimal answer, which greedy misses.",
+        "Greedy starts from the largest coin, not the smallest.",
+        "Greedy still finds a valid (suboptimal) combination here.",
+        null
+      ],
+      "readMore": "/system-design/lld-vending-machine/"
+    },
+    {
+      "id": "system-design-lld-vending-machine-005",
+      "topic": "lld-vending-machine",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In `Dispense`, why is change computed before the slot's quantity is decremented?",
+      "options": [
+        "To make the code shorter",
+        "Because `TakeOne` throws when change is null",
+        "If change can't be made, the sale is refunded and stock must remain unchanged",
+        "Because coins must be counted in cents"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Do the step that can fail first, and commit side effects only when everything succeeds. Otherwise a refund would leave stock decremented, or the customer would get a product without change.",
+      "optionNotes": [
+        "Ordering here is about correctness, not length.",
+        "`TakeOne` only checks the quantity.",
+        null,
+        "Units are unrelated to ordering."
+      ],
+      "readMore": "/system-design/lld-vending-machine/"
+    },
+    {
+      "id": "system-design-lld-vending-machine-006",
+      "topic": "lld-vending-machine",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about thread-safety in the vending machine skeleton are true? (Select all that apply)",
+      "options": [
+        "All public methods share one lock so reading the state, applying the input and transitioning is atomic",
+        "Without the lock, two concurrent selections could dispense two products for one payment",
+        "The lock makes the state objects immutable",
+        "`TransitionTo` is public so external code can reset the machine safely"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "The lock serialises each state-handled operation. Without it, two threads in `HasMoney` could both pass the balance check. State objects are stateless anyway, and `TransitionTo` is internal precisely so callers cannot bypass the rules.",
+      "optionNotes": [
+        null,
+        null,
+        "Immutability comes from the states holding no data, not from locking.",
+        "It is internal; exposing it would let callers skip the rules."
+      ],
+      "readMore": "/system-design/lld-vending-machine/"
+    },
+    {
+      "id": "system-design-lld-vending-machine-007",
+      "topic": "lld-vending-machine",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In `HasMoneyState`, the customer selects a 65c item with a 50c balance. What happens?",
+      "options": [
+        "The item is dispensed and the machine records a debt",
+        "The machine stays in HasMoney and asks for 15c more",
+        "The machine refunds 50c and goes to Idle",
+        "The machine goes to Dispensing and waits"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Insufficient balance is not an error that ends the transaction; the state stays HasMoney and reports how much more is needed. The customer can insert more coins or cancel.",
+      "optionNotes": [
+        "Vending machines don't extend credit.",
+        null,
+        "Refunding is what Cancel does.",
+        "Dispensing is entered only when the balance covers the price."
+      ],
+      "readMore": "/system-design/lld-vending-machine/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-001",
+      "topic": "lld-lru-cache",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the time complexity of `TryGet` and `Put` in a hash map plus doubly linked list LRU cache?",
+      "options": [
+        "O(1) for both (average case)",
+        "O(log n) for both",
+        "O(1) for get, O(n) for put",
+        "O(n) for both"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The map finds the node in O(1) average. The doubly linked list moves, inserts or removes a node in O(1) when you already have the node. Eviction takes `tail.Prev`, also O(1).",
+      "optionNotes": [
+        null,
+        "That would be a tree or sorted structure.",
+        "Eviction is O(1) because the LRU is at the tail.",
+        "Only a naive list-based implementation is O(n)."
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-002",
+      "topic": "lld-lru-cache",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does the linked-list node store the key as well as the value?",
+      "options": [
+        "To support equality comparison between two nodes",
+        "To keep the nodes sorted by key inside the list",
+        "Because `Dictionary` requires values to contain their keys",
+        "So eviction, starting at the list tail, can delete the map entry in O(1)"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Eviction finds the least recently used node via `tail.Prev`, but the map is keyed by key. Without the key in the node you would have to search the map, which is O(n).",
+      "optionNotes": [
+        "Nodes are compared by reference.",
+        "The list is ordered by recency, not key.",
+        "The map stores key to node; the node's key is our design choice.",
+        null
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-003",
+      "topic": "lld-lru-cache",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Capacity 2. Operations: `Put(1)`, `Put(2)`, `TryGet(1)`, `Put(3)`. Which key is evicted?",
+      "options": [
+        "1",
+        "3",
+        "2",
+        "None"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`TryGet(1)` makes key 1 the most recently used, so key 2 is the least recently used when `Put(3)` needs space.",
+      "optionNotes": [
+        "Key 1 was just read, so it is the most recent.",
+        "The new key is never the one evicted.",
+        null,
+        "The cache is full, so one key must go."
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-004",
+      "topic": "lld-lru-cache",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why is `ReaderWriterLockSlim` a poor choice for protecting an LRU cache?",
+      "options": [
+        "It is not available in .NET 10",
+        "Every `TryGet` moves a node in the list, so reads are writes and need exclusive access anyway",
+        "It does not support generic types",
+        "It only works with `async` code"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Reader-writer locks help when reads don't mutate shared state. In an LRU cache a hit changes recency order, so all operations need the write lock and you only add overhead. Shard the cache or use approximate LRU for more throughput.",
+      "optionNotes": [
+        "It is still available.",
+        null,
+        "Locks are independent of generics.",
+        "It is a synchronous lock and cannot be held across await."
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-005",
+      "topic": "lld-lru-cache",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "TTL support is added with `TtlCache`, which wraps any `ICache` and stores values with an expiry time. Which pattern is this?",
+      "options": [
+        "Decorator",
+        "Adapter",
+        "Proxy for remote access",
+        "Template Method"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The decorator implements the same `ICache` interface, delegates to the inner cache and adds behaviour (expiry) without modifying `LruCache`, following Open/Closed.",
+      "optionNotes": [
+        null,
+        "An adapter changes an interface; here the interface is the same.",
+        "No remote object or access control is involved.",
+        "No base-class algorithm with overridable steps is involved."
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-006",
+      "topic": "lld-lru-cache",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about the thread-safe `LruCache` are true? (Select all that apply)",
+      "options": [
+        "The map and the linked list must be updated under the same lock",
+        "Using `ConcurrentDictionary` for the map makes the lock unnecessary",
+        "The `Evicted` event is raised after releasing the lock so a slow or re-entrant handler can't block or deadlock the cache",
+        "Sharding into N caches by key hash reduces contention at the cost of only approximate global LRU order"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "An LRU operation changes two structures together, so they need one lock. Callbacks run outside the lock to avoid blocking and deadlocks. Sharding trades exact global recency for less contention. A concurrent map alone does not make the list update atomic with it.",
+      "optionNotes": [
+        null,
+        "The list is still unsafe, and the two updates are not atomic together.",
+        null,
+        null
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-007",
+      "topic": "lld-lru-cache",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What do the sentinel `head` and `tail` nodes buy you?",
+      "options": [
+        "They store the most and least recently used values",
+        "They reduce the memory used by each cache entry",
+        "They make the cache safe for concurrent access",
+        "Real nodes always have non-null neighbours, so linking code has no edge cases"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Dummy nodes at both ends mean inserting after head and unlinking any node use the same code whether the list is empty, has one node, or the node is first or last.",
+      "optionNotes": [
+        "Sentinels hold no real data.",
+        "They add two nodes; the benefit is simpler code.",
+        "Thread-safety comes from the lock.",
+        null
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-lru-cache-008",
+      "topic": "lld-lru-cache",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is a drawback of lazy TTL expiry (checking expiry only on read)?",
+      "options": [
+        "Reads become O(n)",
+        "Expired values may be returned to callers",
+        "Expired entries that are never read keep occupying capacity until evicted",
+        "It requires a background thread"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Lazy expiry is O(1) and simple, but stale entries stay in the cache until something reads or evicts them. Active expiry (a periodic sweep or a heap by expiry time) frees them earlier at extra cost.",
+      "optionNotes": [
+        "The check is O(1).",
+        "The read checks expiry, so expired values are not returned.",
+        null,
+        "Lazy expiry is the variant that needs no background work."
+      ],
+      "readMore": "/system-design/lld-lru-cache/"
+    },
+    {
+      "id": "system-design-lld-logger-001",
+      "topic": "lld-logger",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In the logging framework, which pattern lets a filter stop a message before it reaches any sink, while other steps pass it on?",
+      "options": [
+        "Singleton",
+        "Chain of Responsibility",
+        "Abstract Factory",
+        "Memento"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each `LogHandler` processes the message and decides whether to pass it to the next handler. Filters, samplers, enrichers and sinks are steps in that chain.",
+      "optionNotes": [
+        "Singleton controls instance count.",
+        null,
+        "Abstract Factory creates families of related objects.",
+        "Memento captures and restores object state."
+      ],
+      "readMore": "/system-design/lld-logger/"
+    },
+    {
+      "id": "system-design-lld-logger-002",
+      "topic": "lld-logger",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`AsyncSink` wraps any `ILogSink` and moves the writes to a background task. Which pattern is it?",
+      "options": [
+        "Decorator",
+        "Adapter",
+        "Observer",
+        "Facade"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "It implements the same `ILogSink` interface, holds an inner sink, and adds behaviour (buffering) without changing the inner sink's code.",
+      "optionNotes": [
+        null,
+        "The interface is unchanged, so it is not an adapter.",
+        "There are no subscribers being notified.",
+        "A facade simplifies a subsystem behind a new interface."
+      ],
+      "readMore": "/system-design/lld-logger/"
+    },
+    {
+      "id": "system-design-lld-logger-003",
+      "topic": "lld-logger",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The console sink is configured with minimum level Info, and the logger's minimum level is Debug. What happens to a Debug message?",
+      "options": [
+        "It is written to the console",
+        "It throws an exception",
+        "It is dropped by the logger before reaching the pipeline",
+        "It passes the logger's check but the console sink handler does not write it"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Debug is at or above the logger's minimum, so a message is created and enters the chain. The console `SinkHandler` writes only Info and above, so it skips the write and passes the message on.",
+      "optionNotes": [
+        "The sink handler's threshold is Info.",
+        "Levels below a threshold are skipped silently.",
+        "The logger's own minimum is Debug, so it passes.",
+        null
+      ],
+      "readMore": "/system-design/lld-logger/"
+    },
+    {
+      "id": "system-design-lld-logger-004",
+      "topic": "lld-logger",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The async sink uses a bounded `Channel` with `BoundedChannelFullMode.DropOldest`. The file sink stalls for 10 seconds under heavy load. What happens?",
+      "options": [
+        "Request threads block until the file sink recovers",
+        "Memory grows without limit until the sink recovers",
+        "The oldest queued lines are dropped once the buffer is full; callers never block",
+        "The application crashes with an exception"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A bounded channel caps memory. In `DropOldest` mode `TryWrite` always succeeds by discarding the oldest item, so callers are never blocked. That trade-off suits diagnostic logs; audit logs would use `Wait` instead.",
+      "optionNotes": [
+        "That is the `Wait` full mode.",
+        "That is an unbounded channel.",
+        null,
+        "No exception is thrown on a full bounded channel in drop modes."
+      ],
+      "readMore": "/system-design/lld-logger/"
+    },
+    {
+      "id": "system-design-lld-logger-005",
+      "topic": "lld-logger",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does `AsyncSink.DisposeAsync` complete the channel writer and then await the pump task?",
+      "options": [
+        "To release the lock on the console",
+        "To flush: the pump drains remaining queued messages before shutdown",
+        "To restart the pump with a new channel",
+        "Because `IAsyncDisposable` requires awaiting at least one task"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Completing the writer tells `ReadAllAsync` to finish after the remaining items. Awaiting the pump ensures they are all written before the process exits, so the last log lines before a shutdown are not lost.",
+      "optionNotes": [
+        "There is no console lock involved.",
+        null,
+        "Dispose ends the sink's life; it does not restart it.",
+        "There is no such requirement."
+      ],
+      "readMore": "/system-design/lld-logger/"
+    },
+    {
+      "id": "system-design-lld-logger-006",
+      "topic": "lld-logger",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which practices keep logging cheap on the request path? (Select all that apply)",
+      "options": [
+        "Check `IsEnabled(level)` before building the message",
+        "Format and write to the file synchronously so ordering is guaranteed",
+        "Enqueue formatted lines to a channel consumed by a background task",
+        "Interpolate large objects into strings before checking the level"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Skipping disabled levels early avoids allocations, and handing I/O to a background consumer keeps the caller fast. A single consumer still preserves the enqueue order. Synchronous file writes and eager string building are exactly what slows requests down.",
+      "optionNotes": [
+        null,
+        "Synchronous I/O on the request thread is the problem being solved.",
+        null,
+        "Wastes work for messages that are discarded."
+      ],
+      "readMore": "/system-design/lld-logger/"
+    },
+    {
+      "id": "system-design-lld-logger-007",
+      "topic": "lld-logger",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Supporting both plain-text and JSON output per sink is best modelled as:",
+      "options": [
+        "An `ILogFormatter` strategy injected into each sink handler",
+        "A `bool useJson` parameter on every log method",
+        "Two separate logger classes",
+        "A static helper chosen with `#if` compiler directives"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Formatting is a varying algorithm, so it is a Strategy. Each sink handler gets its own formatter, which is how the demo sends text to the console and JSON to the memory sink.",
+      "optionNotes": [
+        null,
+        "Leaks a sink concern into every call site.",
+        "Duplicates the logger for a formatting detail.",
+        "Compile-time switches can't vary per sink at runtime."
+      ],
+      "readMore": "/system-design/lld-logger/"
+    },
+    {
+      "id": "system-design-lld-notification-dispatcher-001",
+      "topic": "lld-notification-dispatcher",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In the notification dispatcher, what role does `INotificationChannel` (Email, SMS, Push) play?",
+      "options": [
+        "Visitor",
+        "Singleton",
+        "Memento",
+        "Strategy"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Each channel is an interchangeable algorithm for delivering a message, behind one interface. The dispatcher calls `SendAsync` without knowing which channel it is.",
+      "optionNotes": [
+        "Visitor adds operations over an object structure.",
+        "Instance count is not the point.",
+        "Memento saves and restores state.",
+        null
+      ],
+      "readMore": "/system-design/lld-notification-dispatcher/"
+    },
+    {
+      "id": "system-design-lld-notification-dispatcher-002",
+      "topic": "lld-notification-dispatcher",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The team adds a WhatsApp channel. With the given design, which code changes?",
+      "options": [
+        "A new `switch` case in `NotificationDispatcher`",
+        "`ChannelFactory.Get` gains a new `if` branch",
+        "A new `WhatsAppChannel` class, an enum value, and a DI registration",
+        "Every existing channel class gains a `SupportsWhatsApp` property"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The factory builds its lookup from the injected channel collection, and the dispatcher depends only on interfaces. So the dispatcher and factory stay closed for modification (OCP).",
+      "optionNotes": [
+        "The dispatcher has no switch on channel type.",
+        "The factory is data-driven from DI; no branches.",
+        null,
+        "Existing channels are unaffected."
+      ],
+      "readMore": "/system-design/lld-notification-dispatcher/"
+    },
+    {
+      "id": "system-design-lld-notification-dispatcher-003",
+      "topic": "lld-notification-dispatcher",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does the retry policy add random jitter to exponential backoff?",
+      "options": [
+        "To make retries faster on average",
+        "So many clients that failed together don't all retry at exactly the same moments and overload the provider",
+        "Because `Task.Delay` requires a random value",
+        "To guarantee exactly-once delivery"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "During an outage, many sends fail at once. Without jitter, they retry in synchronised waves (thundering herd). Jitter spreads retries over time.",
+      "optionNotes": [
+        "Jitter adds delay; it is about spreading load, not speed.",
+        null,
+        "`Task.Delay` takes any duration.",
+        "Retries make delivery at-least-once, not exactly-once."
+      ],
+      "readMore": "/system-design/lld-notification-dispatcher/"
+    },
+    {
+      "id": "system-design-lld-notification-dispatcher-004",
+      "topic": "lld-notification-dispatcher",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which failures should the retry policy retry? (Select all that apply)",
+      "options": [
+        "HTTP 503 Service Unavailable from the SMS provider",
+        "Invalid phone number (400 Bad Request)",
+        "A network timeout",
+        "The user has unsubscribed from SMS"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Retry transient failures (timeouts, 429, 503, connection resets). Permanent failures such as invalid input or an unsubscribed user will fail again and only waste time and quota.",
+      "optionNotes": [
+        null,
+        "A bad number won't become valid on retry.",
+        null,
+        "Preferences are a business rule, not a transient error."
+      ],
+      "readMore": "/system-design/lld-notification-dispatcher/"
+    },
+    {
+      "id": "system-design-lld-notification-dispatcher-005",
+      "topic": "lld-notification-dispatcher",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An SMS send times out and is retried, and the user receives the SMS twice. What is the most realistic way to handle this?",
+      "options": [
+        "Accept at-least-once delivery and deduplicate with a request id (and the provider's idempotency key where supported)",
+        "Disable retries for SMS so duplicates are impossible",
+        "Wrap the send in a database transaction",
+        "Increase the timeout until it never fires"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A timeout doesn't tell you whether the provider sent the message. Exactly-once delivery to a phone isn't achievable end to end, so systems use idempotency keys and dedup records to make duplicates rare and safe.",
+      "optionNotes": [
+        null,
+        "Then transient failures lose messages instead.",
+        "A local transaction can't roll back an SMS already sent by a provider.",
+        "Timeouts are still needed; the ambiguity remains."
+      ],
+      "readMore": "/system-design/lld-notification-dispatcher/"
+    },
+    {
+      "id": "system-design-lld-notification-dispatcher-006",
+      "topic": "lld-notification-dispatcher",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does `SendOneAsync` catch exceptions and return a failed `DeliveryResult` instead of letting them propagate to `Task.WhenAll`?",
+      "options": [
+        "Because `Task.WhenAll` cannot handle faulted tasks at all",
+        "Because async methods are not allowed to throw exceptions",
+        "So that the retry policy can keep retrying forever",
+        "So one failing channel can't hide the other channels' results from observers"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "If a channel task threw, awaiting `WhenAll` would rethrow the first exception and the dispatcher would not report the other results. Converting failures to result objects makes every channel's outcome visible.",
+      "optionNotes": [
+        "It can, but it rethrows only the first exception when awaited.",
+        "Async methods can throw normally.",
+        "The retry policy limits attempts; this catch runs after it gives up.",
+        null
+      ],
+      "readMore": "/system-design/lld-notification-dispatcher/"
+    },
+    {
+      "id": "system-design-lld-notification-dispatcher-007",
+      "topic": "lld-notification-dispatcher",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Metrics, an audit log and a dashboard all need to know about each delivery result. Which pattern does `IDeliveryObserver` apply?",
+      "options": [
+        "Flyweight",
+        "Builder",
+        "Observer",
+        "Bridge"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Subscribers register with the dispatcher and are notified of each `DeliveryResult`. The dispatcher doesn't depend on what they do with it.",
+      "optionNotes": [
+        "Flyweight shares fine-grained objects to save memory.",
+        "Builder constructs objects step by step.",
+        null,
+        "Bridge separates an abstraction from its implementation."
+      ],
+      "readMore": "/system-design/lld-notification-dispatcher/"
+    }
+  ]
+}

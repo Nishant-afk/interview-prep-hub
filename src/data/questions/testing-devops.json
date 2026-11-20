@@ -1,0 +1,2444 @@
+{
+  "section": "testing-devops",
+  "version": 1,
+  "questions": [
+    {
+      "id": "testing-devops-testing-strategy-001",
+      "topic": "testing-strategy",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In the classic test pyramid, which kind of test should you have the **most** of?",
+      "options": [
+        "End-to-end UI tests",
+        "Integration tests",
+        "Unit tests",
+        "Manual exploratory tests"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Unit tests are fast and cheap, so the pyramid puts most tests at the bottom. Slower, more brittle tests (integration, e2e) become fewer as you go up.",
+      "optionNotes": [
+        "E2E tests sit at the narrow top: slow and brittle.",
+        "Integration tests are the middle layer.",
+        null,
+        "Manual testing is not part of the automated pyramid base."
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-testing-strategy-002",
+      "topic": "testing-strategy",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does **AAA** stand for when structuring a test?",
+      "options": [
+        "Arrange, Act, Assert",
+        "Assign, Await, Assert",
+        "Arrange, Assert, Audit",
+        "Act, Arrange, Assert"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Arrange sets up inputs and doubles, Act calls the code under test once, Assert checks the outcome. It keeps tests readable and focused on one behaviour.",
+      "optionNotes": [
+        null,
+        "Not a recognised pattern.",
+        "Not a recognised pattern.",
+        "Wrong order: you arrange before you act."
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-testing-strategy-003",
+      "topic": "testing-strategy",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A unit test passes an `InMemoryOrderRepository` that stores orders in a `Dictionary` and really implements add, find and delete. Which test double is it?",
+      "options": [
+        "A stub",
+        "A mock",
+        "A dummy",
+        "A fake"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A fake is a working, lightweight implementation of a dependency (in-memory repository, FakeTimeProvider). A stub only returns canned answers, and a mock verifies interactions.",
+      "optionNotes": [
+        "A stub returns canned values without real behaviour.",
+        "A mock is set up with expectations that the test verifies.",
+        "A dummy is passed but never used.",
+        null
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-testing-strategy-004",
+      "topic": "testing-strategy",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You want to prove that cancelling an order sends the customer an email. Which approach fits best?",
+      "options": [
+        "Use a stub email sender that returns a canned value and assert nothing on it",
+        "Use a mock email sender and verify `SendAsync` was called once with the customer address",
+        "Pass `null` as a dummy email sender",
+        "Connect to a real SMTP server from the unit test"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Sending the email is an outgoing side effect, which is exactly what mocks are for: verify the interaction. Stubs feed data in and are not asserted on.",
+      "optionNotes": [
+        "Without an assertion the test cannot prove the email was sent.",
+        null,
+        "The code would throw a NullReferenceException.",
+        "Real SMTP makes a unit test slow, flaky and side-effecting."
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-testing-strategy-005",
+      "topic": "testing-strategy",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A test that asserts an order was \"created today\" fails about once in 20 CI runs, usually around midnight UTC. The code calls `DateTime.UtcNow` directly. What is the best fix?",
+      "options": [
+        "Add a retry attribute so CI stays green",
+        "Inject `TimeProvider` and control time with `FakeTimeProvider`",
+        "Increase the test timeout",
+        "Run the whole suite sequentially"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The flakiness comes from a hidden dependency on the real clock. Injecting TimeProvider (built into .NET 8+) and using FakeTimeProvider in tests makes time deterministic.",
+      "optionNotes": [
+        "Retries hide the bug instead of fixing it.",
+        null,
+        "The test is not slow, it is non-deterministic.",
+        "Ordering is not the cause; the clock is."
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-testing-strategy-006",
+      "topic": "testing-strategy",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these commonly cause flaky tests? (Select all that apply)",
+      "options": [
+        "Shared database state between tests",
+        "Fixed `Thread.Sleep` waits for asynchronous UI updates",
+        "Pure functions called with fixed inputs",
+        "Logic that reads the current time directly"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Shared state, arbitrary sleeps and the real clock are classic sources of non-determinism. Pure functions with fixed inputs always produce the same result.",
+      "optionNotes": [
+        null,
+        null,
+        "Deterministic by definition.",
+        null
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-testing-strategy-007",
+      "topic": "testing-strategy",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A team has 95% line coverage, yet bugs keep reaching production. Which technique best measures whether the tests actually **detect** faults?",
+      "options": [
+        "Switching to a branch-coverage report",
+        "Raising the coverage target to 100%",
+        "Counting assertions per test",
+        "Mutation testing, for example Stryker.NET"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Mutation testing changes the code (flips conditions, removes statements) and checks that some test fails. Surviving mutants reveal code that runs during tests but whose behaviour is never verified.",
+      "optionNotes": [
+        "Still only measures what executed, not what was asserted.",
+        "Coverage measures execution, not verification; 100% can still miss bugs.",
+        "The number of asserts says little about their quality.",
+        null
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-testing-strategy-008",
+      "topic": "testing-strategy",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which statement about the \"classical\" (Detroit) and \"London\" (mockist) schools of unit testing is correct?",
+      "options": [
+        "The classical school replaces only slow, shared or non-deterministic dependencies",
+        "The London school treats a unit as a unit of behaviour spanning several classes",
+        "The classical school mocks every collaborator of the class under test",
+        "Both schools forbid real databases in any automated test"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Classical tests use real collaborators where practical and isolate only external or non-deterministic ones, so tests survive refactoring better. The London school mocks all collaborators of a single class, which couples tests more tightly to implementation.",
+      "optionNotes": [
+        null,
+        "That describes the classical school.",
+        "That describes the London school.",
+        "Neither school is about integration tests, which do use real databases."
+      ],
+      "readMore": "/testing-devops/testing-strategy/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-001",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In xUnit, which attribute marks a **parameterised** test that runs once per data row?",
+      "options": [
+        "`[Theory]`",
+        "`[Fact]`",
+        "`[TestCase]`",
+        "`[DataRow]`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`[Theory]` combined with `[InlineData]`, `[MemberData]` or `[ClassData]` runs the test once per row. `[Fact]` is a test without parameters.",
+      "optionNotes": [
+        null,
+        "A fact takes no parameters.",
+        "That is NUnit.",
+        "That is MSTest."
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-002",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How does xUnit share an expensive object (such as a container or connection) across all tests in **one test class**?",
+      "options": [
+        "Put it in a method marked `[OneTimeSetUp]`",
+        "Initialise it in a static `[ClassInitialize]` method",
+        "Create it in the test class constructor",
+        "Implement `IClassFixture<T>` and receive the fixture in the constructor"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "xUnit creates a new test class instance per test, so constructor code runs every time. A class fixture is created once and injected into each instance.",
+      "optionNotes": [
+        "That is NUnit.",
+        "That is MSTest.",
+        "The constructor runs before every test in xUnit.",
+        null
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-003",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is wrong with this test?",
+      "code": "[Fact]\npublic void Cancel_after_window_throws()\n{\n    var sut = CreateSut();\n    Assert.ThrowsAsync<InvalidOperationException>(() => sut.CancelAsync(1));\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Nothing, it correctly verifies the exception",
+        "`Assert.ThrowsAsync` returns a task that is never awaited, so the test can pass without verifying anything",
+        "`ThrowsAsync` only exists in NUnit",
+        "It should call `sut.CancelAsync(1).Result` instead"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The method is not async and the returned Task is discarded, so the assertion may never be observed. Make the test `async Task` and `await Assert.ThrowsAsync<...>(...)`; the xUnit analyzers flag this.",
+      "optionNotes": [
+        "The assertion task is ignored.",
+        null,
+        "xUnit has Assert.ThrowsAsync too.",
+        "Blocking with .Result wraps exceptions in AggregateException and is not how async tests are written."
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-004",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the NSubstitute equivalent of this Moq setup?",
+      "code": "_repo.Setup(r => r.FindAsync(1, It.IsAny<CancellationToken>()))\n     .ReturnsAsync(order);",
+      "codeLang": "csharp",
+      "options": [
+        "`repo.Setup(r => r.FindAsync(1, default)).Returns(order);`",
+        "`repo.FindAsync(1, Arg.Any<CancellationToken>()).Returns(order);`",
+        "`Substitute.Return(repo.FindAsync, order);`",
+        "`repo.When(r => r.FindAsync(1, default)).Do(order);`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "In NSubstitute the substitute is the interface itself: call the member with argument matchers and chain `.Returns(...)`. For `Task<T>` members NSubstitute wraps the value in a completed task.",
+      "optionNotes": [
+        "Setup is Moq syntax.",
+        null,
+        "No such API exists.",
+        "When/Do configures callbacks and takes a delegate."
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-005",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`OrderService.CancelAsync` must reject cancellations more than 24 hours after the order was created. How should you test the rejection path?",
+      "options": [
+        "Use `Thread.Sleep` with a shorter window configured for tests",
+        "Create the order with `DateTime.Now` and wait for the window to pass",
+        "Change the system clock on the CI agent",
+        "Inject `TimeProvider`; in the test use `FakeTimeProvider` and call `Advance(TimeSpan.FromHours(25))`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "TimeProvider (in the BCL since .NET 8) makes time an injectable dependency. FakeTimeProvider from Microsoft.Extensions.TimeProvider.Testing moves time instantly and deterministically.",
+      "optionNotes": [
+        "Slow, and changes production logic just for tests.",
+        "Would take 24 hours.",
+        "Affects everything on the machine and is not repeatable.",
+        null
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-006",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which statement about **FluentAssertions** licensing is accurate?",
+      "options": [
+        "Version 8 requires a paid licence for commercial use, while 7.x remains Apache 2.0",
+        "Version 8 is free for all uses, but version 7 required a licence",
+        "It was removed from NuGet in 2025",
+        "It was merged into xUnit v3 as `Assert.That`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "FluentAssertions 8 moved to a commercial licence for commercial use. Teams pin 7.x, buy licences, or switch to Shouldly, AwesomeAssertions (a community fork) or plain Assert.",
+      "optionNotes": [
+        null,
+        "It is the other way round.",
+        "It is still published.",
+        "xUnit has no such merge."
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-007",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why can Moq not create a mock of this class?",
+      "code": "public sealed class PaymentGateway\n{\n    public Task<bool> ChargeAsync(decimal amount) => Task.FromResult(true); // calls Stripe\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Moq cannot mock methods that return `Task`",
+        "The class lacks a parameterless constructor",
+        "Moq builds runtime proxies that can only override interfaces and virtual or abstract members",
+        "Sealed classes can be mocked only with `MockBehavior.Strict`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Proxy-based libraries (Moq and NSubstitute use Castle DynamicProxy) subclass or implement the type at runtime, so sealed classes and non-virtual or static members cannot be intercepted. Depend on an interface such as `IPaymentGateway` instead.",
+      "optionNotes": [
+        "Moq handles async methods with ReturnsAsync.",
+        "It has an implicit parameterless constructor; sealing is the problem.",
+        null,
+        "Strictness does not affect what can be proxied."
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-008",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "On the .NET 10 SDK, `dotnet test` on an xUnit v3 project fails with \"Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later\". What fixes it?",
+      "options": [
+        "Downgrade the project to xUnit v2",
+        "Make every test class `public sealed`",
+        "Remove the `Microsoft.NET.Test.Sdk` package",
+        "Opt in to the Microsoft.Testing.Platform mode of `dotnet test` in `global.json`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Projects running on Microsoft.Testing.Platform need the new dotnet test experience on the .NET 10 SDK, enabled with a `\"test\": { \"runner\": \"Microsoft.Testing.Platform\" }` entry in global.json. The test executable can also be run directly with `dotnet run`.",
+      "optionNotes": [
+        "Unnecessary; v3 is supported.",
+        "Class modifiers are unrelated to the runner.",
+        "Does not switch the dotnet test mode.",
+        null
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-unit-testing-009",
+      "topic": "dotnet-unit-testing",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are valid ways to supply data to an xUnit `[Theory]`? (Select all that apply)",
+      "options": [
+        "`[InlineData(...)]`",
+        "`[MemberData(nameof(Cases))]`",
+        "`[ClassData(typeof(CaseData))]`",
+        "`[TestCaseSource(nameof(Cases))]`"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "xUnit theories take data from InlineData (constants), MemberData (a static property or method, ideally `TheoryData<...>`) or ClassData (a class that yields rows).",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "TestCaseSource is NUnit."
+      ],
+      "readMore": "/testing-devops/dotnet-unit-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-001",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which NuGet package provides `WebApplicationFactory<TEntryPoint>`?",
+      "options": [
+        "Microsoft.Extensions.Hosting.Testing",
+        "Microsoft.AspNetCore.Server.Kestrel.Testing",
+        "xunit.aspnetcore",
+        "Microsoft.AspNetCore.Mvc.Testing"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Microsoft.AspNetCore.Mvc.Testing contains WebApplicationFactory, which hosts the app on an in-memory TestServer (from Microsoft.AspNetCore.TestHost) and sets the content root.",
+      "optionNotes": [
+        "Not the package that ships WebApplicationFactory.",
+        "Kestrel is replaced by TestServer in these tests.",
+        "Not a Microsoft package for this.",
+        null
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-002",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why do minimal-hosting apps often add `public partial class Program;` at the end of `Program.cs`?",
+      "options": [
+        "It is required to enable minimal API endpoint routing",
+        "The generated `Program` is internal; tests need it for `WebApplicationFactory<Program>`",
+        "Kestrel needs a public entry point type to start listening",
+        "It turns on nullable reference types for the entry point"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Top-level statements generate an internal Program class. Declaring it public partial makes it visible to the test assembly (InternalsVisibleTo is the alternative).",
+      "optionNotes": [
+        "Minimal APIs work without it.",
+        null,
+        "Kestrel does not care.",
+        "Unrelated."
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-003",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is the EF Core **InMemory** provider a poor choice for integration tests of a SQL Server app?",
+      "options": [
+        "It is slower than SQL Server running in a container",
+        "It is not relational, so constraints, transactions and SQL translation differ",
+        "It cannot be combined with `WebApplicationFactory` at all",
+        "It requires Docker on every developer machine"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Because InMemory is not a relational database, tests can pass while production fails on constraints, transactions, raw SQL or query translation. Use SQL Server in Testcontainers (or at least SQLite).",
+      "optionNotes": [
+        "It is very fast; realism is the problem.",
+        null,
+        "It can be swapped in with ConfigureTestServices.",
+        "It runs entirely in-process."
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-004",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does **Respawn** do in an integration test suite?",
+      "options": [
+        "Recreates the Docker container before each test",
+        "Wraps every test in a transaction and rolls it back",
+        "Generates seed data from EF Core entity types",
+        "Deletes data from all tables in foreign-key-safe order between tests, keeping the schema"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Respawn inspects the schema once and then deletes rows table by table in dependency order, skipping tables you ignore (such as `__EFMigrationsHistory`). Resetting takes milliseconds instead of recreating a database.",
+      "optionNotes": [
+        "Far slower; Respawn reuses the database.",
+        "That is a different isolation technique.",
+        "Respawn does not seed data.",
+        null
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-005",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a custom `WebApplicationFactory`, where should you replace the real `IEmailSender` with a fake?",
+      "options": [
+        "In `ConfigureTestServices`, removing the original registration and adding the fake",
+        "In `appsettings.Testing.json`",
+        "By adding `#if TEST` blocks in `Program.cs`",
+        "In the test method, by casting `factory.Services` to `ServiceCollection`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "ConfigureTestServices runs after the application's own registrations, so replacements made there win. Removing the original avoids surprises with `IEnumerable<T>` resolution.",
+      "optionNotes": [
+        null,
+        "Configuration files cannot swap service implementations by themselves.",
+        "Test-only code in production builds is fragile and unnecessary.",
+        "The built provider is read-only; you cannot modify it like that."
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-006",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "This class has 30 tests and the suite is extremely slow. Why?",
+      "code": "public class OrdersTests : IAsyncLifetime\n{\n    private MsSqlContainer _sql = default!;\n\n    public async ValueTask InitializeAsync()\n    {\n        _sql = new MsSqlBuilder(\"mcr.microsoft.com/mssql/server:2022-latest\").Build();\n        await _sql.StartAsync();\n    }\n\n    public ValueTask DisposeAsync() => _sql.DisposeAsync();\n    // ... 30 [Fact] tests\n}",
+      "codeLang": "csharp",
+      "options": [
+        "`MsSqlBuilder` needs a connection string before `Build()`",
+        "`IAsyncLifetime` is not supported in xUnit v3",
+        "xUnit creates a new class instance per test, so a new SQL Server container starts for every test",
+        "Containers must be started in the constructor, not in `InitializeAsync`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "IAsyncLifetime on the test class runs per test because xUnit instantiates the class for each test. Move the container to a class fixture (`IClassFixture<T>`) or collection fixture and reset data with Respawn.",
+      "optionNotes": [
+        "Build() needs only the image.",
+        "xUnit v3 supports IAsyncLifetime (returning ValueTask).",
+        null,
+        "Constructors cannot await; InitializeAsync is the right hook, just at the wrong scope."
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-007",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Your endpoints require JWT bearer auth. Which approach tests authorization rules (401, 403, roles) without a real identity provider?",
+      "options": [
+        "Remove `[Authorize]` when the environment is \"Testing\"",
+        "Add a global `AllowAnonymous` filter in the factory",
+        "Call the production identity provider with a test account",
+        "Register a test `AuthenticationHandler` as the default scheme in `ConfigureTestServices` and build claims from a request header"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A test handler keeps the real authorization pipeline (policies, roles, [Authorize]) while letting each test choose the user, or no user to get 401. Alternatively, sign real JWTs with a test key.",
+      "optionNotes": [
+        "Then authorization is not tested at all.",
+        "Bypasses the rules you want to test.",
+        "Slow, flaky and couples tests to an external system.",
+        null
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-dotnet-integration-testing-008",
+      "topic": "dotnet-integration-testing",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about running Testcontainers-based tests in CI are true? (Select all that apply)",
+      "options": [
+        "The agent needs a Docker-compatible container runtime",
+        "GitHub-hosted `ubuntu-latest` runners have Docker available",
+        "Testcontainers removes the need for `WebApplicationFactory`",
+        "Windows agents run Linux SQL Server containers by default"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Testcontainers drives a Docker-compatible daemon, which Ubuntu-hosted runners and agents provide. It supplies infrastructure; WebApplicationFactory still hosts the API. Windows agents generally cannot run Linux containers.",
+      "optionNotes": [
+        null,
+        null,
+        "They solve different problems and are used together.",
+        "Linux containers need a Linux kernel; Windows hosted agents typically do not provide that."
+      ],
+      "readMore": "/testing-devops/dotnet-integration-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-001",
+      "topic": "e2e-testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which browser engines can Playwright run tests against out of the box?",
+      "options": [
+        "Only Chromium",
+        "Chromium, Firefox and WebKit",
+        "Chromium and Firefox",
+        "Chromium and Internet Explorer"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Playwright ships and drives Chromium, Firefox and WebKit (the Safari engine), which makes cross-browser e2e testing straightforward.",
+      "optionNotes": [
+        "It supports more than Chromium.",
+        null,
+        "WebKit is supported too.",
+        "Internet Explorer is not supported."
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-002",
+      "topic": "e2e-testing",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main purpose of the **page object** pattern?",
+      "options": [
+        "Run each test in a separate browser process",
+        "Encapsulate a page's selectors and user actions behind methods so UI changes are fixed in one place",
+        "Generate test data for the database",
+        "Record videos of failing tests"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A page object exposes intent-level methods (`createOrder`, `login`) and hides selectors. When markup changes, one class is updated instead of every test.",
+      "optionNotes": [
+        "Isolation is handled by the test runner, not page objects.",
+        null,
+        "Unrelated to page objects.",
+        "That is a runner feature."
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-003",
+      "topic": "e2e-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why prefer `page.getByRole('button', { name: 'Save' })` over `page.locator('div.toolbar > .btn-primary:nth-child(2)')`?",
+      "options": [
+        "Role locators run faster because they skip the DOM",
+        "CSS selectors are not supported by Playwright",
+        "Role locators bypass Angular change detection",
+        "It targets what the user sees and the accessibility tree, so it survives layout and class-name changes"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Role and label locators depend on semantics (role + accessible name), not on DOM structure or styling classes, so refactors rarely break them. They also encourage accessible markup.",
+      "optionNotes": [
+        "They still query the DOM; speed is not the reason.",
+        "Playwright supports CSS selectors.",
+        "Locators do not interact with change detection.",
+        null
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-004",
+      "topic": "e2e-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the main problem with this Playwright test step?",
+      "code": "await page.getByRole('button', { name: 'Save' }).click();\nawait page.waitForTimeout(3000);\nexpect(await page.locator('.toast').textContent()).toBe('Saved');",
+      "codeLang": "ts",
+      "options": [
+        "Fixed sleeps are flaky and the plain `expect` never retries",
+        "`getByRole` cannot locate buttons inside toolbars",
+        "`textContent()` is not available on Playwright locators",
+        "Toast notifications cannot be tested in e2e suites"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "waitForTimeout is either too short on slow agents or wastes time on fast ones. Web-first assertions such as `toHaveText` retry until the condition holds or the timeout expires.",
+      "optionNotes": [
+        null,
+        "It can; role locators are the recommended way.",
+        "It exists; the issue is that the check runs once.",
+        "They can, with retrying assertions."
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-005",
+      "topic": "e2e-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Every test currently logs in through the UI, adding 5 seconds each. What is the recommended Playwright approach?",
+      "options": [
+        "Disable authentication in the test environment",
+        "Run all tests in one long test so you log in once",
+        "Log in once in a setup project, save `storageState`, and reuse it in the test projects",
+        "Hard-code a session cookie copied from production"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A setup project authenticates once and writes cookies and local storage to a file; dependent projects start with that storage state, so tests begin already signed in.",
+      "optionNotes": [
+        "You would stop testing the real auth flow and config.",
+        "Destroys isolation and reporting.",
+        null,
+        "Insecure and will expire."
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-006",
+      "topic": "e2e-testing",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Where should the full e2e suite run in a CI/CD pipeline?",
+      "options": [
+        "On every keystroke in the developer IDE",
+        "Against production after each deployment, with real payments",
+        "Only manually before major releases",
+        "After deploying the build to a test or staging environment, before promoting it to production"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "E2E tests need a running environment. Deploy the immutable build to staging (or an ephemeral environment), run e2e against its URL, and promote the same build only if they pass.",
+      "optionNotes": [
+        "Far too slow for that.",
+        "Risky; production smoke tests should be read-only and limited.",
+        "Loses the fast automated feedback.",
+        null
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-007",
+      "topic": "e2e-testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A test creates an order called \"Laptop\" and asserts there is exactly one \"Laptop\" row. It passes locally but fails intermittently in CI with 4 workers. Most likely cause?",
+      "options": [
+        "Parallel workers create \"Laptop\" orders in the same shared environment, so the row count varies",
+        "Chromium renders tables differently in CI",
+        "Playwright does not support tables",
+        "The test needs `waitForTimeout(5000)`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Tests that share data names collide when run in parallel. Generate unique data per test (for example `Laptop-${Date.now()}`) and assert on that specific item.",
+      "optionNotes": [
+        null,
+        "Rendering is not the issue.",
+        "Tables are fine; use getByRole(\"row\").",
+        "Waiting does not fix a data collision."
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-008",
+      "topic": "e2e-testing",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "With `retries: 2` in CI, a test fails on the first attempt and passes on the second. How does Playwright report it?",
+      "options": [
+        "As passed, with no indication of the earlier failure",
+        "As failed, because any failed attempt fails the run",
+        "As flaky, and a trace of the retry is recorded",
+        "As skipped, because the first attempt was discarded"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Playwright distinguishes flaky tests (failed then passed on retry) in its reports. Track them; retries are a safety net, not a fix.",
+      "optionNotes": [
+        "The report does show it.",
+        "The run passes, but the test is marked flaky.",
+        null,
+        "It ran, so it is not skipped."
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-e2e-testing-009",
+      "topic": "e2e-testing",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which practices reduce e2e test flakiness? (Select all that apply)",
+      "options": [
+        "Web-first assertions such as `await expect(locator).toBeVisible()`",
+        "Mocking an unstable third-party widget with `page.route`",
+        "Raising the global timeout to five minutes",
+        "Creating each test's data through the API with unique names"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Retrying assertions, isolating from unstable external services and independent test data remove common sources of flakiness. Huge timeouts only make failures slower.",
+      "optionNotes": [
+        null,
+        null,
+        "Hides problems and slows failing runs.",
+        null
+      ],
+      "readMore": "/testing-devops/e2e-testing/"
+    },
+    {
+      "id": "testing-devops-ci-cd-001",
+      "topic": "ci-cd",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which statement describes **continuous deployment**?",
+      "options": [
+        "Developers merge to the main branch at least daily",
+        "Every change that passes the pipeline is released to production automatically",
+        "Every change is deployable, but a person approves production releases",
+        "Deployments happen on a fixed monthly schedule"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Continuous deployment removes the manual gate: passing changes go straight to production. Continuous delivery keeps them releasable with a manual approval, and CI is about integrating and testing every change.",
+      "optionNotes": [
+        "That is continuous integration.",
+        null,
+        "That is continuous delivery.",
+        "That is a release train, not continuous anything."
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-002",
+      "topic": "ci-cd",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why tag images with the commit SHA (or build number) instead of `latest`?",
+      "options": [
+        "`latest` tags are rejected by Azure Container Registry",
+        "Kubernetes only accepts SHA tags",
+        "SHA tags make images smaller",
+        "So every deployment points at an exact, immutable build that you can trace and roll back to"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Unique tags make it obvious what is running where and allow rolling back to a known version. `latest` is a movable label, so two nodes can run different code under the same tag.",
+      "optionNotes": [
+        "ACR accepts latest.",
+        "Kubernetes accepts any tag.",
+        "Tags do not affect size.",
+        null
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-003",
+      "topic": "ci-cd",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The pipeline builds the API image once for staging, then **rebuilds** it from the same commit for production. What is the main risk?",
+      "options": [
+        "Production may get different base image or package versions, so you ship an artifact that was never tested",
+        "None, because the commit is the same",
+        "The rebuild doubles registry storage",
+        "Production cannot pull rebuilt images"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Rebuilding can pull newer base images or floating package versions. Build once, then promote the same image (tag or digest) through environments with environment-specific configuration.",
+      "optionNotes": [
+        null,
+        "Inputs outside the commit (base images, feeds) can change.",
+        "Storage is a minor concern compared with untested binaries.",
+        "Pulling works; the problem is what is inside."
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-004",
+      "topic": "ci-cd",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In a GitHub Actions workflow, what does `permissions: id-token: write` enable?",
+      "options": [
+        "Writing to a special ID file in the repository",
+        "Granting the workflow admin rights on the repository",
+        "Requesting an OIDC token for federated login to Azure",
+        "Signing every commit the workflow creates automatically"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The job can request a short-lived OIDC token from GitHub, which Azure (or AWS) trusts through a federated credential. No long-lived client secret needs to be stored.",
+      "optionNotes": [
+        "There is no such file.",
+        "It grants only the token-request permission.",
+        null,
+        "Unrelated to commit signing."
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-005",
+      "topic": "ci-cd",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How do you require a manual approval before the production deployment job in GitHub Actions?",
+      "options": [
+        "Add `if: github.event.approved == true` to the job",
+        "Add `needs: approval` to the production job",
+        "Add a `sleep 3600` step so someone can cancel it",
+        "Use `environment: production` with required reviewers"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Environments support protection rules such as required reviewers and wait timers. A job referencing the environment pauses until a reviewer approves.",
+      "optionNotes": [
+        "No such event property exists.",
+        "`needs` refers to jobs, not approvals.",
+        "Not an approval mechanism.",
+        null
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-006",
+      "topic": "ci-cd",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Azure DevOps YAML, what does a `deployment` job targeting `environment: shop-prod` give you that a normal job does not?",
+      "options": [
+        "Deployment history per environment, plus checks such as approvals configured on the environment",
+        "It runs on a faster agent pool",
+        "Automatic rollback of database migrations",
+        "It skips all previous stages"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Deployment jobs record what was deployed to which environment and honour the environment's checks (approvals, business hours, gates). They also offer strategies such as runOnce, rolling and canary.",
+      "optionNotes": [
+        null,
+        "Pool choice is independent.",
+        "Rollback is your responsibility.",
+        "Stage dependencies still apply."
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-007",
+      "topic": "ci-cd",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You must rename column `Email` to `ContactEmail` on a table used by an API deployed with rolling updates. What is the safe approach?",
+      "options": [
+        "Rename it in one migration that every Pod runs at startup",
+        "Stop all traffic, rename the column, then deploy",
+        "Expand/contract: add the new column, migrate code and data, drop the old one later",
+        "Rename it and let EF Core map the old name automatically"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "During a rolling update old and new versions run together, so the schema must work for both. Expand first, migrate data and code, and contract later. Run migrations as a pipeline step, not from every Pod.",
+      "optionNotes": [
+        "Old Pods break immediately, and Pods race to migrate.",
+        "Works but causes downtime.",
+        null,
+        "EF Core will not guess the mapping."
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-008",
+      "topic": "ci-cd",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why are production approvals usually configured on the **environment** (in the UI) rather than as steps in the pipeline YAML?",
+      "options": [
+        "So a pull request that edits the pipeline file cannot remove or bypass the gate",
+        "YAML cannot express conditions",
+        "The UI is faster to evaluate",
+        "Approvals in YAML are billed separately"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Controls defined outside the repository are enforced by the platform no matter what the YAML says, which keeps the gate intact even if someone changes the workflow file.",
+      "optionNotes": [
+        null,
+        "YAML has conditions; it just should not own the control.",
+        "Speed is irrelevant.",
+        "There is no such billing."
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-ci-cd-009",
+      "topic": "ci-cd",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are good practices for secrets in CI/CD? (Select all that apply)",
+      "options": [
+        "Use OIDC / workload identity federation instead of long-lived client secrets",
+        "Keep application secrets in Key Vault and read them at runtime with a managed identity",
+        "Bake secrets into the image with `ENV` so every environment has them",
+        "Print secrets in a debug step, since the platform masks them anyway"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Federated identity removes stored credentials, and runtime retrieval keeps secrets out of images and pipelines. Images are widely distributed, and masking does not cover derived or transformed values.",
+      "optionNotes": [
+        null,
+        null,
+        "Anyone with the image can read them.",
+        "Masking is best-effort; never print secrets."
+      ],
+      "readMore": "/testing-devops/ci-cd/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-001",
+      "topic": "docker-fundamentals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the difference between a Docker **image** and a **container**?",
+      "options": [
+        "They are the same thing with different names",
+        "An image is a running process; a container is its file on disk",
+        "A container is a compressed image stored in a registry",
+        "An image is a read-only template; a container is a running instance of it"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Images are read-only templates made of layers plus metadata. Each container started from an image adds a thin writable layer and its own process, network and limits.",
+      "optionNotes": [
+        "They are distinct concepts.",
+        "It is the other way round.",
+        "Registries store images, not containers.",
+        null
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-002",
+      "topic": "docker-fundamentals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `EXPOSE 8080` in a Dockerfile do?",
+      "options": [
+        "Documents that the container listens on 8080; it does not publish the port",
+        "Publishes port 8080 on the host",
+        "Opens 8080 in the host firewall",
+        "Makes the app listen on 8080"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "EXPOSE is metadata. Publishing a port to the host requires `docker run -p host:container` or `ports:` in Compose. The app's listening port is set by the app itself (for ASP.NET Core, ASPNETCORE_HTTP_PORTS).",
+      "optionNotes": [
+        null,
+        "Publishing needs -p.",
+        "Docker does not change firewall rules because of EXPOSE.",
+        "The application decides what it listens on."
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-003",
+      "topic": "docker-fundamentals",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the key architectural difference between containers and virtual machines?",
+      "options": [
+        "VMs start faster than containers",
+        "Containers cannot run on cloud VMs",
+        "Containers share the host OS kernel; VMs each run a full guest OS on a hypervisor",
+        "Containers always provide stronger isolation than VMs"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Containers are isolated processes using kernel namespaces and cgroups, which makes them light and fast. VMs virtualise hardware and boot their own kernel, giving stronger isolation at a higher cost.",
+      "optionNotes": [
+        "Containers start in milliseconds to seconds.",
+        "In the cloud, containers usually run on VMs.",
+        null,
+        "VMs give the stronger boundary."
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-004",
+      "topic": "docker-fundamentals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With this Dockerfile, every source code change makes the build download all NuGet packages again. Why?",
+      "code": "FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build\nWORKDIR /src\nCOPY . .\nRUN dotnet restore\nRUN dotnet publish -c Release -o /app",
+      "codeLang": "dockerfile",
+      "options": [
+        "The SDK image has no NuGet cache directory at all",
+        "`dotnet publish` always clears the NuGet package cache",
+        "`WORKDIR` disables layer caching for later instructions",
+        "`COPY . .` before restore invalidates the restore layer on any change"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Layer caching is invalidated when a COPY input changes. Copy only the `.csproj` (and props) files, run restore, then copy the rest of the source so restore stays cached.",
+      "optionNotes": [
+        "Caching is about layers, not the image content.",
+        "The issue is the earlier layer being rebuilt.",
+        "WORKDIR does not affect caching.",
+        null
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-005",
+      "topic": "docker-fundamentals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In Docker Compose, the API uses `Server=localhost,1433` to reach the `sql` service and fails to connect. Why?",
+      "options": [
+        "Inside the API container, `localhost` is the API container itself; use the service name, `Server=sql,1433`",
+        "SQL Server cannot run in a container",
+        "Port 1433 must be published with `-p`",
+        "Compose does not create a network"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each container has its own network namespace. Compose puts services on a shared network with DNS by service name, so containers reach each other by name on the container port.",
+      "optionNotes": [
+        null,
+        "It runs fine in a container.",
+        "Publishing is only needed for access from the host.",
+        "Compose creates a default network per project."
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-006",
+      "topic": "docker-fundamentals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `docker run -p 5000:8080 orders-api` do?",
+      "options": [
+        "Maps container port 5000 to host port 8080",
+        "Makes the app listen on both 5000 and 8080",
+        "Maps host port 5000 to container port 8080",
+        "Limits the container to 5000 MB of memory"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The format is `host:container`. Requests to localhost:5000 on the host reach port 8080 in the container, where .NET 8+ images listen by default.",
+      "optionNotes": [
+        "Reversed.",
+        "Port mapping does not change what the app listens on.",
+        null,
+        "Memory is set with --memory."
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-007",
+      "topic": "docker-fundamentals",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A SQL Server container was removed with `docker rm` and recreated, and all data is gone. How do you prevent this?",
+      "options": [
+        "Mount a named volume at `/var/opt/mssql` so data lives outside the container's writable layer",
+        "Use `docker stop` instead of `docker rm` forever",
+        "Increase the container memory",
+        "Commit the container to a new image after each change"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The writable layer is deleted with the container. A named volume persists independently and can be attached to a new container (for example after an image upgrade).",
+      "optionNotes": [
+        null,
+        "Not a practical persistence strategy.",
+        "Unrelated to persistence.",
+        "Images are not a database backup mechanism."
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-008",
+      "topic": "docker-fundamentals",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "With `ENTRYPOINT dotnet Orders.Api.dll` (shell form), `docker stop` waits 10 seconds and then kills the app without a graceful shutdown. Why?",
+      "options": [
+        ".NET ignores SIGTERM unless a handler is registered",
+        "The image lacks a HEALTHCHECK, so Docker kills it",
+        "`docker stop` always sends SIGKILL immediately",
+        "The shell is PID 1 and may not forward SIGTERM to dotnet"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Shell form wraps the command in `/bin/sh -c`. Use the exec form `ENTRYPOINT [\"dotnet\", \"Orders.Api.dll\"]` so the app is PID 1 and receives SIGTERM, letting ASP.NET Core drain requests.",
+      "optionNotes": [
+        "ASP.NET Core handles SIGTERM gracefully.",
+        "Health checks do not affect signals.",
+        "It sends SIGTERM first, then SIGKILL after the timeout.",
+        null
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-009",
+      "topic": "docker-fundamentals",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Dockerfile installs build tools in one `RUN` and deletes them in a later `RUN rm -rf /tools`. The image is still large. Why?",
+      "options": [
+        "`rm` commands are not allowed inside Dockerfiles",
+        "Earlier layers are immutable; deleting later only hides the files",
+        "Docker compresses deleted files instead of removing them",
+        "BuildKit skips `rm` commands to keep the cache valid"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each layer stores changes. Deleting in a later layer adds a whiteout but does not shrink earlier layers. Clean up in the same RUN, or better, use a multi-stage build so tools never reach the final image.",
+      "optionNotes": [
+        "rm works; it just cannot shrink earlier layers.",
+        null,
+        "There is no such behaviour.",
+        "BuildKit runs it normally."
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-fundamentals-010",
+      "topic": "docker-fundamentals",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which practices improve container image security? (Select all that apply)",
+      "options": [
+        "Run as a non-root user",
+        "Use a minimal base image such as a chiseled or distroless image",
+        "Pass the database password as a build `ARG`",
+        "Scan images in CI and rebuild regularly for patched bases"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Non-root users, minimal bases and regular scanning and rebuilding reduce the attack surface and known CVEs. Build args are recorded in image history and must not carry secrets.",
+      "optionNotes": [
+        null,
+        null,
+        "ARG values are visible in image history.",
+        null
+      ],
+      "readMore": "/testing-devops/docker-fundamentals/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-001",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "On which port does an ASP.NET Core app listen by default in the official .NET 8+ container images?",
+      "options": [
+        "8080",
+        "443",
+        "80",
+        "5000"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Since .NET 8 the images set `ASPNETCORE_HTTP_PORTS=8080` so the app can run as a non-root user, which cannot bind ports below 1024 by default.",
+      "optionNotes": [
+        null,
+        "HTTPS is not configured by default in the images.",
+        "That was the default before .NET 8.",
+        "5000 is the default for `dotnet run` outside containers in older templates."
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-002",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `USER $APP_UID` do in a Dockerfile based on `mcr.microsoft.com/dotnet/aspnet:10.0`?",
+      "options": [
+        "Creates a new administrator user",
+        "Runs the container as the host user",
+        "Switches to the non-root `app` user that the .NET images include",
+        "Reads the user id from appsettings.json"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": ".NET 8+ images ship an `app` user and expose its numeric id as the `APP_UID` environment variable, so the final stage can drop root privileges with one line.",
+      "optionNotes": [
+        "It does the opposite: drops privileges.",
+        "Container users are separate from host users (unless user namespaces map them).",
+        null,
+        "Dockerfile instructions cannot read app configuration."
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-003",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which environment variable overrides `ConnectionStrings:Sql` from `appsettings.json` in a container?",
+      "options": [
+        "`ConnectionStrings:Sql`",
+        "`CONNECTIONSTRINGS_SQL`",
+        "`ConnectionStrings.Sql`",
+        "`ConnectionStrings__Sql`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The .NET environment variable configuration provider maps a double underscore to the `:` section separator, and environment variables override JSON files in the default provider order.",
+      "optionNotes": [
+        "Colons are not valid in environment variable names on every platform.",
+        "A single underscore is not a separator.",
+        "Dots are not section separators.",
+        null
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-004",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The Angular app is served by nginx in a container. Navigating inside the app works, but refreshing on `/orders/42` returns a 404. What fixes it?",
+      "options": [
+        "Add `try_files $uri $uri/ /index.html;` so unknown paths fall back to index.html",
+        "Enable gzip in nginx",
+        "Switch to the Angular hash location strategy in the API",
+        "Expose port 80 in the Dockerfile"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "nginx looks for a file named /orders/42, which does not exist. The SPA fallback serves index.html so the Angular router can handle the route. Hosting platforms need the equivalent navigation fallback.",
+      "optionNotes": [
+        null,
+        "Compression is unrelated.",
+        "Hash routing would work around it but changes URLs; the API is unrelated.",
+        "Ports are unrelated to the 404."
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-005",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The API service fails on startup with \"cannot connect to SQL Server\" even though it has `depends_on: [sql]`. Why?",
+      "code": "services:\n  sql:\n    image: mcr.microsoft.com/mssql/server:2022-latest\n  api:\n    build: .\n    depends_on: [sql]",
+      "codeLang": "yaml",
+      "options": [
+        "`depends_on` is ignored by Docker Compose",
+        "The API must be declared before sql in the file",
+        "Plain `depends_on` only waits for the sql container to start, not for SQL Server to accept connections",
+        "SQL Server needs `privileged: true`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Add a healthcheck to the sql service and use `condition: service_healthy`, and make the app retry connections (EF Core EnableRetryOnFailure) because dependencies can restart in production too.",
+      "optionNotes": [
+        "It controls start order.",
+        "Order in the file does not matter.",
+        null,
+        "Not required for SQL Server."
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-006",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which statement about the `aspnet:10.0-noble-chiseled` image is true?",
+      "options": [
+        "It has no shell or package manager and runs as a non-root user by default",
+        "It runs as root by default",
+        "It includes apt so you can install extra packages",
+        "It can only run Native AOT apps"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Chiseled images contain only what .NET needs. That reduces size and CVEs, but you cannot `exec` a shell into them and ICU is absent unless you use the `-extra` variant.",
+      "optionNotes": [
+        null,
+        "They default to the non-root app user.",
+        "There is no package manager.",
+        "The aspnet chiseled image runs normal framework-dependent apps."
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-007",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why does the Microsoft sample Dockerfile use `FROM --platform=$BUILDPLATFORM ...sdk:10.0` together with `dotnet publish -a $TARGETARCH`?",
+      "options": [
+        "To force the build to run under QEMU emulation for accuracy",
+        "It is required for any multi-stage build",
+        "Because `TARGETARCH` selects the Linux distribution",
+        "So the SDK runs natively on the build machine and cross-compiles for the target architecture, avoiding slow emulation"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "With buildx multi-platform builds, the build stage runs on the native platform and .NET cross-targets amd64 or arm64. Only the final runtime stage uses the target platform image.",
+      "optionNotes": [
+        "The point is to avoid emulation.",
+        "Single-platform builds do not need it.",
+        "It selects the CPU architecture.",
+        null
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-008",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which statement about `dotnet publish /t:PublishContainer` is true?",
+      "options": [
+        "It requires a Dockerfile in the project folder",
+        "It can build an image and push it to a remote registry such as ACR without a Docker daemon",
+        "It only works on Windows hosts",
+        "In .NET 10 it requires adding the `Microsoft.NET.Build.Containers` package"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "SDK container support (since .NET 8) builds OCI images from MSBuild properties such as ContainerRepository, ContainerImageTags and ContainerFamily. A local daemon is only needed when loading the image locally.",
+      "optionNotes": [
+        "No Dockerfile is used.",
+        null,
+        "It works on Linux, macOS and Windows.",
+        "The capability is built into the SDK; console apps only need EnableSdkContainerSupport."
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-009",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which changes reduce the size of the final API image? (Select all that apply)",
+      "options": [
+        "A multi-stage build that copies only the publish output into the runtime stage",
+        "Using the SDK image as the final stage so tools are available",
+        "A chiseled or Alpine runtime base image",
+        "A `.dockerignore` that excludes `bin/`, `obj/` and `.git`"
+      ],
+      "answer": [
+        0,
+        2,
+        3
+      ],
+      "explanation": "Leaving the SDK and source behind is the biggest win; smaller bases help further; .dockerignore keeps stray files out of the context and out of any COPY layers.",
+      "optionNotes": [
+        null,
+        "The SDK image is several times larger than the runtime image.",
+        null,
+        null
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-docker-dotnet-angular-010",
+      "topic": "docker-dotnet-angular",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How can one Angular image be deployed to dev, staging and production without rebuilding it per environment?",
+      "options": [
+        "Use a different `environment.ts` per environment at build time",
+        "Load a mounted `config.json` at startup, or call `/api` on the same origin",
+        "Bake all three API URLs into the bundle and pick one at random",
+        "Set `ASPNETCORE_ENVIRONMENT` on the nginx container"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "environment.ts is compiled into the bundle, which forces a rebuild per environment. Runtime config or same-origin routing keeps one immutable image across environments.",
+      "optionNotes": [
+        "That requires a build per environment.",
+        null,
+        "Not a configuration strategy.",
+        "nginx and the Angular bundle ignore that variable."
+      ],
+      "readMore": "/testing-devops/docker-dotnet-angular/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-001",
+      "topic": "kubernetes-core",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which control plane component stores the cluster's state?",
+      "options": [
+        "kubelet",
+        "kube-proxy",
+        "etcd",
+        "containerd"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "etcd is a consistent key-value store holding all Kubernetes objects. Only the API server talks to it directly.",
+      "optionNotes": [
+        "The kubelet is the node agent.",
+        "kube-proxy programs Service networking on nodes.",
+        null,
+        "containerd is the container runtime on nodes."
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-002",
+      "topic": "kubernetes-core",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the smallest deployable unit in Kubernetes?",
+      "options": [
+        "Container",
+        "Node",
+        "ReplicaSet",
+        "Pod"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A Pod wraps one or more containers that share a network namespace (one IP) and volumes. Kubernetes schedules Pods, not individual containers.",
+      "optionNotes": [
+        "Containers always run inside Pods.",
+        "A node is a machine that runs Pods.",
+        "A ReplicaSet manages several Pods.",
+        null
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-003",
+      "topic": "kubernetes-core",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which Service type is reachable **only from inside** the cluster?",
+      "options": [
+        "ClusterIP",
+        "LoadBalancer",
+        "NodePort",
+        "ExternalName"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "ClusterIP (the default) gives a virtual IP and DNS name reachable inside the cluster. NodePort and LoadBalancer expose the service externally.",
+      "optionNotes": [
+        null,
+        "Provisions an external load balancer.",
+        "Opens a port on every node.",
+        "A DNS alias to an external name."
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-004",
+      "topic": "kubernetes-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which component decides which node a new Pod runs on?",
+      "options": [
+        "kubelet",
+        "kube-controller-manager",
+        "kube-scheduler",
+        "kube-proxy"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The scheduler watches for unscheduled Pods and binds each to a node based on resource requests, affinity rules, taints and tolerations. The kubelet on that node then starts it.",
+      "optionNotes": [
+        "The kubelet runs Pods already assigned to its node.",
+        "Controllers create Pods but do not place them.",
+        null,
+        "kube-proxy handles Service traffic."
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-005",
+      "topic": "kubernetes-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Requests to this Service time out, while the Pods are running and ready. What is wrong?",
+      "code": "apiVersion: v1\nkind: Service\nmetadata: { name: orders-api, namespace: shop }\nspec:\n  selector: { app: orders }\n  ports:\n    - port: 80\n      targetPort: 8080\n# Deployment Pod template labels: { app: orders-api }",
+      "codeLang": "yaml",
+      "options": [
+        "The selector `app: orders` matches no Pods, so there are no endpoints",
+        "`targetPort` must always equal `port` in a Service",
+        "Services need `type: LoadBalancer` to route any traffic",
+        "The Service must live in a different namespace from its Pods"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A Service routes to Pods whose labels match its selector. With no match there are no endpoints (`kubectl get endpoints` or `kubectl describe svc` shows none). Port mapping 80 to 8080 is valid.",
+      "optionNotes": [
+        null,
+        "They can differ; that is the point of targetPort.",
+        "ClusterIP routes traffic fine inside the cluster.",
+        "Selectors only match Pods in the same namespace."
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-006",
+      "topic": "kubernetes-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which statement about Kubernetes Secrets is correct?",
+      "options": [
+        "Values are encrypted with AES by kubectl before upload",
+        "Secrets are only ever visible to cluster administrators",
+        "Secrets cannot be mounted into Pods as files",
+        "Values are only base64-encoded, so RBAC and vaults matter"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Base64 is an encoding anyone can reverse. Security comes from limiting who can read Secrets (RBAC), encrypting etcd, keeping Secret YAML out of git, and syncing from Key Vault or AWS Secrets Manager.",
+      "optionNotes": [
+        "kubectl does not encrypt them.",
+        "Anyone with read access to Secrets in the namespace can see them.",
+        "They can be environment variables or files.",
+        null
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-007",
+      "topic": "kubernetes-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You applied an Ingress, but requests to the host never reach the Service. What is the most likely cause?",
+      "options": [
+        "An Ingress requires a NodePort Service behind it",
+        "No matching ingress controller is installed for the class",
+        "Ingress only routes gRPC traffic, not plain HTTP",
+        "Ingress objects must be created in the default namespace"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "An Ingress is only a set of rules; an ingress controller (NGINX-based, Traefik, Application Gateway for Containers, AWS Load Balancer Controller) must watch it and implement the routing.",
+      "optionNotes": [
+        "ClusterIP Services work behind an Ingress.",
+        null,
+        "Ingress is primarily for HTTP/HTTPS.",
+        "Ingresses work in any namespace, routing to Services in the same namespace."
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-008",
+      "topic": "kubernetes-core",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "After `kubectl apply` of a new Deployment, which component actually creates the Pod objects?",
+      "options": [
+        "kubectl creates them directly",
+        "The ReplicaSet controller, after the Deployment controller has created a ReplicaSet",
+        "The scheduler creates them",
+        "The kubelet on each node creates them from the Deployment"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "kubectl only stores the Deployment via the API server. The Deployment controller creates a ReplicaSet, the ReplicaSet controller creates Pods, the scheduler assigns them to nodes, and kubelets start the containers.",
+      "optionNotes": [
+        "kubectl only sends the Deployment.",
+        null,
+        "The scheduler binds existing Pods to nodes.",
+        "Kubelets run Pods assigned to them; they do not create Pod objects from Deployments."
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-009",
+      "topic": "kubernetes-core",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Pod in namespace `web` calls `http://orders-api` and gets a DNS error. The Service `orders-api` exists in namespace `shop`. Why?",
+      "options": [
+        "Services can never be called across namespaces",
+        "The Service must be of type LoadBalancer for DNS",
+        "Cluster DNS only works for headless Services",
+        "Short names resolve in the caller's namespace; use `orders-api.shop`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Cluster DNS search paths start with the Pod's namespace. Cross-namespace calls need the namespace in the name (unless a NetworkPolicy blocks the traffic, which is a separate problem).",
+      "optionNotes": [
+        "Cross-namespace calls work by default.",
+        "Type does not affect in-cluster DNS.",
+        "ClusterIP Services get DNS names too.",
+        null
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-core-010",
+      "topic": "kubernetes-core",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these are **control plane** components? (Select all that apply)",
+      "options": [
+        "kube-apiserver",
+        "etcd",
+        "kube-scheduler",
+        "kubelet"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "The API server, etcd, scheduler and controller managers make up the control plane (managed for you on AKS and EKS). The kubelet runs on every worker node.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "The kubelet is a node component."
+      ],
+      "readMore": "/testing-devops/kubernetes-core/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-001",
+      "topic": "kubernetes-operations",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which probe, when failing, removes a Pod from Service endpoints **without** restarting it?",
+      "options": [
+        "livenessProbe",
+        "preStop hook",
+        "startupProbe",
+        "readinessProbe"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Readiness controls whether the Pod receives traffic. Liveness failures restart the container, and the startup probe gates the other probes during boot.",
+      "optionNotes": [
+        "Liveness failure restarts the container.",
+        "preStop is a lifecycle hook, not a probe.",
+        "Startup failure eventually restarts the container.",
+        null
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-002",
+      "topic": "kubernetes-operations",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A container exceeds its **memory limit**. What happens?",
+      "options": [
+        "It is OOMKilled and restarted according to the restart policy",
+        "It is throttled",
+        "Kubernetes raises the limit automatically",
+        "Nothing; limits are advisory"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Memory cannot be throttled, so the kernel kills the process (OOMKilled). Exceeding a CPU limit, by contrast, throttles the container.",
+      "optionNotes": [
+        null,
+        "Throttling applies to CPU.",
+        "Limits are not raised automatically (VPA can recommend changes).",
+        "Memory limits are enforced."
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-003",
+      "topic": "kubernetes-operations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The liveness probe calls `/health` which checks SQL Server. The database is unavailable for two minutes and every API Pod restarts repeatedly. What is the fix?",
+      "options": [
+        "Increase the liveness `failureThreshold` to 100",
+        "Remove all probes from the Deployment",
+        "Check only the process in liveness; move the DB check to readiness",
+        "Use a TCP liveness probe on the database port instead"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Dependency failures should take Pods out of rotation (readiness), not restart them. Restarting healthy processes cannot fix a database outage and amplifies the incident.",
+      "optionNotes": [
+        "Just delays the restart loop and leaves stuck processes undetected.",
+        "You lose traffic control and self-healing.",
+        null,
+        "Still ties liveness to an external dependency."
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-004",
+      "topic": "kubernetes-operations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An HPA targets 60% average CPU utilisation. There are 4 Pods averaging 90%. How many replicas will it aim for (ignoring min/max)?",
+      "options": [
+        "6",
+        "5",
+        "8",
+        "4"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "desiredReplicas = ceil(currentReplicas × current / target) = ceil(4 × 90 / 60) = ceil(6) = 6.",
+      "optionNotes": [
+        null,
+        "Too low for the formula.",
+        "That would correspond to 120% utilisation.",
+        "No change would mean utilisation at target."
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-005",
+      "topic": "kubernetes-operations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "With this strategy and `replicas: 3`, what happens during a rollout?",
+      "code": "spec:\n  replicas: 3\n  strategy:\n    type: RollingUpdate\n    rollingUpdate:\n      maxSurge: 1\n      maxUnavailable: 0",
+      "codeLang": "yaml",
+      "options": [
+        "All 3 old Pods are deleted, then 3 new ones are created",
+        "New Pods receive traffic before passing readiness",
+        "At most 6 Pods exist at once",
+        "At most 4 Pods exist and the number of available Pods never drops below 3"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "maxSurge 1 allows one extra Pod above the desired count; maxUnavailable 0 forbids going below the desired count of available Pods. Old Pods are removed only as new ones become ready.",
+      "optionNotes": [
+        "That is the Recreate strategy.",
+        "Traffic waits for readiness.",
+        "maxSurge limits the extra Pods to one.",
+        null
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-006",
+      "topic": "kubernetes-operations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Version 1.5.0 is failing in production. Which command returns the Deployment to the previous version?",
+      "options": [
+        "`kubectl delete deployment orders-api`",
+        "`kubectl rollout undo deployment/orders-api`",
+        "`kubectl rollout restart deployment/orders-api`",
+        "`kubectl scale deployment/orders-api --replicas=0`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`rollout undo` scales the previous ReplicaSet back up (kept according to revisionHistoryLimit). `rollout restart` only re-creates Pods with the same template.",
+      "optionNotes": [
+        "Deletes the app entirely.",
+        null,
+        "Restarts the same failing version.",
+        "Takes the service down."
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-007",
+      "topic": "kubernetes-operations",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A .NET API has `limits: { cpu: 200m }`. CPU usage sits flat at about 200m, p99 latency spikes and probes fail intermittently. What is happening?",
+      "options": [
+        "The container is being OOMKilled every few minutes",
+        "CPU throttling: the container keeps hitting its CPU quota",
+        "The HPA is scaling the Deployment down too aggressively",
+        "The garbage collector is disabled by the CPU limit"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "CPU limits are enforced by throttling, not killing. A flat line at the limit plus latency spikes is the signature. Raise or remove the CPU limit, keep a realistic request, and scale out with the HPA.",
+      "optionNotes": [
+        "OOMKilled relates to memory and shows in Pod status.",
+        null,
+        "Scaling down is not indicated by these symptoms.",
+        "The GC still runs; it adapts to the CPU count."
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-008",
+      "topic": "kubernetes-operations",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "During rolling updates a few requests fail with 502 even though readiness probes are configured. What is the most likely cause and fix?",
+      "options": [
+        "Ingress does not support rolling updates; switch to Recreate",
+        "The image tag must be `latest` for endpoints to update",
+        "Readiness probes must use TCP checks instead of HTTP",
+        "SIGTERM races endpoint removal; add a preStop delay and drain"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Load balancers and kube-proxy take a moment to stop sending traffic to a terminating Pod. A preStop delay keeps the Pod serving while endpoints update, then graceful shutdown drains in-flight requests.",
+      "optionNotes": [
+        "Rolling updates work through Ingress; Recreate causes downtime.",
+        "Tags are unrelated and latest is discouraged.",
+        "Probe type is not the cause.",
+        null
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-009",
+      "topic": "kubernetes-operations",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "`kubectl get hpa` shows `cpu: <unknown>/70%` for the orders-api HPA. What is the most likely cause?",
+      "options": [
+        "The containers have no CPU request, so utilisation is unknown",
+        "The HPA uses the `autoscaling/v2` API version",
+        "`maxReplicas` is lower than `minReplicas` plus one",
+        "The Deployment uses the RollingUpdate strategy"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Utilisation is measured relative to the CPU request. Without requests, or without metrics-server providing metrics, the HPA reports unknown and does not scale.",
+      "optionNotes": [
+        null,
+        "autoscaling/v2 is the current API.",
+        "Replica bounds do not cause unknown metrics.",
+        "Strategy is unrelated."
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-kubernetes-operations-010",
+      "topic": "kubernetes-operations",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are characteristics of a **StatefulSet**? (Select all that apply)",
+      "options": [
+        "Stable Pod names such as `redis-0`",
+        "A PersistentVolumeClaim per Pod through `volumeClaimTemplates`",
+        "Random Pod name suffixes like a Deployment",
+        "Ordered, one-by-one Pod creation and termination by default"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "StatefulSets give Pods stable identities, stable storage and ordered rollout, which clustered databases and brokers need. Deployments generate random suffixes.",
+      "optionNotes": [
+        null,
+        null,
+        "That is Deployment behaviour.",
+        null
+      ],
+      "readMore": "/testing-devops/kubernetes-operations/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-001",
+      "topic": "cloud-deployment",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the AWS equivalent of Azure Kubernetes Service (AKS)?",
+      "options": [
+        "EKS",
+        "ECS",
+        "App Runner",
+        "Lambda"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Amazon EKS is AWS's managed Kubernetes. ECS is AWS's own container orchestrator, App Runner is a simpler container platform (closed to new customers since April 2026), and Lambda is functions.",
+      "optionNotes": [
+        null,
+        "ECS is not Kubernetes.",
+        "Closer to App Service or Container Apps.",
+        "Closer to Azure Functions."
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-002",
+      "topic": "cloud-deployment",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which Azure service is designed for hosting an Angular SPA with a global CDN and preview environments per pull request?",
+      "options": [
+        "Azure Kubernetes Service",
+        "Azure Functions",
+        "Azure Static Web Apps",
+        "Azure Container Registry"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Static Web Apps hosts static front ends globally with free TLS, routing rules, auth and staging environments for pull requests. AWS equivalents: S3 + CloudFront or Amplify Hosting.",
+      "optionNotes": [
+        "Overkill for static files.",
+        "For event-driven code, not static hosting.",
+        null,
+        "A registry for images, not a host."
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-003",
+      "topic": "cloud-deployment",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How do App Service deployment slots enable zero-downtime releases?",
+      "options": [
+        "You deploy to a staging slot, warm it up, then swap it with production; swapping back is the rollback",
+        "They pause traffic while the new version deploys",
+        "They run two versions and pick one randomly per request",
+        "They create a new App Service plan per deployment"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Swapping exchanges the slots' routing so warmed-up instances take production traffic immediately. The previous version stays in the other slot for an instant rollback.",
+      "optionNotes": [
+        null,
+        "There is no traffic pause.",
+        "Random routing is not the mechanism (testing-in-production routing is a separate feature).",
+        "Slots share the same plan."
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-004",
+      "topic": "cloud-deployment",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "After a slot swap, production started using the **staging** database connection string. What was missed?",
+      "options": [
+        "The app must be restarted after every swap",
+        "Slots cannot have different connection strings",
+        "The swap ran without warm-up",
+        "The connection string was not marked as a deployment slot setting (sticky)"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Settings marked as slot settings stay with the slot instead of moving with the code during a swap. Environment-specific values such as connection strings should be sticky.",
+      "optionNotes": [
+        "A restart would not change which value is applied.",
+        "They can, through slot settings.",
+        "Warm-up affects cold starts, not settings.",
+        null
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-005",
+      "topic": "cloud-deployment",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A small team runs three containerised microservices plus a queue-triggered worker that should scale to zero. Nobody on the team knows Kubernetes. Best fit on Azure?",
+      "options": [
+        "AKS with KEDA installed",
+        "Azure Container Apps",
+        "Virtual machines with Docker installed",
+        "Azure Static Web Apps"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Container Apps runs containers without cluster management, with KEDA-based scaling (including to zero on queue length), revisions and built-in ingress. AWS equivalent: ECS on Fargate.",
+      "optionNotes": [
+        "Works, but the team would have to operate Kubernetes.",
+        null,
+        "Manual patching, scaling and deployment.",
+        "Static hosting cannot run the API or worker."
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-006",
+      "topic": "cloud-deployment",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "How do you run a 10% canary of a new API version on Azure Container Apps?",
+      "options": [
+        "Create a second Container Apps environment and use DNS round robin",
+        "Switch to multiple-revision mode and set traffic weights, for example 90 to the old revision and 10 to the new",
+        "Deploy with `--canary 10` on `az containerapp create`",
+        "Container Apps cannot split traffic"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each template change creates a revision. In multiple-revision mode, ingress traffic can be split by weight between revisions and shifted gradually or rolled back.",
+      "optionNotes": [
+        "DNS round robin gives no precise control or quick rollback.",
+        null,
+        "No such flag.",
+        "Traffic splitting by revision is a core feature."
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-007",
+      "topic": "cloud-deployment",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An Angular SPA is hosted in a private S3 bucket behind CloudFront. Deep links such as `/orders/42` return 403 AccessDenied. What fixes it?",
+      "options": [
+        "Make the S3 bucket publicly readable",
+        "Enable S3 versioning on the bucket",
+        "Add CORS headers to the bucket configuration",
+        "Map 403/404 errors to `/index.html` in CloudFront"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "S3 has no object at that key and answers 403 through CloudFront. Mapping those errors to index.html gives the SPA its navigation fallback, like `try_files` in nginx or `navigationFallback` in Static Web Apps.",
+      "optionNotes": [
+        "Insecure and still has no such object.",
+        "Versioning does not create the missing route.",
+        "CORS is unrelated to missing objects.",
+        null
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-cloud-deployment-008",
+      "topic": "cloud-deployment",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which approaches let an App Service app read Key Vault secrets **without** storing a credential? (Select all that apply)",
+      "options": [
+        "Enable a managed identity and grant it access to the vault",
+        "Use `DefaultAzureCredential` in the application code",
+        "Store a service principal secret in `appsettings.json`",
+        "Use Key Vault references in App Service application settings"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Managed identity provides the credential automatically; DefaultAzureCredential picks it up in code, and Key Vault references resolve secrets into app settings using the same identity.",
+      "optionNotes": [
+        null,
+        null,
+        "That is a stored credential, the thing to avoid.",
+        null
+      ],
+      "readMore": "/testing-devops/cloud-deployment/"
+    },
+    {
+      "id": "testing-devops-observability-001",
+      "topic": "observability",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What are the \"three pillars\" of observability?",
+      "options": [
+        "Alerts, dashboards and runbooks",
+        "CPU, memory and disk",
+        "Logs, metrics and traces",
+        "Unit, integration and e2e tests"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Logs record discrete events, metrics are aggregated numeric time series, and traces follow a request across services. Together they let you detect and explain problems.",
+      "optionNotes": [
+        "Those are consumers of telemetry, not signal types.",
+        "Those are resources you might measure with metrics.",
+        null,
+        "Those are test levels."
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-002",
+      "topic": "observability",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which HTTP header carries W3C Trace Context between services?",
+      "options": [
+        "`traceparent`",
+        "`X-Request-ID`",
+        "`Authorization`",
+        "`X-Forwarded-For`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`traceparent` contains the trace id, parent span id and flags. ASP.NET Core and HttpClient propagate it automatically when tracing is enabled.",
+      "optionNotes": [
+        null,
+        "A common custom correlation header, not the W3C standard.",
+        "Carries credentials.",
+        "Carries the original client IP."
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-003",
+      "topic": "observability",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API has a 99.9% availability SLO over 30 days. How much \"bad\" time does the error budget allow?",
+      "options": [
+        "4.32 minutes",
+        "43.2 hours",
+        "7.2 hours",
+        "43.2 minutes"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "30 days = 43,200 minutes, and 0.1% of that is 43.2 minutes. When the budget is spent, the team prioritises reliability work over new features.",
+      "optionNotes": [
+        "That would be 99.99%.",
+        "Far more than 0.1%.",
+        "That would be 99%.",
+        null
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-004",
+      "topic": "observability",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why is `logger.LogInformation(\"Order {OrderId} created\", order.Id)` preferred over `logger.LogInformation($\"Order {order.Id} created\")`?",
+      "options": [
+        "String interpolation is not allowed in ILogger calls",
+        "It keeps `OrderId` as a structured, queryable property",
+        "It makes the log level configurable per message",
+        "Interpolated messages never reach Application Insights"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Message templates produce structured logs with named properties you can filter on, and formatting is deferred until the log is actually written. The LoggerMessage source generator goes further for hot paths.",
+      "optionNotes": [
+        "It compiles, it is just a bad practice.",
+        null,
+        "Levels are configured separately.",
+        "They are written, but as plain text."
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-005",
+      "topic": "observability",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A developer adds a `userId` dimension to the `http.requests` metric. Why is this a problem?",
+      "options": [
+        "Metrics are not allowed to have any dimensions",
+        "It creates one time series per user: high cardinality",
+        "User ids cannot be used as metric label values",
+        "Adding dimensions to a metric disables tracing"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each unique label combination is a separate series. Unbounded identifiers belong in logs and trace attributes; metric dimensions should be bounded (endpoint, status code, region).",
+      "optionNotes": [
+        "Dimensions are normal and useful.",
+        null,
+        "Type is irrelevant.",
+        "Metrics and traces are independent."
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-006",
+      "topic": "observability",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Average latency on an endpoint is 180 ms, yet users complain the page is often slow. What should you look at first?",
+      "options": [
+        "Total request count per day",
+        "The number of log lines per request",
+        "The minimum latency",
+        "High percentiles such as p95 and p99"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Latency distributions have long tails. An average can hide a significant share of very slow requests; percentiles show what the slowest users experience.",
+      "optionNotes": [
+        "Volume does not show slowness.",
+        "Unrelated to user-perceived latency.",
+        "Minimum latency hides the problem completely.",
+        null
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-007",
+      "topic": "observability",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which alert is the best candidate for paging the on-call engineer?",
+      "options": [
+        "Checkout SLO error budget burning fast enough to be exhausted within hours",
+        "Any single exception logged",
+        "CPU above 80% on any instance for 1 minute",
+        "A deployment completed successfully"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Burn-rate alerts on SLIs page on user-facing symptoms and their urgency. Cause-based alerts such as CPU spikes or individual exceptions are noisy and often not actionable.",
+      "optionNotes": [
+        null,
+        "Far too noisy.",
+        "Often harmless; a cause, not a symptom.",
+        "Informational, not actionable."
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-008",
+      "topic": "observability",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Requests from the Orders API to the Payments service show up as two separate, unconnected traces. Orders sends the work through an Azure Service Bus queue. What is the most likely cause?",
+      "options": [
+        "Payments uses a different log level",
+        "The two services use different Application Insights resources by design",
+        "Trace context is not propagated: it must be written into the message properties and restored by the consumer",
+        "Service Bus messages cannot be traced"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "HTTP propagation is automatic, but messaging needs the traceparent copied into message properties and extracted by the consumer (the Azure SDK and MassTransit instrumentations do this when enabled).",
+      "optionNotes": [
+        "Log levels do not affect trace correlation.",
+        "Separate resources can still be correlated if the context flows.",
+        null,
+        "They can, with propagation."
+      ],
+      "readMore": "/testing-devops/observability/"
+    },
+    {
+      "id": "testing-devops-observability-009",
+      "topic": "observability",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about OpenTelemetry are true? (Select all that apply)",
+      "options": [
+        "It is a vendor-neutral standard for logs, metrics and traces",
+        "In .NET, `ActivitySource` and `Meter` are the APIs used for OTel traces and metrics",
+        "It can only export to Azure Monitor",
+        "OTLP is its protocol for sending telemetry to collectors and backends"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "OpenTelemetry decouples instrumentation from backends: instrument once with the .NET Activity and Meter APIs, export over OTLP or vendor exporters (Azure Monitor, Grafana, Datadog, AWS via ADOT).",
+      "optionNotes": [
+        null,
+        null,
+        "It supports many backends.",
+        null
+      ],
+      "readMore": "/testing-devops/observability/"
+    }
+  ]
+}

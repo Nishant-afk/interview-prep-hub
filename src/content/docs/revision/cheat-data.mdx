@@ -1,0 +1,59 @@
+---
+title: "Cheat Sheet: EF Core & SQL"
+description: One-page revision of EF Core behaviour and SQL Server querying, indexing and transactions.
+sidebar:
+  order: 4
+noProgress: true
+tableOfContents: false
+---
+
+## EF Core
+
+| Topic | Remember |
+|---|---|
+| DbContext | Scoped, not thread-safe. One unit of work per request. [More](../../data/efcore-architecture/) |
+| Change tracking | States: Added, Unchanged, Modified, Deleted, Detached. `SaveChanges` turns them into SQL in one transaction. |
+| Read-only queries | `AsNoTracking()` is faster and uses less memory. |
+| N+1 | A loop that touches a navigation property runs a query per row. Fix with `Include`, a projection (`Select` to a DTO), or a split query. [More](../../data/efcore-querying/) |
+| Loading | Eager (`Include`), explicit (`Entry().Collection().Load()`), lazy (proxies, risky in APIs). [More](../../data/loading-strategies/) |
+| Bulk | `ExecuteUpdate` / `ExecuteDelete` run one SQL statement without loading entities. [More](../../data/transactions-raw-sql/) |
+| Raw SQL | `FromSql($"... {id}")` parameterises the interpolated values. `FromSqlRaw` with string concatenation opens you to injection. |
+| Concurrency | A `rowversion` token makes a conflicting save throw `DbUpdateConcurrencyException`; reload or merge. [More](../../data/concurrency/) |
+| Migrations | Generate idempotent scripts for production. Don't run `Migrate()` on startup across many instances. [More](../../data/migrations/) |
+
+## SQL essentials
+
+- **Logical order:** FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → TOP/OFFSET. That is why a SELECT alias can't be used in WHERE. [More](../../data/sql-joins-queries/)
+- **WHERE vs HAVING:** WHERE filters rows, HAVING filters groups.
+- **UNION** removes duplicates (it sorts or hashes). **UNION ALL** keeps them and is faster.
+- **EXISTS** stops at the first match; `NOT IN` with a NULL in the subquery returns no rows.
+- **Window functions:** `ROW_NUMBER` gives unique numbers, `RANK` leaves gaps after ties, `DENSE_RANK` doesn't. Use `LAG`/`LEAD` for previous/next rows and `SUM() OVER (ORDER BY ...)` for running totals. [More](../../data/window-functions/)
+
+```sql
+-- Nth highest salary (N = 2), ties handled
+SELECT DISTINCT Salary FROM (
+  SELECT Salary, DENSE_RANK() OVER (ORDER BY Salary DESC) AS rnk FROM Employees
+) t WHERE rnk = 2;
+```
+
+## Indexes and plans
+
+- **Clustered** = the table's row order (one per table). **Non-clustered** = a separate B-tree pointing to rows. [More](../../data/indexes/)
+- **Covering index:** key columns for seek, `INCLUDE` columns for the SELECT list, so there is no key lookup.
+- **Composite order:** equality columns first, then range columns.
+- **SARGable:** don't wrap the column in a function (`WHERE YEAR(d) = 2026` scans; `WHERE d >= '2026-01-01' AND d < '2027-01-01'` seeks). [More](../../data/execution-plans/)
+- **Parameter sniffing:** a plan cached for one parameter value runs poorly for another. Fixes: `OPTION (RECOMPILE)`, `OPTIMIZE FOR`, better indexes.
+
+## Transactions and isolation
+
+| Level | Dirty read | Non-repeatable read | Phantom |
+|---|---|---|---|
+| Read Uncommitted | Yes | Yes | Yes |
+| Read Committed (default) | No | Yes | Yes |
+| Repeatable Read | No | No | Yes |
+| Serializable | No | No | No |
+| Snapshot | No | No | No (row versions) |
+
+- **RCSI** makes readers use row versions, so readers don't block writers. [More](../../data/transactions-isolation/)
+- **Deadlock prevention:** access tables in the same order, keep transactions short, add the right indexes, retry on error 1205.
+- **Normalization:** 1NF atomic values, 2NF no partial dependency, 3NF no transitive dependency. Denormalize deliberately for reads. [More](../../data/normalization/)

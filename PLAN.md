@@ -1,7 +1,7 @@
 # Interview Prep Hub – Project Plan
 
 > Personal, self-hosted interview preparation website for a **3–4 year SDE (.NET + Angular)**.
-> Status: **READY FOR REVIEW – all decisions recorded (§11), execution checklist prepared (§12–§15). No application code written yet.**
+> Status: **IN EXECUTION.** Phases 1–2 done and committed (site skeleton, MCQ engine, tests, deploy workflow). Phase 3–5 content is being written. See §17 for the implementation log.
 > Created: 2026-11-02 · Last updated: 2026-11-02
 
 **Scope rule:** the *content* is laser-focused on .NET + Angular (plus the stack-agnostic basics every SDE interview asks). The *website itself* is built with whatever is fastest to author, cheapest to host and easiest to maintain for one person. It does not need to be .NET or Angular.
@@ -58,14 +58,14 @@ Starlight is Astro's documentation theme. It gives, out of the box and with zero
 | Site generator | **Astro (latest) + Starlight theme** | Content-first, Markdown/MDX, fastest path to a polished docs-style site; framework-agnostic |
 | Content | Markdown / MDX files under `src/content/docs/**` | One file per topic; front matter for title/order/tags |
 | Tabs | Starlight `<Tabs>/<TabItem>` in MDX | Needed for "C# / TypeScript" side-by-side code and sub-topic tabs |
-| Diagrams | **Mermaid** via `rehype-mermaid` (renders to SVG at build; no client JS) + hand-made SVGs in `public/diagrams/` | Diagrams stay as text in the repo |
+| Diagrams | **Mermaid** via `astro-mermaid` (client-side render, light/dark aware; no Playwright needed) + hand-made SVGs in `public/diagrams/`. Diagram syntax is checked in CI by `scripts/check-content.mjs` | Diagrams stay as text in the repo |
 | Code highlighting | Built-in Expressive Code (Shiki) with copy button, line highlight, file-name titles | No setup |
 | Search | Built-in Pagefind | No setup |
 | MCQ engine | Small **Preact** (or vanilla TS) island component `<Quiz>` loaded with `client:visible`; data from JSON files | Preact is ~3 KB, Astro supports it natively; keeps the quiz interactive on a static site |
 | Progress storage | `localStorage` + Export/Import JSON button | No backend |
 | Styling | Starlight theme + CSS custom properties override | Minimal custom CSS |
 | Testing | Vitest for quiz logic + question-JSON validator script | Light |
-| Build/deploy | GitHub Actions with the official `withastro/action` → GitHub Pages | Official, documented, ~20 lines of YAML |
+| Build/deploy | GitHub Actions: validate → content check → tests → `astro build` → `upload-pages-artifact` → `deploy-pages`. Site URL and base path derived from the repo owner/name | No username hard-coded |
 | Package manager | npm (Node 22 already installed) | |
 
 ### Alternatives considered
@@ -448,7 +448,7 @@ JobPreparation/
 ├─ .github/workflows/deploy.yml      # validate → build → deploy to GitHub Pages
 ├─ PLAN.md                           # this file
 ├─ README.md
-├─ astro.config.mjs                  # Starlight + Preact + rehype-mermaid, site/base for Pages
+├─ astro.config.mjs                  # Starlight + Preact + astro-mermaid, site/base for Pages
 ├─ package.json / tsconfig.json
 ├─ scripts/
 │  └─ validate-questions.mjs
@@ -515,7 +515,7 @@ If time is short: Phase 1 → 2 → 3 gives a usable study + quiz site fastest.
 | 7 | Extra emphasis | **Microservices + messaging** (Kafka / RabbitMQ / Azure Service Bus) and **Docker + Kubernetes** get full sub-sections (see §5.7a and §5.11) |
 | 8 | Start | **On hold** until the user has reviewed this file. Nothing is coded yet |
 
-Still needed before Phase 1: GitHub username (for the Pages URL and `base` path).
+The GitHub username is no longer needed in code: the workflow derives the Pages URL from the repository.
 
 ---
 
@@ -528,7 +528,7 @@ Still needed before Phase 1: GitHub username (for the Pages URL and `base` path)
 - [x] VS Code
 
 **To do before Phase 1 (user):**
-- [ ] Provide GitHub username → fills `site`/`base` in `astro.config.mjs`
+- [x] ~~Provide GitHub username~~ not needed; derived in CI
 - [ ] Create empty GitHub repo `interview-prep-hub` (public, so GitHub Pages is free; no README/license so the first push is clean)
 - [ ] Repo → Settings → Pages → Source = **GitHub Actions**
 - [ ] Optional VS Code extensions: `astro-build.astro-vscode`, `unifiedjs.vscode-mdx`, `bierner.markdown-mermaid` (preview Mermaid in `.md`)
@@ -652,3 +652,37 @@ jobs:
 - Angular interview topics: https://arc.dev/employer-blog/?p=5149 , https://www.techprep.app/blog/angular-interview-questions , https://hyring.com/jobseeker-toolkit/interview-questions/technical/angular
 - System design at mid-level: https://www.designgurus.io/answers/detail/system-design-interview-tips-for-mid-level-software-engineers , https://interviewing.io/system-design-interview-questions , https://www.mintlify.com/ByteByteGoHq/system-design-101/interviews/overview
 - Starlight vs Docusaurus: https://blog.logrocket.com/starlight-vs-docusaurus-building-documentation , https://gautamkhorana.com/static-site-generators/compare/starlight-vs-docusaurus/ , https://docs.astro.build/en/guides/migrate-to-astro/from-docusaurus/
+
+---
+
+## 17. Implementation Log
+
+### 2026-11-02: Phases 1–2 complete
+
+| Item | Result |
+|------|--------|
+| Stack | Astro 7.4.1 (pinned: later 7.4.x need Node ≥ 22.23.4; local Node is 22.23.2), Starlight 0.42, Preact islands, astro-mermaid, Pagefind search |
+| Pages | Home with progress dashboard, Study Plan, Test Centre, Flashcards, 14 section overview pages, template topic page (C# async/await) |
+| Quiz engine | Inline topic quiz; Test Centre with section / 40-question 45-min mock (weighted) / weak-areas modes, question palette, flags, timer, keyboard shortcuts, per-topic results, retry-wrong, history with trends, review past attempts, export/import/clear |
+| Flashcards | Leitner boxes (1, 3, 7, 14, 30 days) built from the question bank |
+| Progress | localStorage `ip.progress.v1`; "Mark as studied" on every topic page footer |
+| Question bank | `src/data/questions/<section>[.<part>].json`, zod schema, served as static `/api/questions/<section>.json` |
+| Tooling | `npm run validate` (questions), `npm run check:content` (front matter, MDX compile, Mermaid parse, links, quiz wiring), Vitest unit + component tests (30) |
+| Deploy | `.github/workflows/deploy.yml`, not yet pushed (owner will provide the GitHub account later) |
+| Docs | README.md, AUTHORING.md (page + question format), CONTENT-MAP.md (all 185 page slugs) |
+
+### Phases 3–5: content
+
+All sections are written in parallel against CONTENT-MAP.md, each with its own question file, and checked with `validate` + `check:content` before a full build. Revision cheat sheets (Phase 6) are written after the sections.
+
+### 2026-11-02: Phases 3–6 complete (content)
+
+| Item | Result |
+|------|--------|
+| Topic pages | 185 topic pages across 13 sections, plus 7 revision cheat sheets (198 built pages in total) |
+| Question bank | 1,374 MCQs across 12 quiz sections, all marked unreviewed until the owner checks them |
+| Verification | Writers compiled and ran C# samples and "what does this print" questions on .NET 10, ran JS puzzles in Node, and generated EF Core SQL from a real EF Core 10 project. Checks: 0 content errors, 0 question errors, 30 tests pass, production build succeeds |
+| Fact corrections after review | Signal Forms and `resource`/`httpResource` are stable in Angular 22 (pages said experimental). AWS App Runner closed to new customers on 30 April 2026 (replaced with ECS Express Mode). Added the full OWASP Top 10:2025 ranking |
+| Confirmed during review | OWASP 2025 categories, C# 15 union syntax, `*ngIf`/`*ngFor` deprecated in v20, ingress-nginx retired March 2026, Azure Managed Redis as successor to Azure Cache for Redis, .NET 10 `BackgroundService` start change, MassTransit v9 commercial licence |
+
+Remaining for the owner: review MCQ answers (set `reviewed: true`), personalise the behavioral pages, push to GitHub when ready.

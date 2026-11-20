@@ -180,6 +180,1473 @@
       "answer": [1],
       "explanation": "`DbContext` is not thread-safe and does not support concurrent operations. EF Core detects this and throws \"A second operation was started on this context instance before a previous operation completed\". Use separate contexts (for example via `IDbContextFactory`) for parallel queries.",
       "readMore": "/csharp/async-await/"
+    },
+    {
+      "id": "csharp-dotnet-platform-001",
+      "topic": "dotnet-platform",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does the C# compiler (Roslyn) produce when you build a class library?",
+      "options": [
+        "Native machine code for the current CPU",
+        "An assembly containing IL, metadata and a manifest",
+        "Source code for the CLR to interpret line by line",
+        "A Docker image with the runtime included"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Roslyn compiles C# to Intermediate Language plus metadata describing every type, packaged in an assembly (.dll). The CLR's JIT turns IL into native code at run time, unless you publish with ReadyToRun or Native AOT.",
+      "optionNotes": [
+        "Only Native AOT publishing produces native code ahead of time.",
+        null,
+        "IL is compiled by the JIT, not interpreted line by line.",
+        "Container images are a separate publishing step."
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-dotnet-platform-002",
+      "topic": "dotnet-platform",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In late 2026, which .NET version is the current Long-Term Support (LTS) release?",
+      "options": [
+        ".NET 9",
+        ".NET 11",
+        ".NET 10",
+        ".NET 8"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": ".NET ships every November; even-numbered releases are LTS with 3 years of support. .NET 10 (November 2025) is the current LTS. .NET 11 (November 2026) is an STS release, and .NET 8 and 9 reach end of support in November 2026.",
+      "optionNotes": [
+        "Odd-numbered releases are STS.",
+        ".NET 11 is an STS release.",
+        null,
+        ".NET 8 was the previous LTS and its support ends in November 2026."
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-dotnet-platform-003",
+      "topic": "dotnet-platform",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A benchmark shows a method is noticeably slower during its first few dozen calls than afterwards. What runtime feature best explains this?",
+      "options": [
+        "Tiered compilation: it starts as quickly compiled Tier 0 code and is later recompiled with full optimizations once hot",
+        "The garbage collector compacts the method's IL after a number of calls",
+        "The CLR interprets IL until the method has been called 100 times",
+        "ReadyToRun code is discarded after the first call"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Tier 0 favours fast startup with minimal optimization. Hot methods (about 30 calls, or loops via on-stack replacement) are recompiled at Tier 1, using Dynamic PGO data to devirtualize and inline. That is why benchmarks need warm-up.",
+      "optionNotes": [
+        null,
+        "The GC manages data, not code.",
+        "The CLR does not interpret IL; it always JIT-compiles it (or uses precompiled code).",
+        "R2R code is replaced only for hot methods, which is an optimization, not a slowdown."
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-dotnet-platform-004",
+      "topic": "dotnet-platform",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You publish an Azure Function (AWS: Lambda) API with Native AOT to cut cold starts. JSON serialization now fails or warns about trimming. What is the usual fix?",
+      "options": [
+        "Switch to the Newtonsoft.Json package",
+        "Disable trimming but keep Native AOT",
+        "Call `GC.Collect()` before serializing",
+        "Use System.Text.Json source generation with a `JsonSerializerContext`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Native AOT has no JIT and trims unused code, so reflection-based serialization cannot discover types at run time. The System.Text.Json source generator produces the serialization code at compile time, which is trim- and AOT-safe.",
+      "optionNotes": [
+        "Newtonsoft.Json is reflection-heavy and not AOT-friendly.",
+        "Native AOT always trims; you can't simply turn it off.",
+        "Garbage collection has nothing to do with trimming.",
+        null
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-dotnet-platform-005",
+      "topic": "dotnet-platform",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about ReadyToRun (R2R) publishing are true? (Select all that apply)",
+      "options": [
+        "The IL is kept, so hot methods can still be re-JITted with Tier 1 optimizations",
+        "It removes the need for any .NET runtime on the target machine",
+        "It improves startup because most methods don't need JIT compilation at launch",
+        "It disables reflection, like Native AOT does"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "R2R precompiles IL to native code but keeps the IL and the JIT, so startup improves and the runtime can still optimize hot paths. Whether you need an installed runtime depends on framework-dependent vs self-contained deployment, not on R2R. Reflection keeps working.",
+      "optionNotes": [
+        null,
+        "That is self-contained deployment, a separate option.",
+        null,
+        "Only Native AOT restricts dynamic features."
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-dotnet-platform-006",
+      "topic": "dotnet-platform",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A shared library marked `[assembly: CLSCompliant(true)]` exposes `public uint GetCount()`. What does the compiler warn about, and why?",
+      "options": [
+        "`uint` is slower than `int` on 64-bit CPUs",
+        "`uint` is not part of the Common Language Specification, so some .NET languages may not be able to consume it",
+        "`uint` is not part of the Common Type System",
+        "Public methods must return reference types to be CLS-compliant"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The CTS defines all runtime types, including unsigned integers. The CLS is the subset every .NET language must support, and unsigned types aren't in it. For cross-language public APIs you expose `int` or `long` instead.",
+      "optionNotes": [
+        "Performance is not the concern here.",
+        null,
+        "`uint` (System.UInt32) is a CTS type.",
+        "Value types like `int` are CLS-compliant return types."
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-dotnet-platform-007",
+      "topic": "dotnet-platform",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the unit of deployment and versioning in .NET, and also the boundary of the `internal` access modifier?",
+      "options": [
+        "Namespace",
+        "Solution",
+        "Assembly",
+        "NuGet feed"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "An assembly (.dll) carries IL, metadata and a manifest with its name and version. `internal` members are visible only within the same assembly. Namespaces are just logical naming and can span assemblies.",
+      "optionNotes": [
+        "Namespaces are logical and can span many assemblies.",
+        "A solution is a build-time grouping of projects.",
+        null,
+        "A feed distributes packages, which contain assemblies."
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-dotnet-platform-008",
+      "topic": "dotnet-platform",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A .NET Framework app loads plugins into separate AppDomains so it can unload them. When migrating to .NET 10, what replaces this?",
+      "options": [
+        "Creating new AppDomains works exactly as before",
+        "The Global Assembly Cache (GAC)",
+        "Running each plugin with `Task.Run`",
+        "A collectible `AssemblyLoadContext`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Modern .NET supports only a single AppDomain. `AssemblyLoadContext` provides assembly isolation, and a collectible context can be unloaded once nothing references its types. For strong isolation (security, crash containment) use separate processes.",
+      "optionNotes": [
+        "Creating additional AppDomains throws PlatformNotSupportedException in modern .NET.",
+        "The GAC doesn't exist in modern .NET and never provided isolation.",
+        "Tasks share the same assemblies; there's no isolation or unloading.",
+        null
+      ],
+      "readMore": "/csharp/dotnet-platform/"
+    },
+    {
+      "id": "csharp-value-reference-types-001",
+      "topic": "value-reference-types",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which of these is a reference type?",
+      "options": [
+        "`int`",
+        "`DateTime`",
+        "`string`",
+        "`Guid`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`string` is a reference type, although it is immutable and overrides `==` to compare contents, which makes it feel like a value type. `int`, `DateTime` and `Guid` are structs.",
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-002",
+      "topic": "value-reference-types",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "object a = 5;\nobject b = 5;\nConsole.WriteLine(a == b);\nConsole.WriteLine(a.Equals(b));",
+      "codeLang": "csharp",
+      "options": [
+        "True, True",
+        "False, True",
+        "True, False",
+        "False, False"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each assignment boxes 5 into a separate heap object. `==` on `object` compares references, so it is False. `Equals` is virtual and dispatches to `Int32.Equals`, which compares values, so it is True.",
+      "optionNotes": [
+        "`==` on two `object` variables is reference equality.",
+        null,
+        "`Equals` is overridden by Int32 to compare values.",
+        "`Int32.Equals` compares the boxed values."
+      ],
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-003",
+      "topic": "value-reference-types",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "struct Point { public int X; }\n\nvar p1 = new Point { X = 1 };\nvar p2 = p1;\np2.X = 10;\nConsole.WriteLine(p1.X);",
+      "codeLang": "csharp",
+      "options": [
+        "1",
+        "10",
+        "0",
+        "Compile-time error"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Assigning a struct copies the whole value. `p2` is an independent copy, so changing `p2.X` doesn't affect `p1`. With a class, both variables would reference the same object and it would print 10.",
+      "optionNotes": [
+        null,
+        "That would happen if Point were a class.",
+        "p1.X was set to 1 and never changed.",
+        "Mutating a local struct variable's field is allowed."
+      ],
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-004",
+      "topic": "value-reference-types",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is boxing?",
+      "options": [
+        "Casting a derived class to its base class",
+        "Wrapping a reference in a `Nullable<T>`",
+        "Converting a string to a number",
+        "Copying a value type into a new heap object so it can be treated as `object` or an interface"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Boxing allocates a heap object and copies the value into it, for example `object o = 42;`. Unboxing type-checks and copies the value back out. It costs an allocation, which is why generics replaced non-generic collections like `ArrayList`.",
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-005",
+      "topic": "value-reference-types",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "record Person(string Name, int Age);\n\nvar a = new Person(\"Ann\", 30);\nvar b = new Person(\"Ann\", 30);\nConsole.WriteLine($\"{a == b} {ReferenceEquals(a, b)}\");",
+      "codeLang": "csharp",
+      "options": [
+        "True True",
+        "False False",
+        "True False",
+        "False True"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Records generate value-based `Equals` and `==` that compare all members, so `a == b` is True. They are still reference types and two `new` calls create two objects, so `ReferenceEquals` is False.",
+      "optionNotes": [
+        "They are two separate objects.",
+        "Record `==` compares values, not references.",
+        null,
+        "Reference equality can't be true while value equality is false for records."
+      ],
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-006",
+      "topic": "value-reference-types",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What happens when this runs?",
+      "code": "object boxed = 42;\nlong value = (long)boxed;",
+      "codeLang": "csharp",
+      "options": [
+        "`value` is 42",
+        "`InvalidCastException` at run time",
+        "Compile-time error",
+        "`OverflowException` at run time"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Unboxing must use the exact boxed type. The box contains an `Int32`, so unboxing to `long` throws. Write `(long)(int)boxed` (unbox, then convert) or `Convert.ToInt64(boxed)`.",
+      "optionNotes": [
+        "The int-to-long conversion only works on an unboxed int.",
+        null,
+        "The cast from object to long compiles; the check happens at run time.",
+        "No arithmetic overflow is involved."
+      ],
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-007",
+      "topic": "value-reference-types",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about where value types are stored are true? (Select all that apply)",
+      "options": [
+        "Value types are always stored on the stack",
+        "A struct field of a class is stored inside that object on the heap",
+        "The elements of an `int[]` are stored on the stack",
+        "A local variable captured by a lambda is hoisted into a heap-allocated class"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "A value type lives wherever its container lives. Locals are typically on the stack, but fields of classes and array elements live on the heap, and captured locals (or locals used across `await`) are hoisted into compiler-generated classes on the heap.",
+      "optionNotes": [
+        "Only plain locals and parameters usually are.",
+        null,
+        "Arrays are heap objects; their elements are inside them.",
+        null
+      ],
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-008",
+      "topic": "value-reference-types",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "`P` is a mutable struct with a public field `X`. What happens with this code?",
+      "code": "struct P { public int X; }\n\nvar list = new List<P> { new P() };\nlist[0].X = 5;",
+      "codeLang": "csharp",
+      "options": [
+        "The element in the list now has X = 5",
+        "It compiles but silently modifies a temporary copy",
+        "Compile-time error CS1612: cannot modify the return value because it is not a variable",
+        "It throws `InvalidOperationException` at run time"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The `List<T>` indexer returns a copy of the struct, so assigning to its field would change a temporary. The compiler rejects it. Arrays are different: `arr[0].X = 5` works because an array element is a variable. Prefer readonly structs to avoid the confusion.",
+      "optionNotes": [
+        "The indexer returns a copy, not a reference to the element.",
+        "The compiler catches this case and reports an error.",
+        null,
+        "It never compiles, so nothing runs."
+      ],
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-value-reference-types-009",
+      "topic": "value-reference-types",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "With nullable reference types enabled, how do `string` and `string?` differ at run time?",
+      "options": [
+        "They don't: it is the same type, and `?` only drives compile-time warnings",
+        "`string?` is `Nullable<string>`",
+        "`string?` adds a runtime null check on every access",
+        "`string` variables can never hold null at run time"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Nullable reference types are annotations used by compiler flow analysis. The runtime type is `System.String` in both cases, so you still need guard clauses at API boundaries. `Nullable<T>` only applies to value types such as `int?`.",
+      "optionNotes": [
+        null,
+        "`Nullable<T>` requires a value type.",
+        "No runtime checks are inserted.",
+        "Callers can still pass null, e.g. via `!` or code with NRT disabled."
+      ],
+      "readMore": "/csharp/value-reference-types/"
+    },
+    {
+      "id": "csharp-oop-csharp-001",
+      "topic": "oop-csharp",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How many base classes and interfaces can a C# class have?",
+      "options": [
+        "Many base classes, one interface",
+        "One base class, many interfaces",
+        "One base class, one interface",
+        "Many base classes and many interfaces"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "C# has single inheritance of implementation (one base class) but a class can implement any number of interfaces. That is one reason interfaces are used for contracts and DI.",
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-002",
+      "topic": "oop-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "class Base\n{\n    public virtual void Virt() => Console.WriteLine(\"Base.Virt\");\n    public void Hide() => Console.WriteLine(\"Base.Hide\");\n}\nclass Derived : Base\n{\n    public override void Virt() => Console.WriteLine(\"Derived.Virt\");\n    public new void Hide() => Console.WriteLine(\"Derived.Hide\");\n}\n\nBase b = new Derived();\nb.Virt();\nb.Hide();",
+      "codeLang": "csharp",
+      "options": [
+        "Base.Virt, Base.Hide",
+        "Derived.Virt, Derived.Hide",
+        "Derived.Virt, Base.Hide",
+        "Base.Virt, Derived.Hide"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`override` replaces the virtual slot, so the runtime type (Derived) decides. `new` hides the method with an unrelated one, so the compile-time type of the variable (Base) decides.",
+      "optionNotes": [
+        "The override is used through a base reference.",
+        "Hiding with `new` doesn't participate in virtual dispatch.",
+        null,
+        "Both results are reversed."
+      ],
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-003",
+      "topic": "oop-csharp",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does `new Child()` print?",
+      "code": "class Parent\n{\n    public Parent() { Console.WriteLine(\"Parent ctor\"); Init(); }\n    protected virtual void Init() => Console.WriteLine(\"Parent.Init\");\n}\nclass Child : Parent\n{\n    private readonly string _a = \"field\";\n    private readonly string? _b;\n    public Child() { _b = \"ctor\"; Console.WriteLine(\"Child ctor\"); }\n    protected override void Init() => Console.WriteLine($\"Child.Init {_a} {_b ?? \"null\"}\");\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Parent ctor, Child.Init field null, Child ctor",
+        "Parent ctor, Parent.Init, Child ctor",
+        "Parent ctor, Child.Init field ctor, Child ctor",
+        "Parent ctor, Child.Init null null, Child ctor"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Derived field initializers run first, then the base constructor, then the derived constructor body. The virtual call from Parent's constructor dispatches to the override, which sees `_a` (initializer already ran) but not `_b` (set later in the body). This is why virtual calls in constructors are risky.",
+      "optionNotes": [
+        null,
+        "Virtual dispatch uses the runtime type even inside the base constructor.",
+        "The Child constructor body hasn't run yet, so `_b` is null.",
+        "Field initializers run before the base constructor, so `_a` is set."
+      ],
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-004",
+      "topic": "oop-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `protected internal` mean?",
+      "options": [
+        "Accessible only from derived classes in the same assembly",
+        "Accessible only within the same file",
+        "Accessible only from the declaring class",
+        "Accessible from the same assembly, or from derived classes in any assembly"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`protected internal` is the union of `protected` and `internal`. Its counterpart `private protected` is the intersection: derived classes that are also in the same assembly.",
+      "optionNotes": [
+        "That is `private protected`.",
+        "That is the `file` modifier, which applies to types.",
+        "That is `private`.",
+        null
+      ],
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-005",
+      "topic": "oop-csharp",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which of these can an abstract class have that an interface cannot?",
+      "options": [
+        "Methods with a body",
+        "Static members",
+        "Instance fields and constructors",
+        "Members with a non-public access modifier"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Interfaces can't hold instance state or declare constructors. Since C# 8 they can have default method bodies, static members and private/protected members, so those no longer distinguish them from abstract classes.",
+      "optionNotes": [
+        "Default interface methods (C# 8) allow bodies.",
+        "Interfaces can have static members, including static abstract ones (C# 11).",
+        null,
+        "Interfaces can have private and protected members since C# 8."
+      ],
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-006",
+      "topic": "oop-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens with this code?",
+      "code": "interface IGreeter\n{\n    string Greet(string who) => $\"Hello {who}\";\n}\nclass EnglishGreeter : IGreeter { }\n\nvar g = new EnglishGreeter();\nConsole.WriteLine(g.Greet(\"Ann\"));",
+      "codeLang": "csharp",
+      "options": [
+        "Prints \"Hello Ann\" because the class inherits the default body",
+        "Compile-time error: `Greet` is only accessible via `IGreeter`",
+        "`MissingMethodException` thrown when `Greet` is called",
+        "Compile-time error: `EnglishGreeter` must implement `Greet`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A default interface method isn't inherited as a class member. The class satisfies the interface, but you can only call the default implementation through the interface type: `IGreeter g = new EnglishGreeter();`.",
+      "optionNotes": [
+        "It would print this if `g` were typed as `IGreeter`.",
+        null,
+        "The problem is caught at compile time.",
+        "The default body satisfies the interface requirement."
+      ],
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-007",
+      "topic": "oop-csharp",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "What are real benefits of marking a class `sealed`? (Select all that apply)",
+      "options": [
+        "It makes instances thread-safe",
+        "The JIT can devirtualize and inline calls more easily",
+        "It gives the class value-type copy semantics",
+        "Other code can't derive from it and depend on its internals"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "Sealing documents that the type isn't designed for inheritance, prevents fragile subclasses, and lets the JIT turn virtual or interface calls on the sealed type into direct calls. It has no effect on thread safety or copy semantics.",
+      "optionNotes": [
+        "Thread safety depends on how state is accessed.",
+        null,
+        "Sealed classes are still reference types.",
+        null
+      ],
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-008",
+      "topic": "oop-csharp",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why do teams usually prefer a DI-registered singleton service over a static class holding shared state?",
+      "options": [
+        "It can implement an interface, be injected, and be replaced with a fake in tests",
+        "Static classes can't contain methods",
+        "Static classes are garbage collected after every request",
+        "A DI singleton is automatically thread-safe"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A static class can't implement interfaces or be substituted, so code that uses it is hard to test and tightly coupled. A singleton registered in DI is a normal object behind an abstraction with a container-managed lifetime. It still needs to be thread-safe yourself.",
+      "optionNotes": [
+        null,
+        "Static classes contain static methods.",
+        "Statics live for the lifetime of the process.",
+        "Singletons are shared across threads, so you must make them thread-safe."
+      ],
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-oop-csharp-009",
+      "topic": "oop-csharp",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which of these is compile-time (static) polymorphism in C#?",
+      "options": [
+        "Overriding a virtual method",
+        "Implementing an interface",
+        "Calling a method through a base-class reference",
+        "Method overloading"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Overloads are resolved by the compiler from the argument types. Overriding and interface implementation are resolved at run time through virtual dispatch.",
+      "readMore": "/csharp/oop-csharp/"
+    },
+    {
+      "id": "csharp-memory-gc-001",
+      "topic": "memory-gc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Where is a newly created small object (for example a DTO) allocated?",
+      "options": [
+        "Gen 2",
+        "Large Object Heap",
+        "Gen 0",
+        "Gen 1"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "New small objects go to Gen 0, which is collected often and cheaply because most objects die young. Survivors are promoted to Gen 1 and then Gen 2.",
+      "optionNotes": [
+        "Objects reach Gen 2 only after surviving collections.",
+        "Only objects of 85,000 bytes or more go to the LOH.",
+        null,
+        "Gen 1 holds survivors of a Gen 0 collection."
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-memory-gc-002",
+      "topic": "memory-gc",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does a `using` statement on an `IDisposable` compile to?",
+      "options": [
+        "A `try/finally` that calls `Dispose()` in the `finally` block",
+        "A call to `GC.Collect()` at the end of the block",
+        "A finalizer registered for the object",
+        "A `try/catch` that calls `Dispose()` only if an exception occurs"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The compiler emits `try { ... } finally { x?.Dispose(); }`, so cleanup runs whether the block completes normally or throws. `await using` does the same with `DisposeAsync()`.",
+      "optionNotes": [
+        null,
+        "`using` never triggers a garbage collection.",
+        "Finalizers are unrelated to `using`.",
+        "Dispose runs on success as well, because it's in `finally`."
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-memory-gc-003",
+      "topic": "memory-gc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An API allocates a new `byte[200_000]` buffer for every request. Why can this hurt performance?",
+      "options": [
+        "Arrays of bytes are always boxed",
+        "The array is allocated on the stack and overflows it",
+        "The buffer is collected in Gen 0 too aggressively",
+        "It lands on the Large Object Heap, which is collected only with Gen 2 and isn't compacted by default"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Objects of 85,000 bytes or more go to the LOH. Frequent large allocations trigger expensive full collections and fragment memory. Rent buffers from `ArrayPool<byte>.Shared` or stream the data instead.",
+      "optionNotes": [
+        "Arrays are already reference types; nothing is boxed.",
+        "Arrays are heap-allocated.",
+        "Large objects never go to Gen 0.",
+        null
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-memory-gc-004",
+      "topic": "memory-gc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why are objects with finalizers more expensive for the GC?",
+      "options": [
+        "Finalizers run on the thread that allocated the object",
+        "When found dead they are queued for the finalizer thread and survive at least one more collection",
+        "They are allocated directly on the Large Object Heap",
+        "They prevent Gen 0 collections from running"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Finalizable objects are tracked from allocation. When unreachable they move to the f-reachable queue, get promoted, wait for the single finalizer thread, and are only freed by a later GC. `Dispose` plus `GC.SuppressFinalize` avoids this.",
+      "optionNotes": [
+        "Finalizers run on a dedicated finalizer thread.",
+        null,
+        "Having a finalizer doesn't change which heap is used.",
+        "Gen 0 collections still run normally."
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-memory-gc-005",
+      "topic": "memory-gc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Memory grows steadily in a long-running service. A heap snapshot shows thousands of `PriceWidget` objects, each subscribed with `feed.PriceChanged += OnPriceChanged` to a singleton `PriceFeed`. What is the most likely cause?",
+      "options": [
+        "The GC doesn't collect objects that have event handler methods",
+        "`PriceWidget` should be a struct",
+        "The singleton's event delegate holds references to every subscribed widget, keeping them reachable",
+        "Events always allocate on the Large Object Heap"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "An event subscription stores a delegate whose target is the subscriber. As long as the long-lived publisher is reachable, so are all its subscribers. Unsubscribe with `-=` in `Dispose`, or use a weak-event approach.",
+      "optionNotes": [
+        "Having handler methods doesn't prevent collection; being referenced does.",
+        "Structs wouldn't fix the reference from the delegate (and would be boxed).",
+        null,
+        "Delegates are small objects."
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-memory-gc-006",
+      "topic": "memory-gc",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these act as GC roots? (Select all that apply)",
+      "options": [
+        "Static fields",
+        "Objects referenced only by a `WeakReference<T>`",
+        "Local variables of methods currently on a thread's stack",
+        "Every object that has been promoted to Gen 2"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Roots are the starting points of the mark phase: statics, live locals and registers, GC handles and the finalization queue. A weak reference deliberately doesn't keep its target alive, and a Gen 2 object is collected like any other once nothing reachable points to it.",
+      "optionNotes": [
+        null,
+        "Weak references don't keep targets alive.",
+        null,
+        "Generation affects how often it is checked, not whether it is a root."
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-memory-gc-007",
+      "topic": "memory-gc",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A `sealed` class owns a `FileStream` field and nothing else unmanaged. What is the right cleanup design?",
+      "options": [
+        "Add a finalizer that disposes the FileStream",
+        "Call `GC.Collect()` in `Dispose()` to free the file handle",
+        "Rely on the GC; FileStream closes itself eventually",
+        "Implement `IDisposable` (and `IAsyncDisposable`) that disposes the stream; no finalizer"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`FileStream` already wraps its OS handle in a `SafeHandle` with its own finalizer. Your class only owns a managed wrapper, so plain `Dispose`/`DisposeAsync` is enough. A finalizer would add GC cost and must not touch other managed objects anyway.",
+      "optionNotes": [
+        "Finalizers shouldn't access other finalizable objects, and this adds GC overhead.",
+        "Forcing a GC is expensive and doesn't make disposal deterministic.",
+        "Waiting for finalization keeps the file locked for an unpredictable time.",
+        null
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-memory-gc-008",
+      "topic": "memory-gc",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which GC mode does an ASP.NET Core app use by default, and why?",
+      "options": [
+        "Server GC: a heap and GC thread per core, optimized for throughput",
+        "Workstation non-concurrent GC: lowest memory use",
+        "No GC: ASP.NET Core uses reference counting",
+        "Workstation GC: optimized for UI responsiveness"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "ASP.NET Core defaults to Server GC for throughput across many request threads, with background Gen 2 collections. Since .NET 9, DATAS adapts the number of heaps to the load, which helps in memory-limited containers.",
+      "optionNotes": [
+        null,
+        "That mode suits small tools, not servers.",
+        ".NET uses a tracing GC, not reference counting.",
+        "Workstation is the default for desktop and console apps."
+      ],
+      "readMore": "/csharp/memory-gc/"
+    },
+    {
+      "id": "csharp-collections-generics-001",
+      "topic": "collections-generics",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You need to check, millions of times, whether an id has been seen before. Which collection gives O(1) average membership checks?",
+      "options": [
+        "`List<T>`",
+        "`SortedSet<T>`",
+        "`HashSet<T>`",
+        "`LinkedList<T>`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`HashSet<T>` uses a hash table, so `Contains` and `Add` are O(1) on average. `List<T>.Contains` is O(n), and `SortedSet<T>` is O(log n).",
+      "optionNotes": [
+        "`List<T>.Contains` scans linearly: O(n).",
+        "A red-black tree gives O(log n).",
+        null,
+        "Linked list search is O(n)."
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-002",
+      "topic": "collections-generics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens when this runs?",
+      "code": "var nums = new List<int> { 1, 2, 3 };\nforeach (var n in nums)\n    if (n == 2) nums.Remove(n);",
+      "codeLang": "csharp",
+      "options": [
+        "The list becomes [1, 3] with no error",
+        "`InvalidOperationException` (collection was modified)",
+        "Only the first element is removed",
+        "The loop never terminates"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`List<T>` tracks a version number; the enumerator throws if the list changes during iteration. Use `nums.RemoveAll(n => n == 2)`, iterate a copy, or loop backwards with `for`.",
+      "optionNotes": [
+        "That is what `RemoveAll` would give.",
+        null,
+        "The enumerator detects the change and throws.",
+        "The enumerator detects the change and throws."
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-003",
+      "topic": "collections-generics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`Key` overrides `GetHashCode` to return `Id` and `Equals` to compare `Id`. What does this print?",
+      "code": "var key = new Key { Id = 1 };\nvar set = new HashSet<Key> { key };\nkey.Id = 2;\nConsole.WriteLine(set.Contains(key));",
+      "codeLang": "csharp",
+      "options": [
+        "Throws InvalidOperationException",
+        "True",
+        "Compile-time error",
+        "False"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The object was stored in the bucket for hash 1. After mutation its hash is 2, so the lookup searches the wrong bucket and doesn't find it. Keys of hash-based collections must be immutable (records with init-only properties are a good fit).",
+      "optionNotes": [
+        "HashSet doesn't detect mutated keys.",
+        "The lookup uses the new hash, which points to a different bucket.",
+        "This compiles fine.",
+        null
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-004",
+      "topic": "collections-generics",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A method only needs to loop over the items it receives. Which parameter type is the best choice?",
+      "options": [
+        "`IEnumerable<T>`",
+        "`List<T>`",
+        "`IList<T>`",
+        "`T[]`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Accept the least capable interface you need. `IEnumerable<T>` lets callers pass a list, array, set or LINQ query. Requiring `List<T>` forces callers to convert.",
+      "optionNotes": [
+        null,
+        "Forces callers to create a List.",
+        "Asks for indexing and mutation you don't use.",
+        "Forces callers to create an array."
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-005",
+      "topic": "collections-generics",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which assignment compiles?",
+      "options": [
+        "`List<object> a = new List<string>();`",
+        "`IList<object> b = new List<string>();`",
+        "`IEnumerable<object> c = new List<string>();`",
+        "`List<string> d = new List<object>();`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`IEnumerable<out T>` is covariant because it only produces items, so a sequence of strings is safely a sequence of objects. `List<T>` and `IList<T>` are invariant because they also accept `T` via `Add`, which would let you insert a non-string.",
+      "optionNotes": [
+        "`List<T>` is invariant.",
+        "`IList<T>` is invariant because it has `Add` and a setter.",
+        null,
+        "Neither variance direction allows this."
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-006",
+      "topic": "collections-generics",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What happens with this code?",
+      "code": "object[] items = new string[2];\nitems[0] = 1;",
+      "codeLang": "csharp",
+      "options": [
+        "It compiles, then throws `ArrayTypeMismatchException` at run time",
+        "Compile-time error",
+        "It stores a boxed 1 in the array",
+        "It throws `InvalidCastException` at run time"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Arrays of reference types are covariant (a legacy design), so `string[]` converts to `object[]`. Every store is then type-checked at run time, and writing an `int` into a `string[]` fails. Generic interfaces avoid this by allowing covariance only for read-only use (`out T`).",
+      "optionNotes": [
+        null,
+        "Array covariance makes the assignment legal at compile time.",
+        "The runtime check rejects the store.",
+        "The specific exception is ArrayTypeMismatchException."
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-007",
+      "topic": "collections-generics",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "`cache.GetOrAdd(key, k => LoadFromDb(k))` on a `ConcurrentDictionary` sometimes calls `LoadFromDb` twice for the same key under load. Why, and what is the usual fix?",
+      "options": [
+        "It's a bug in ConcurrentDictionary; wrap every call in `lock`",
+        "The dictionary isn't thread-safe for reads; use `Dictionary` with a lock",
+        "`GetOrAdd` removes entries under memory pressure; increase capacity",
+        "The factory runs outside the internal lock, so racing threads may each run it; store `Lazy<T>` values so the work runs once"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "ConcurrentDictionary guarantees only one value is stored, but it doesn't hold a lock while running your factory, so concurrent callers may all execute it and the losers' results are discarded. Wrapping values in `Lazy<T>` (with ExecutionAndPublication mode) makes the expensive work run once.",
+      "optionNotes": [
+        "This is documented behaviour, and a global lock kills concurrency.",
+        "Reads and writes are thread-safe.",
+        "ConcurrentDictionary doesn't evict entries.",
+        null
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-008",
+      "topic": "collections-generics",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements are true? (Select all that apply)",
+      "options": [
+        "`Dictionary<K,V>` guarantees enumeration in insertion order",
+        "`SortedDictionary<K,V>` inserts in O(log n)",
+        "`LinkedList<T>` offers O(1) access by index",
+        "`List<T>.Add` is amortized O(1)"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "`SortedDictionary` is a red-black tree, so inserts and lookups are O(log n). `List<T>.Add` is O(1) except when the backing array doubles, which averages out. Dictionary order is not guaranteed, and linked lists need O(n) to reach an index.",
+      "optionNotes": [
+        "Order often looks preserved but is not guaranteed, especially after removals.",
+        null,
+        "Reaching the i-th node means walking the list: O(n).",
+        null
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-collections-generics-009",
+      "topic": "collections-generics",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "When is `FrozenDictionary<K,V>` (.NET 8+) the right choice?",
+      "options": [
+        "When many threads add and remove items concurrently",
+        "For lookup data built once (e.g. at startup) and read very often",
+        "When you need items sorted by key",
+        "When you need to modify items while enumerating"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Frozen collections are immutable and spend extra time at creation to optimize read performance. They suit configuration, feature flags or reference data loaded once and read on every request.",
+      "optionNotes": [
+        "Use ConcurrentDictionary for concurrent writes.",
+        null,
+        "Use SortedDictionary or SortedList for ordering.",
+        "Frozen collections can't be modified at all."
+      ],
+      "readMore": "/csharp/collections-generics/"
+    },
+    {
+      "id": "csharp-linq-001",
+      "topic": "linq",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which LINQ method executes the query immediately?",
+      "options": [
+        "`Where`",
+        "`Select`",
+        "`ToList`",
+        "`OrderBy`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`ToList` enumerates the source and materializes the results. `Where`, `Select` and `OrderBy` are deferred: they only describe the query until something enumerates it.",
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-002",
+      "topic": "linq",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var source = new List<int> { 1, 2, 3 };\nvar query = source.Where(n => n > 1);\nsource.Add(4);\nConsole.WriteLine(string.Join(\",\", query));",
+      "codeLang": "csharp",
+      "options": [
+        "2,3",
+        "2,3,4",
+        "1,2,3,4",
+        "An empty line"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The query is deferred: it runs when `string.Join` enumerates it, after 4 was added, so it sees the current contents of the list.",
+      "optionNotes": [
+        "That would require the query to run when defined.",
+        null,
+        "The filter `n > 1` still applies.",
+        "The filter matches three items."
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-003",
+      "topic": "linq",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var q = new[] { 1, 2, 3 }\n    .Where(i => { Console.Write($\"W{i} \"); return i % 2 == 1; })\n    .Select(i => { Console.Write($\"S{i} \"); return i; });\nforeach (var x in q) Console.Write($\"[{x}] \");",
+      "codeLang": "csharp",
+      "options": [
+        "W1 W2 W3 S1 S3 [1] [3]",
+        "W1 S1 W2 S2 W3 S3 [1] [3]",
+        "S1 S3 W1 W2 W3 [1] [3]",
+        "W1 S1 [1] W2 W3 S3 [3]"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`Where` and `Select` are streaming operators: each item flows through the whole pipeline before the next one is pulled. Item 2 fails the filter, so it never reaches `Select`.",
+      "optionNotes": [
+        "That is stage-by-stage execution, which LINQ to Objects doesn't do.",
+        "Item 2 is filtered out and never reaches Select.",
+        "Select can't run before Where provides items.",
+        null
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-004",
+      "topic": "linq",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A repository method returns `IEnumerable<Order>` as `return db.Orders;`. A caller writes `repo.GetAll().Where(o => o.Id == id).FirstOrDefault()`. What happens?",
+      "options": [
+        "EF Core runs a query without a WHERE clause, streams every order into memory, and filters there",
+        "EF Core generates `SELECT TOP(1) ... WHERE Id = @id`",
+        "It throws because `IEnumerable` can't be filtered",
+        "EF Core caches the whole table and filters the cache"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The static type is `IEnumerable<Order>`, so `Where` binds to `Enumerable.Where` with a compiled delegate. EF Core only sees the bare DbSet and fetches all rows. Return `IQueryable<T>` deliberately, or better, expose specific methods such as `FindAsync(id)`.",
+      "optionNotes": [
+        null,
+        "That only happens when `Where` binds to `Queryable.Where`.",
+        "Filtering IEnumerable works fine, just in memory.",
+        "EF Core doesn't cache query results like that."
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-005",
+      "topic": "linq",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How does `Single()` differ from `First()`?",
+      "options": [
+        "`Single()` returns null when nothing matches",
+        "`Single()` throws if there are zero or more than one elements",
+        "`Single()` is faster because it stops at the first match",
+        "There is no difference"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`First()` returns the first element and throws only on an empty sequence. `Single()` asserts exactly one element and throws otherwise, so it must look past the first match. Use it when uniqueness is an invariant.",
+      "optionNotes": [
+        "That is `SingleOrDefault()` (when nothing matches).",
+        null,
+        "It must check for a second match, so it can't stop at the first.",
+        "Their behaviour differs when there are several matches."
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-006",
+      "topic": "linq",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Against EF Core and SQL Server, why is `db.Orders.Any(o => o.Status == Status.Pending)` preferred over `.Count(...) > 0`?",
+      "options": [
+        "`Count` isn't supported by EF Core",
+        "`Any` loads the rows first, so it's cached",
+        "`Count` always runs on the client",
+        "`Any` translates to `EXISTS`, which can stop at the first matching row"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`Any` becomes `EXISTS (SELECT 1 ...)`, which SQL Server can satisfy as soon as it finds one row. `COUNT(*)` must count every matching row. The same reasoning applies in memory: `Any()` stops at the first element.",
+      "optionNotes": [
+        "Count translates to COUNT(*).",
+        "Neither loads rows.",
+        "Count is translated to SQL.",
+        null
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-007",
+      "topic": "linq",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var source = new List<int> { 1, 2, 3, 4 };\nvar calls = 0;\nvar query = source.Where(n => { calls++; return true; });\nvar count = query.Count();\nvar first = query.First();\nConsole.WriteLine(calls);",
+      "codeLang": "csharp",
+      "options": [
+        "1",
+        "4",
+        "5",
+        "8"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Each terminal operator re-runs the deferred query. `Count()` evaluates the predicate for all 4 items; `First()` starts again and stops after the first match, adding 1. This is the multiple-enumeration problem; against a database it means two queries.",
+      "optionNotes": [
+        "Count() enumerates everything.",
+        "That ignores the second enumeration by First().",
+        null,
+        "First() stops at the first matching element."
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-008",
+      "topic": "linq",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these operators use deferred execution? (Select all that apply)",
+      "options": [
+        "`GroupBy`",
+        "`Count`",
+        "`Where`",
+        "`ToDictionary`"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "`GroupBy` and `Where` return a sequence that runs when enumerated (`GroupBy` buffers the source at that point). `Count` and `ToDictionary` return a value or materialized collection, so they execute immediately. `ToLookup` is the immediate counterpart of `GroupBy`.",
+      "optionNotes": [
+        null,
+        "Count returns a number, so it must run now.",
+        null,
+        "ToDictionary materializes immediately."
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-linq-009",
+      "topic": "linq",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In EF Core 10, a query's `Where` calls a C# helper method that can't be translated to SQL. What happens?",
+      "options": [
+        "EF Core silently loads the table and evaluates the helper in memory",
+        "EF Core throws `InvalidOperationException` saying the expression could not be translated",
+        "The helper is ignored and all rows are returned",
+        "SQL Server raises a syntax error"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Since EF Core 3.0, untranslatable expressions throw instead of silently switching to client evaluation (the final `Select` projection is the exception). Rewrite the filter with translatable constructs, or deliberately call `AsEnumerable()` after filtering what you can in SQL.",
+      "optionNotes": [
+        "That was EF Core 2.x behaviour and caused hidden performance problems.",
+        null,
+        "EF Core never drops part of a filter.",
+        "The error happens during translation, before any SQL is sent."
+      ],
+      "readMore": "/csharp/linq/"
+    },
+    {
+      "id": "csharp-delegates-events-001",
+      "topic": "delegates-events",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which built-in delegate type returns a value?",
+      "options": [
+        "`Action<T>`",
+        "`Func<T, TResult>`",
+        "`EventHandler`",
+        "`Action`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Func` delegates return the type given as their last type argument. `Action` delegates return `void`, and `EventHandler` is a void `(sender, args)` signature.",
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-002",
+      "topic": "delegates-events",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var actions = new List<Action>();\nfor (int i = 0; i < 3; i++)\n    actions.Add(() => Console.Write(i));\nforeach (var a in actions) a();",
+      "codeLang": "csharp",
+      "options": [
+        "012",
+        "222",
+        "333",
+        "Compile-time error"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A `for` loop has one `i` variable for the whole loop, and all three lambdas capture that same variable. By the time they run, the loop has finished with `i == 3`. `foreach` gets a fresh variable per iteration (C# 5+), so the same code with `foreach` prints 012.",
+      "optionNotes": [
+        "That's the foreach behaviour, or a for loop that copies i to a local first.",
+        "The loop exits only after i becomes 3.",
+        null,
+        "Capturing loop variables is legal."
+      ],
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-003",
+      "topic": "delegates-events",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "Func<int> f = () => 1;\nf += () => 2;\nConsole.WriteLine(f());",
+      "codeLang": "csharp",
+      "options": [
+        "2",
+        "1",
+        "3",
+        "Compile-time error"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Both delegates in the invocation list run in order, but a multicast delegate returns only the last one's result. To collect every result, loop over `GetInvocationList()`.",
+      "optionNotes": [
+        null,
+        "The first result is discarded.",
+        "Results aren't combined.",
+        "Combining Func delegates with += is allowed."
+      ],
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-004",
+      "topic": "delegates-events",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Outside the declaring class, what can you NOT do with a public `event`?",
+      "options": [
+        "Subscribe with `+=`",
+        "Unsubscribe with `-=`",
+        "Subscribe a lambda",
+        "Invoke it or replace all handlers with `=`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The `event` keyword limits outside code to adding and removing handlers. Only the declaring class can raise the event or reset its invocation list, which protects other subscribers. A public delegate field has no such protection.",
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-005",
+      "topic": "delegates-events",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "Action m = () => Console.Write(\"A\");\nm += () => Console.Write(\"B\");\nm -= () => Console.Write(\"A\");\nm();",
+      "codeLang": "csharp",
+      "options": [
+        "B",
+        "AB",
+        "A",
+        "Nothing"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Removal matches delegates by method and target. The lambda in the `-=` line compiles to a different method from the first lambda, so nothing is removed. Keep a reference to the handler (or use a named method) when you need to unsubscribe.",
+      "optionNotes": [
+        "This would print only if the removal matched the first handler.",
+        null,
+        "The B handler was added and not removed.",
+        "Both handlers are still subscribed."
+      ],
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-006",
+      "topic": "delegates-events",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What happens when this runs?",
+      "code": "Action a = () => Console.Write(\"1\");\na += () => throw new InvalidOperationException(\"boom\");\na += () => Console.Write(\"3\");\ntry { a(); }\ncatch (Exception ex) { Console.Write($\" caught {ex.Message}\"); }",
+      "codeLang": "csharp",
+      "options": [
+        "Prints `13 caught boom`",
+        "Prints `13` and the exception is swallowed",
+        "Throws `AggregateException` after all three handlers run",
+        "Prints `1 caught boom`; the third handler never runs"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Handlers run synchronously in order. When the second throws, invocation stops and the exception propagates to the caller, so the third handler never runs. To isolate failures, iterate `GetInvocationList()` with try/catch around each call.",
+      "optionNotes": [
+        "Invocation stops at the first exception.",
+        "Exceptions aren't swallowed.",
+        "Multicast invocation doesn't aggregate exceptions.",
+        null
+      ],
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-007",
+      "topic": "delegates-events",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "int counter = 0;\nFunc<int> increment = () => ++counter;\nincrement();\nincrement();\nConsole.WriteLine(counter);",
+      "codeLang": "csharp",
+      "options": [
+        "0",
+        "1",
+        "2",
+        "Compile-time error: captured variables are read-only"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Closures capture variables, not values. The compiler moves `counter` into a display class shared by the method and the lambda, so the lambda's increments are visible to the outer code.",
+      "optionNotes": [
+        "That would be true if the lambda captured a copy.",
+        "Each call increments the same variable.",
+        null,
+        "Lambdas can modify captured locals (unlike Java)."
+      ],
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-008",
+      "topic": "delegates-events",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about local functions are true? (Select all that apply)",
+      "options": [
+        "They must be declared above the code that calls them",
+        "They can call themselves recursively without extra setup",
+        "They cannot capture local variables",
+        "When called directly, they don't need a delegate allocation"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "Local functions are real methods: they can be recursive, generic and declared anywhere in the enclosing method. Calling one directly needs no delegate, and captured state can live in a struct. They can capture locals unless marked `static`.",
+      "optionNotes": [
+        "They can be declared after the code that uses them.",
+        null,
+        "They can capture, unless declared `static`.",
+        null
+      ],
+      "readMore": "/csharp/delegates-events/"
+    },
+    {
+      "id": "csharp-delegates-events-009",
+      "topic": "delegates-events",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why raise an event with `PriceChanged?.Invoke(this, e)`?",
+      "options": [
+        "It avoids a `NullReferenceException` when there are no subscribers, reading the field only once",
+        "It runs subscribers in parallel",
+        "It makes handlers run asynchronously",
+        "It removes subscribers that throw"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "An event with no subscribers is null. The null-conditional operator reads the delegate once into a temporary, so another thread unsubscribing between the check and the call can't cause a null reference.",
+      "optionNotes": [
+        null,
+        "Handlers still run sequentially.",
+        "Invocation is synchronous.",
+        "Exceptions still propagate and nothing is removed."
+      ],
+      "readMore": "/csharp/delegates-events/"
     }
   ]
 }

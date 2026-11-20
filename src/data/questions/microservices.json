@@ -1,0 +1,1839 @@
+{
+  "section": "microservices",
+  "version": 1,
+  "questions": [
+    {
+      "id": "microservices-monolith-vs-microservices-001",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which statement best defines a microservice?",
+      "options": [
+        "A service with fewer than about 1,000 lines of code",
+        "An independently deployable service that owns one business capability and its data",
+        "Any service that exposes its API over gRPC instead of REST",
+        "A folder inside a monolith that groups related controllers"
+      ],
+      "answer": [1],
+      "explanation": "The defining traits are independent deployability and ownership of a business capability together with its data. Size, protocol and folder layout do not make something a microservice.",
+      "optionNotes": [
+        "Size is not the criterion; a tiny service sharing tables with others is still coupled.",
+        null,
+        "Protocol choice is unrelated to the architectural style.",
+        "That is code organisation within one deployable, not a separately deployed service."
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+    {
+      "id": "microservices-monolith-vs-microservices-002",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the strangler fig pattern?",
+      "options": [
+        "Gradually routing capabilities from a legacy system to new services until it can be retired",
+        "Rewriting the whole system in a new stack and switching over in a single release",
+        "Wrapping the legacy database in views so new services can read its tables directly",
+        "Running two copies of the monolith behind a load balancer to improve availability"
+      ],
+      "answer": [0],
+      "explanation": "A routing layer (gateway or reverse proxy) sits in front of the legacy system, and one slice of functionality at a time moves to a new service. Each step is small and reversible, unlike a big-bang rewrite.",
+      "optionNotes": [
+        null,
+        "That is the big-bang rewrite the pattern is designed to avoid.",
+        "Sharing the legacy tables couples new services to the old schema.",
+        "That is horizontal scaling, not migration."
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+    {
+      "id": "microservices-monolith-vs-microservices-003",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A team of six developers is starting a new product. The domain model changes weekly as they learn from customers. Which architecture is the most sensible starting point?",
+      "options": [
+        "One microservice per database entity, each with its own database",
+        "Serverless functions per endpoint sharing one database",
+        "A modular monolith with enforced module boundaries and data owned per module",
+        "Microservices that share one database to avoid data duplication"
+      ],
+      "answer": [2],
+      "explanation": "With a small team and an unstable domain, boundaries will move. Moving them inside one deployable is cheap; moving them across network calls and databases is expensive. A modular monolith keeps the option to extract services later.",
+      "optionNotes": [
+        "Entity-per-service creates chatty, tightly coupled services and large ops overhead.",
+        "A shared database plus many functions gives distribution costs without clear ownership.",
+        null,
+        "Sharing a database between services is the classic distributed monolith."
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+    {
+      "id": "microservices-monolith-vs-microservices-004",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Five services are deployed separately, but they must always be released together, all reference a shared `Common.Domain` library, and they read each other's tables. What is this called?",
+      "options": [
+        "A modular monolith",
+        "A service mesh",
+        "A bounded context",
+        "A distributed monolith"
+      ],
+      "answer": [3],
+      "explanation": "A distributed monolith has the network and operational costs of microservices but none of the independence: shared schema and shared domain code force lock-step releases.",
+      "optionNotes": [
+        "A modular monolith is one deployable with enforced internal boundaries, which is a healthy design.",
+        "A service mesh is infrastructure for service-to-service traffic.",
+        "A bounded context is a DDD modelling boundary, not a failure mode.",
+        null
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+    {
+      "id": "microservices-monolith-vs-microservices-005",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which observation most strongly suggests that a service boundary was drawn in the wrong place?",
+      "options": [
+        "The two services are written in different languages",
+        "Rendering one page needs many synchronous calls back and forth between the two services",
+        "Each service has its own CI/CD pipeline",
+        "One service publishes events that the other subscribes to"
+      ],
+      "answer": [1],
+      "explanation": "Chatty synchronous calls across a boundary mean the things that change and are used together were split apart. Good boundaries have high cohesion inside and few, coarse interactions outside.",
+      "optionNotes": [
+        "Different languages are allowed and say nothing about the boundary.",
+        null,
+        "Separate pipelines are what you want for independent deployment.",
+        "Event-based integration is a normal, loosely coupled pattern."
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+    {
+      "id": "microservices-monolith-vs-microservices-006",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these are good reasons to extract a capability from a monolith into its own service? (Select all that apply)",
+      "options": [
+        "Image processing needs 20 instances while the rest of the app needs 2",
+        "The checkout team is regularly blocked waiting for another team's release train",
+        "The code in that module is messy and hard to read",
+        "Card payments must be isolated for stricter PCI compliance scope"
+      ],
+      "answer": [0, 1, 3],
+      "explanation": "Independent scaling, independent release cadence and isolation for compliance or fault tolerance are real drivers. Messy code is a refactoring problem: extracting it just adds network calls around the mess.",
+      "optionNotes": [
+        null,
+        null,
+        "A messy module becomes a messy service; fix it with refactoring and module boundaries first.",
+        null
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+    {
+      "id": "microservices-monolith-vs-microservices-007",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Three teams all change the same Orders service. They suffer merge conflicts and must coordinate every release. Applying Conway's law, what is the best structural fix?",
+      "options": [
+        "Add a release-management team to coordinate deployments of the Orders service",
+        "Move the Orders data into a shared database so every team can work on its own copy",
+        "Introduce a service mesh so traffic between teams' code is encrypted",
+        "Split by business capability so each stream-aligned team owns its services end to end"
+      ],
+      "answer": [3],
+      "explanation": "Systems mirror the communication structure of the organisation. Aligning ownership (one team per capability, owning code, data and deployment) removes the coordination bottleneck. This is the inverse Conway manoeuvre.",
+      "optionNotes": [
+        "This formalises the bottleneck instead of removing it.",
+        "A shared database increases coupling.",
+        "A mesh handles network concerns, not ownership or release coupling.",
+        null
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+    {
+      "id": "microservices-monolith-vs-microservices-008",
+      "topic": "monolith-vs-microservices",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What distinguishes a modular monolith from a traditional monolith?",
+      "options": [
+        "It runs each module in a separate container",
+        "It has enforced internal module boundaries, with each module owning its own data",
+        "It communicates between modules only through a message broker",
+        "It must use a different database technology per module"
+      ],
+      "answer": [1],
+      "explanation": "A modular monolith is still one deployable, but modules expose narrow contracts and own their tables or schema. That gives clear ownership without the costs of distribution.",
+      "optionNotes": [
+        "Separate containers would make it a distributed system.",
+        null,
+        "Modules usually call each other in-process; a broker is optional.",
+        "Polyglot persistence is not required."
+      ],
+      "readMore": "/microservices/monolith-vs-microservices/"
+    },
+
+    {
+      "id": "microservices-communication-patterns-001",
+      "topic": "communication-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which of these message names describes an event rather than a command?",
+      "options": ["ChargePayment", "SendWelcomeEmail", "OrderPlaced", "ReserveStock"],
+      "answer": [2],
+      "explanation": "Events state facts that already happened and are named in the past tense. Commands ask a specific handler to do something and use imperative names.",
+      "optionNotes": [
+        "Imperative: a command to the payment service.",
+        "Imperative: a command to the email service.",
+        null,
+        "Imperative: a command to inventory."
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+    {
+      "id": "microservices-communication-patterns-002",
+      "topic": "communication-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main drawback of a chain of synchronous HTTP calls between services?",
+      "options": [
+        "HTTP cannot carry JSON payloads larger than 64 KB",
+        "All services in the chain must be available at the same time, so failures cascade",
+        "Synchronous calls cannot be authenticated",
+        "Each call must open a new TCP connection"
+      ],
+      "answer": [1],
+      "explanation": "Synchronous calls create temporal coupling: if any service in the chain is down or slow, the whole request fails or slows. Availability of the chain is roughly the product of each service's availability.",
+      "optionNotes": [
+        "There is no such limit.",
+        null,
+        "Synchronous calls are routinely authenticated with tokens or mTLS.",
+        "HttpClient pools and reuses connections."
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+    {
+      "id": "microservices-communication-patterns-003",
+      "topic": "communication-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A request passes synchronously through five services, each with 99.9% availability. Roughly what availability can the end-to-end request expect?",
+      "options": ["99.9%", "99.5%", "99.0%", "95%"],
+      "answer": [1],
+      "explanation": "Availabilities multiply for a serial chain: 0.999^5 ≈ 0.995, so about 99.5%. That is roughly five times the downtime of a single service.",
+      "optionNotes": [
+        "That ignores that any of the five can fail.",
+        null,
+        "That would correspond to ten services at 99.9%.",
+        "Far too pessimistic for these numbers."
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+    {
+      "id": "microservices-communication-patterns-004",
+      "topic": "communication-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The Orders service needs the Payments service to charge a card. Exactly one handler should process it, and it must survive Payments being down for a few minutes. What fits best?",
+      "options": [
+        "Publish a `PaymentCharged` event to a topic",
+        "Call Payments synchronously with a 5-minute timeout",
+        "Write the charge request into the Payments database directly",
+        "Send a `ChargePayment` command to the Payments queue"
+      ],
+      "answer": [3],
+      "explanation": "A command sent to a queue has one logical receiver and waits durably until Payments is back. An event would announce something that has not happened yet, and a long synchronous timeout ties up resources.",
+      "optionNotes": [
+        "Wrong tense and wrong intent: the charge has not happened.",
+        "A long timeout holds threads and still fails if Payments stays down.",
+        "Writing another service's database breaks ownership.",
+        null
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+    {
+      "id": "microservices-communication-patterns-005",
+      "topic": "communication-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The Angular web app needs rich order pages, while the mobile app needs small payloads and different aggregation. Which pattern addresses this directly?",
+      "options": [
+        "Backend for Frontend: a dedicated API layer per client type",
+        "A service mesh with traffic splitting",
+        "Database per service",
+        "Event sourcing for the order aggregate"
+      ],
+      "answer": [0],
+      "explanation": "A BFF shapes and aggregates responses for one client type and is usually owned by that client's team, so web and mobile can evolve independently.",
+      "optionNotes": [
+        null,
+        "A mesh handles internal traffic, not client-specific response shaping.",
+        "That is about data ownership, not client APIs.",
+        "Event sourcing changes how state is stored, not what clients receive."
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+    {
+      "id": "microservices-communication-patterns-006",
+      "topic": "communication-patterns",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which responsibilities belong in an API gateway? (Select all that apply)",
+      "options": [
+        "TLS termination and routing to backend services",
+        "Calculating order discounts and tax",
+        "Authentication and rate limiting",
+        "Orchestrating a multi-step payment saga"
+      ],
+      "answer": [0, 2],
+      "explanation": "Gateways handle cross-cutting edge concerns: routing, TLS, authentication, rate limiting, caching and light aggregation. Business rules and long-running workflows belong in services, otherwise the gateway becomes a new monolith.",
+      "optionNotes": [
+        null,
+        "Pricing is domain logic owned by a service.",
+        null,
+        "Sagas belong in a service (orchestrator), not the edge proxy."
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+    {
+      "id": "microservices-communication-patterns-007",
+      "topic": "communication-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does a service mesh primarily provide?",
+      "options": [
+        "A public entry point with a developer portal and API subscriptions",
+        "Service-to-service mTLS, retries, timeouts, traffic shifting and telemetry without application code changes",
+        "A message broker for asynchronous events between services",
+        "Automatic database replication between services"
+      ],
+      "answer": [1],
+      "explanation": "A mesh runs proxies next to services, managed by a control plane, to handle east-west traffic concerns consistently across languages. Gateways such as Azure API Management handle north-south traffic.",
+      "optionNotes": [
+        "That describes an API management product.",
+        null,
+        "A mesh proxies network calls; it is not a broker.",
+        "Meshes do not replicate data."
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+    {
+      "id": "microservices-communication-patterns-008",
+      "topic": "communication-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why can't an Angular app call a standard gRPC service directly from the browser?",
+      "options": [
+        "Browsers cannot send binary request bodies",
+        "gRPC requires UDP, which browsers do not expose",
+        "Browser APIs don't give the low-level HTTP/2 control gRPC needs, so gRPC-Web or JSON transcoding is used",
+        "gRPC services can only be called from .NET clients"
+      ],
+      "answer": [2],
+      "explanation": "gRPC relies on HTTP/2 features such as trailers that browser fetch APIs do not expose. gRPC-Web (with a proxy or ASP.NET Core middleware) or JSON transcoding bridges the gap.",
+      "optionNotes": [
+        "Browsers can send binary bodies with fetch.",
+        "gRPC runs over HTTP/2 on TCP.",
+        null,
+        "gRPC is polyglot with clients in many languages."
+      ],
+      "readMore": "/microservices/communication-patterns/"
+    },
+
+    {
+      "id": "microservices-message-brokers-001",
+      "topic": "message-brokers",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In RabbitMQ, where does a producer publish a message?",
+      "options": [
+        "Directly to a consumer",
+        "To an exchange, with a routing key",
+        "To a partition chosen by the key hash",
+        "To a subscription"
+      ],
+      "answer": [1],
+      "explanation": "Producers publish to an exchange; bindings route the message to one or more queues based on the routing key or headers. Consumers read from queues.",
+      "optionNotes": [
+        "Consumers read from queues; producers never address them directly.",
+        null,
+        "Partitions are a Kafka concept.",
+        "Subscriptions are an Azure Service Bus topic concept."
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-002",
+      "topic": "message-brokers",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What ordering guarantee does Kafka provide?",
+      "options": [
+        "Global order across all partitions of a topic",
+        "No ordering guarantee at all",
+        "Order per consumer group",
+        "Order within a single partition"
+      ],
+      "answer": [3],
+      "explanation": "Each partition is an ordered, append-only log. Records with the same key go to the same partition, so per-key order is preserved; there is no order across partitions.",
+      "optionNotes": [
+        "Kafka never orders across partitions.",
+        "Order is guaranteed within a partition.",
+        "Groups share partitions; ordering comes from the partition, not the group.",
+        null
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-003",
+      "topic": "message-brokers",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A queue is bound to a RabbitMQ topic exchange with the binding key `order.*.placed`. Which routing key reaches the queue?",
+      "options": ["order.eu.placed", "order.eu.retail.placed", "order.placed", "orders.eu.placed"],
+      "answer": [0],
+      "explanation": "In topic exchanges `*` matches exactly one dot-separated word and `#` matches zero or more. Only `order.eu.placed` has exactly one word between `order` and `placed`.",
+      "optionNotes": [
+        null,
+        "Two words in the middle; that needs `order.#.placed`.",
+        "Zero words in the middle; `*` needs exactly one.",
+        "`orders` does not match the literal word `order`."
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-004",
+      "topic": "message-brokers",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A Kafka topic has 6 partitions. You start 10 consumers in the same consumer group. What happens?",
+      "options": [
+        "All 10 consumers share each partition round-robin",
+        "Kafka automatically creates 4 more partitions",
+        "6 consumers each get one partition and 4 stay idle",
+        "The group fails to start until consumers equal partitions"
+      ],
+      "answer": [2],
+      "explanation": "Within a group, each partition is assigned to exactly one consumer. Extra consumers are idle standbys, so the partition count caps parallelism for that group.",
+      "optionNotes": [
+        "A partition is never split between consumers of the same group.",
+        "Partition counts only change when an admin changes them.",
+        null,
+        "The group starts fine; extra members just get no partitions."
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-005",
+      "topic": "message-brokers",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Billing and Analytics both need to receive every record written to a Kafka topic. How do you configure them?",
+      "options": [
+        "Put both in the same consumer group",
+        "Give each application its own consumer group",
+        "Create a copy of the topic for each application",
+        "Use a single consumer that forwards records over HTTP"
+      ],
+      "answer": [1],
+      "explanation": "Each consumer group receives every record and tracks its own offsets. Consumers in the same group split the partitions, so each record would go to only one of them.",
+      "optionNotes": [
+        "Records would be split between Billing and Analytics.",
+        null,
+        "Unnecessary: multiple groups read the same log independently.",
+        "Adds coupling and a single point of failure."
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-006",
+      "topic": "message-brokers",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "On Azure Service Bus you need messages for the same order processed in order, while different orders are processed in parallel. Which feature do you use?",
+      "options": [
+        "Duplicate detection",
+        "Auto-forwarding",
+        "Scheduled messages",
+        "Sessions, with `SessionId` set to the order id"
+      ],
+      "answer": [3],
+      "explanation": "A session-enabled entity delivers all messages with the same `SessionId` in order to one receiver at a time, while other sessions are processed concurrently. The AWS equivalent is SQS FIFO with `MessageGroupId`.",
+      "optionNotes": [
+        "Duplicate detection drops repeated MessageIds; it does not order.",
+        "Auto-forwarding chains entities together.",
+        "Scheduling delays delivery; it does not group messages.",
+        null
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-007",
+      "topic": "message-brokers",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about Kafka, compared with Azure Service Bus queues, are true? (Select all that apply)",
+      "options": [
+        "Records stay in the log after consumption until retention expires",
+        "Consumers can reset offsets to replay past records",
+        "Each record is dead-lettered automatically after a maximum delivery count",
+        "Parallelism within one consumer group is capped by the partition count"
+      ],
+      "answer": [0, 1, 3],
+      "explanation": "Kafka is a retained log: consumption does not delete data, offsets can be rewound, and partitions bound group parallelism. It has no built-in per-message delivery count or DLQ; retry and dead-letter topics are application patterns.",
+      "optionNotes": [
+        null,
+        null,
+        "That is a Service Bus feature; Kafka has no per-message delivery count.",
+        null
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-008",
+      "topic": "message-brokers",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does log compaction do on a Kafka topic?",
+      "options": [
+        "Compresses record batches with gzip to save disk space",
+        "Retains at least the latest record for each key and removes older records for that key",
+        "Merges small partitions into larger ones",
+        "Deletes all records once every consumer group has read them"
+      ],
+      "answer": [1],
+      "explanation": "With `cleanup.policy=compact`, Kafka keeps the most recent value per key (a null value is a tombstone that eventually deletes the key). The topic becomes a changelog of current state.",
+      "optionNotes": [
+        "Compression is a separate producer/topic setting.",
+        null,
+        "Partitions are never merged.",
+        "Kafka does not track consumption for deletion; retention is time/size based."
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+    {
+      "id": "microservices-message-brokers-009",
+      "topic": "message-brokers",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which AWS combination is the closest equivalent of an Azure Service Bus topic with several subscriptions?",
+      "options": [
+        "Amazon Kinesis Data Streams with shards",
+        "An S3 bucket with event notifications",
+        "An SNS topic with SQS queues subscribed to it",
+        "AWS Step Functions"
+      ],
+      "answer": [2],
+      "explanation": "SNS fans out each message to its subscribers, and SQS queues give each consumer durable, independent delivery, matching topic + subscriptions. Kinesis is closer to Event Hubs.",
+      "optionNotes": [
+        "Kinesis is a streaming log, closer to Event Hubs or Kafka.",
+        "S3 notifications are storage events, not a general broker.",
+        null,
+        "Step Functions is workflow orchestration."
+      ],
+      "readMore": "/microservices/message-brokers/"
+    },
+
+    {
+      "id": "microservices-delivery-guarantees-001",
+      "topic": "delivery-guarantees",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A consumer acknowledges a message only after it has finished processing it, and the broker redelivers unacknowledged messages. Which delivery semantics is this?",
+      "options": ["At-most-once", "At-least-once", "Exactly-once", "Best-effort once"],
+      "answer": [1],
+      "explanation": "Acknowledging after processing means nothing is lost, but a crash between processing and ack causes redelivery, so duplicates are possible: at-least-once.",
+      "optionNotes": [
+        "At-most-once acks before processing and can lose messages.",
+        null,
+        "Duplicates are still possible, so it is not exactly-once.",
+        "Not a standard delivery semantic."
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-002",
+      "topic": "delivery-guarantees",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does it mean for a message handler to be idempotent?",
+      "options": [
+        "It processes messages in the order they were sent",
+        "It never throws exceptions",
+        "It runs on a single thread",
+        "Processing the same message twice has the same effect as processing it once"
+      ],
+      "answer": [3],
+      "explanation": "Idempotency makes duplicates harmless, which is essential because brokers deliver at least once.",
+      "optionNotes": [
+        "That is ordering, a separate concern.",
+        "Exceptions are unrelated to idempotency.",
+        "Threading is unrelated.",
+        null
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-003",
+      "topic": "delivery-guarantees",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A consumer commits its database transaction, then crashes before completing the Azure Service Bus message (peek-lock). What happens next?",
+      "options": [
+        "The message is lost because the lock was taken",
+        "The message is moved to the dead-letter queue immediately",
+        "The lock expires and the message is delivered again, so the handler must detect the duplicate",
+        "Service Bus rolls back the consumer's database transaction"
+      ],
+      "answer": [2],
+      "explanation": "In peek-lock mode an uncompleted message becomes available again after the lock expires, with its delivery count incremented. The work was already committed, so the handler must be idempotent.",
+      "optionNotes": [
+        "Peek-lock exists precisely so a crash doesn't lose the message.",
+        "Dead-lettering happens only after MaxDeliveryCount or explicitly.",
+        null,
+        "The broker cannot touch your database transaction."
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-004",
+      "topic": "delivery-guarantees",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why must the insert into a `ProcessedMessages` dedup table happen in the same database transaction as the business change?",
+      "options": [
+        "Otherwise a crash between them can either lose the message's effect or let a duplicate through",
+        "Because SQL Server does not allow two transactions per connection",
+        "To make the broker deliver messages in order",
+        "Because the broker reads the dedup table to decide what to redeliver"
+      ],
+      "answer": [0],
+      "explanation": "If the id is recorded but the change is not, the retry is skipped and the effect is lost. If the change is saved but the id is not, the retry applies it again. One transaction makes both atomic.",
+      "optionNotes": [
+        null,
+        "Unrelated; the issue is atomicity across a crash.",
+        "Dedup does not affect ordering.",
+        "The broker knows nothing about your tables."
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-005",
+      "topic": "delivery-guarantees",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A producer sets `MessageId = Guid.NewGuid().ToString()` on every send attempt, including retries after a timeout. Duplicate detection is enabled on the queue. What is the effect?",
+      "code": "for (var attempt = 1; attempt <= 3; attempt++)\n{\n    var msg = new ServiceBusMessage(body) { MessageId = Guid.NewGuid().ToString() };\n    try { await sender.SendMessageAsync(msg); break; }\n    catch (ServiceBusException) when (attempt < 3) { }\n}",
+      "codeLang": "csharp",
+      "options": [
+        "Duplicate detection still drops retries because the body is identical",
+        "Retries of a send that actually succeeded get new ids, so duplicate detection cannot catch them",
+        "The second send fails with a duplicate key error",
+        "Service Bus rejects messages whose MessageId is a GUID"
+      ],
+      "answer": [1],
+      "explanation": "Duplicate detection compares MessageId values within a time window, not bodies. The id must be stable for the logical message (for example generated once and stored in the outbox) for dedup to work.",
+      "optionNotes": [
+        "Bodies are not compared.",
+        null,
+        "No error is raised; duplicates would simply be accepted.",
+        "GUIDs are fine as long as they are stable across retries."
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-006",
+      "topic": "delivery-guarantees",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Kafka consumer uses the default `enable.auto.commit=true` with the default offset store and takes several seconds per record. What risk does this create?",
+      "options": [
+        "Records may be processed out of order within a partition",
+        "The consumer can never be rebalanced",
+        "Offsets can be committed for records that were not yet processed, so a crash can lose them",
+        "Auto-commit forces exactly-once semantics, which slows throughput"
+      ],
+      "answer": [2],
+      "explanation": "Auto-commit periodically commits the offsets of records returned by poll, regardless of whether processing finished. Disable it and commit after processing, or disable the automatic offset store and call `StoreOffset` after each record.",
+      "optionNotes": [
+        "Order within a partition is still preserved for a single consumer.",
+        "Rebalances still happen.",
+        null,
+        "Auto-commit gives no exactly-once guarantee."
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-007",
+      "topic": "delivery-guarantees",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which failures should usually be dead-lettered immediately instead of retried? (Select all that apply)",
+      "options": [
+        "The message body cannot be deserialised into the expected contract",
+        "SQL Server reports a deadlock (error 1205)",
+        "The message fails business validation, such as an unknown currency code",
+        "A downstream HTTP dependency returns 503 Service Unavailable"
+      ],
+      "answer": [0, 2],
+      "explanation": "Deserialisation and validation errors are permanent: retrying gives the same result and only delays the alert. Deadlocks and 503s are transient and usually succeed on retry with backoff.",
+      "optionNotes": [
+        null,
+        "Deadlocks are transient; a retry usually succeeds.",
+        null,
+        "A 503 is typically transient; retry with backoff."
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-008",
+      "topic": "delivery-guarantees",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Events for the same order sometimes arrive out of order at a projection after retries. Which consumer-side technique protects the read model?",
+      "options": [
+        "Increase the prefetch count",
+        "Store a version per entity and ignore events whose version is not newer",
+        "Switch the consumer to receive-and-delete mode",
+        "Process all events on a single thread for the whole system"
+      ],
+      "answer": [1],
+      "explanation": "Including a sequence number or version in events lets the consumer apply only newer changes (`WHERE Version < @newVersion`), making it tolerant to reordering and duplicates.",
+      "optionNotes": [
+        "Prefetch affects throughput, not ordering correctness.",
+        null,
+        "That trades reordering for possible message loss.",
+        "Serialising everything kills throughput and still doesn't fix retries from DLQ."
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+    {
+      "id": "microservices-delivery-guarantees-009",
+      "topic": "delivery-guarantees",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Service Bus handler calls `AbandonMessageAsync` on transient errors, expecting the message to come back after a delay. Under a 2-minute dependency outage, what actually happens?",
+      "options": [
+        "The message is redelivered after an exponential backoff chosen by Service Bus",
+        "The message is deferred until the handler calls `ReceiveDeferredMessageAsync`",
+        "The message is removed from the queue to protect the dependency",
+        "The message is redelivered almost immediately, reaches MaxDeliveryCount within seconds and is dead-lettered"
+      ],
+      "answer": [3],
+      "explanation": "Abandon releases the lock right away and increments the delivery count; there is no built-in backoff. For delays, schedule a copy with `ScheduledEnqueueTime`, use library redelivery (MassTransit, NServiceBus) or a retry pipeline in the handler.",
+      "optionNotes": [
+        "Service Bus has no automatic backoff for abandoned messages.",
+        "That describes deferral, a different operation.",
+        "Abandon never deletes the message.",
+        null
+      ],
+      "readMore": "/microservices/delivery-guarantees/"
+    },
+
+    {
+      "id": "microservices-reliability-patterns-001",
+      "topic": "reliability-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does a circuit breaker do while it is in the Open state?",
+      "options": [
+        "Retries every call three times",
+        "Fails calls fast without contacting the dependency",
+        "Queues calls until the dependency recovers",
+        "Routes calls to a random healthy instance"
+      ],
+      "answer": [1],
+      "explanation": "Open means the failure threshold was crossed; calls are rejected immediately (in Polly, with `BrokenCircuitException`) for the break duration, protecting both caller and dependency. After that a half-open trial call decides whether to close.",
+      "optionNotes": [
+        "Retrying is a separate strategy.",
+        null,
+        "A breaker rejects calls; it does not queue them.",
+        "That is load balancing."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-002",
+      "topic": "reliability-patterns",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which problem does the transactional outbox pattern solve?",
+      "options": [
+        "Atomically saving a database change and publishing the corresponding message",
+        "Ordering messages across Kafka partitions",
+        "Compressing large message payloads",
+        "Load balancing consumers across queues"
+      ],
+      "answer": [0],
+      "explanation": "The dual-write problem: you cannot commit to a database and a broker atomically. Storing the message in an outbox table in the same transaction, then relaying it, ensures it is published if and only if the change committed.",
+      "optionNotes": [
+        null,
+        "Cross-partition ordering is not provided by an outbox.",
+        "That is the claim-check pattern.",
+        "Consumer balancing is the broker's job."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-003",
+      "topic": "reliability-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An outbox relay publishes a message, then crashes before marking the outbox row as sent. What happens and what must the system have?",
+      "options": [
+        "The message is lost; the relay must use a distributed transaction",
+        "The database rolls back the original business change",
+        "The relay publishes it again after restart, so consumers must be idempotent",
+        "The broker detects the crash and deletes the first copy"
+      ],
+      "answer": [2],
+      "explanation": "The outbox guarantees at-least-once publishing. The row is still unsent, so it is published again. Consumers need an inbox or other idempotency (and broker duplicate detection can help if the MessageId is stable).",
+      "optionNotes": [
+        "The row is still there, so nothing is lost.",
+        "The business change committed long before.",
+        null,
+        "Brokers do not retract published messages."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-004",
+      "topic": "reliability-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an order saga, payment was captured but shipping then fails permanently. What is the appropriate compensating action for the payment step?",
+      "options": [
+        "Roll back the payment database transaction",
+        "Delete the payment record",
+        "Do nothing; compensations only apply to inventory",
+        "Issue a refund for the captured amount"
+      ],
+      "answer": [3],
+      "explanation": "Saga steps are already committed and may be visible externally, so they are undone by a forward business action that semantically reverses them, such as a refund.",
+      "optionNotes": [
+        "The local transaction committed long ago; there is nothing to roll back.",
+        "Deleting history hides the money movement and does not return funds.",
+        "Every completed step before the failure needs a compensation.",
+        null
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-005",
+      "topic": "reliability-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A checkout flow has six steps, needs timeouts (cancel if payment is not confirmed in 15 minutes) and the business wants to see each order's current state. Which saga style fits best?",
+      "options": [
+        "Orchestration with a persisted state machine",
+        "Choreography where each service reacts to events",
+        "A distributed transaction with two-phase commit",
+        "A single synchronous HTTP call chain"
+      ],
+      "answer": [0],
+      "explanation": "Many steps, timeouts and a need for visible status favour an orchestrator (MassTransit or NServiceBus saga, Durable Functions; AWS Step Functions), which keeps the flow explicit in one place.",
+      "optionNotes": [
+        null,
+        "Choreography spreads the flow across services, making status and timeouts hard to manage at six steps.",
+        "2PC is generally unavailable across brokers and cloud databases and couples availability.",
+        "A sync chain cannot wait 15 minutes and fails as a whole."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-006",
+      "topic": "reliability-patterns",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the purpose of a bulkhead?",
+      "options": [
+        "Encrypting traffic between services",
+        "Retrying failed calls with exponential backoff",
+        "Limiting the resources one dependency can consume so its failure cannot exhaust everything",
+        "Caching responses from slow services"
+      ],
+      "answer": [2],
+      "explanation": "Like watertight compartments in a ship, a bulkhead caps concurrency (or uses separate pools) per dependency, so a slow reporting service cannot take all the threads that checkout needs. In Polly v8 it is the concurrency limiter.",
+      "optionNotes": [
+        "That is mTLS.",
+        "That is a retry strategy.",
+        null,
+        "That is caching or a fallback."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-007",
+      "topic": "reliability-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A gateway, an API and a downstream client each make up to 3 attempts on failure. The bottom service is down. How many calls can one user request generate against the bottom service?",
+      "options": ["3", "9", "27", "6"],
+      "answer": [2],
+      "explanation": "Attempts multiply across layers: 3 × 3 × 3 = 27. This is how retry storms form. Retry at one layer, use backoff with jitter, retry budgets and circuit breakers.",
+      "optionNotes": [
+        "That counts only one layer.",
+        "That counts only two layers.",
+        null,
+        "Attempts multiply, they don't add."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-008",
+      "topic": "reliability-patterns",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about sagas are true? (Select all that apply)",
+      "options": [
+        "They provide isolation, so other requests never see intermediate state",
+        "Compensating actions should be idempotent and retryable",
+        "After the pivot transaction the saga can only move forward",
+        "They require a two-phase commit coordinator"
+      ],
+      "answer": [1, 2],
+      "explanation": "Sagas give atomicity through compensation but no isolation: intermediate states are visible, which you mitigate with pending states and rereads. Compensations must survive retries, and steps after the pivot are retried until they succeed instead of being undone.",
+      "optionNotes": [
+        "Sagas lack isolation; that is their main trade-off.",
+        null,
+        null,
+        "Sagas exist precisely to avoid 2PC."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+    {
+      "id": "microservices-reliability-patterns-009",
+      "topic": "reliability-patterns",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why does a typical resilience pipeline put a per-attempt timeout inside the retry strategy, in addition to a total timeout outside it?",
+      "code": "pipeline\n    .AddTimeout(TimeSpan.FromSeconds(10))   // total\n    .AddRetry(retryOptions)\n    .AddCircuitBreaker(breakerOptions)\n    .AddTimeout(TimeSpan.FromSeconds(2));   // per attempt",
+      "codeLang": "csharp",
+      "options": [
+        "So one hung attempt is cut off and retried instead of consuming the whole time budget",
+        "Because Polly requires exactly two timeout strategies",
+        "So that the circuit breaker never opens",
+        "To make the retries run in parallel"
+      ],
+      "answer": [0],
+      "explanation": "Strategies added first are outermost. The inner timeout bounds each attempt so a stuck call becomes a retryable timeout; the outer timeout bounds the whole operation including retries and delays.",
+      "optionNotes": [
+        null,
+        "Polly has no such rule.",
+        "Timeouts count as failures and can contribute to opening the breaker.",
+        "Retries are sequential; hedging is a different strategy."
+      ],
+      "readMore": "/microservices/reliability-patterns/"
+    },
+
+    {
+      "id": "microservices-event-driven-design-001",
+      "topic": "event-driven-design",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the key difference between a domain event and an integration event?",
+      "options": [
+        "Domain events are always larger than integration events",
+        "Domain events stay inside one service; integration events are versioned contracts published to other services",
+        "Integration events are handled in the same database transaction as the change",
+        "Domain events must be sent through Kafka"
+      ],
+      "answer": [1],
+      "explanation": "Domain events are in-process notifications using rich domain types. Integration events cross service boundaries through a broker (typically via an outbox) and must be stable, versioned contracts.",
+      "optionNotes": [
+        "Size is not the distinction.",
+        null,
+        "That describes domain events; integration events are published after commit.",
+        "Domain events are usually dispatched in memory."
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+    {
+      "id": "microservices-event-driven-design-002",
+      "topic": "event-driven-design",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does CQRS stand for and mean?",
+      "options": [
+        "Command Queue Routing Service: a broker for commands",
+        "Cached Query Result Storage: caching all reads in Redis",
+        "Concurrent Query Replication System: replicating queries to read replicas",
+        "Command Query Responsibility Segregation: separate models for writes and reads"
+      ],
+      "answer": [3],
+      "explanation": "CQRS separates the write model (commands, validation, aggregates) from read models shaped for queries. It does not require event sourcing or separate databases.",
+      "optionNotes": [
+        "Not a real expansion.",
+        "Not a real expansion.",
+        "Not a real expansion.",
+        null
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+    {
+      "id": "microservices-event-driven-design-003",
+      "topic": "event-driven-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which change to a published integration event is backward compatible for existing consumers?",
+      "options": [
+        "Renaming `total` to `amount`",
+        "Changing `customerId` from an integer to a string",
+        "Adding a new optional field `salesChannel`",
+        "Removing the `currency` field"
+      ],
+      "answer": [2],
+      "explanation": "Tolerant readers ignore unknown fields, so adding an optional field is safe. Renames, type changes and removals break consumers that rely on the old shape.",
+      "optionNotes": [
+        "A rename is a removal plus an addition.",
+        "Deserialisation fails in existing consumers.",
+        null,
+        "Consumers that read currency break."
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+    {
+      "id": "microservices-event-driven-design-004",
+      "topic": "event-driven-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Orders publishes thin events that contain only `orderId`. What is the main downside?",
+      "options": [
+        "Consumers must call Orders back for details, reintroducing synchronous coupling",
+        "Thin events cannot be partitioned by key",
+        "Thin events are not allowed by the CloudEvents specification",
+        "Thin events cannot be dead-lettered"
+      ],
+      "answer": [0],
+      "explanation": "With notification-style events, consumers need the producer to be available to fetch data and may read newer state than the event describes. Event-carried state transfer avoids this at the cost of larger contracts.",
+      "optionNotes": [
+        null,
+        "The id works fine as a partition key.",
+        "CloudEvents does not mandate payload size.",
+        "Any message can be dead-lettered."
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+    {
+      "id": "microservices-event-driven-design-005",
+      "topic": "event-driven-design",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A user creates an item, is redirected to the list page, and the item is missing; a refresh a second later shows it. The list reads from a projection. What is the best fix?",
+      "options": [
+        "Make the projection synchronous inside the command's HTTP request across services",
+        "Show the created item from the command response (or a pending state) until the read model catches up",
+        "Disable caching in the browser",
+        "Increase the database isolation level to Serializable"
+      ],
+      "answer": [1],
+      "explanation": "The read model is eventually consistent. Handle it in the UX: optimistic insertion, a pending state confirmed via polling or SignalR, or read-your-writes for the creating user.",
+      "optionNotes": [
+        "This couples services again and defeats the purpose of the read model.",
+        null,
+        "Browser caching is not the cause.",
+        "Isolation levels don't affect asynchronous projection lag."
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+    {
+      "id": "microservices-event-driven-design-006",
+      "topic": "event-driven-design",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "In an event-sourced system, a handler loads stream `order-42` at version 3 and appends `OrderSubmitted` with expected version 3, but another writer already appended event 4. What happens?",
+      "options": [
+        "The event is appended as version 5 automatically",
+        "The other writer's event is overwritten",
+        "The event store merges both events into one",
+        "The append fails with a concurrency conflict; the handler reloads and retries or rejects"
+      ],
+      "answer": [3],
+      "explanation": "Appending with an expected version is optimistic concurrency: a mismatch means the decision was based on stale state, so the store rejects it. The handler reloads the stream and re-evaluates the command.",
+      "optionNotes": [
+        "That would apply a decision based on stale state.",
+        "Event stores are append-only; nothing is overwritten.",
+        "No merging happens automatically.",
+        null
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+    {
+      "id": "microservices-event-driven-design-007",
+      "topic": "event-driven-design",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A team changes `amount` in `PaymentCaptured` from rupees to paise without renaming it. Why is this the most dangerous kind of schema change?",
+      "options": [
+        "Consumers' deserialisation fails immediately",
+        "The schema registry rejects it automatically",
+        "Nothing fails, so consumers silently compute wrong values",
+        "Kafka refuses to store the larger numbers"
+      ],
+      "answer": [2],
+      "explanation": "A semantic change passes every structural check: same name, same type. Consumers keep running with values 100 times too large. Introduce a new field (`amountMinor`) or a new event version instead.",
+      "optionNotes": [
+        "The type is unchanged, so deserialisation succeeds.",
+        "Structural compatibility checks cannot see meaning.",
+        null,
+        "Kafka stores bytes; it does not care about values."
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+    {
+      "id": "microservices-event-driven-design-008",
+      "topic": "event-driven-design",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which are real costs of adopting event sourcing? (Select all that apply)",
+      "options": [
+        "Old event versions live forever, so schema changes need upcasting",
+        "Queries usually need projections instead of reading current state directly",
+        "It makes auditing changes impossible",
+        "Deleting personal data needs special techniques such as crypto-shredding"
+      ],
+      "answer": [0, 1, 3],
+      "explanation": "Event sourcing gives a complete audit trail, but its costs include permanent event schemas, projections for every query and careful handling of data-deletion requirements.",
+      "optionNotes": [
+        null,
+        null,
+        "The opposite: a full history is its main benefit.",
+        null
+      ],
+      "readMore": "/microservices/event-driven-design/"
+    },
+
+    {
+      "id": "microservices-dotnet-messaging-001",
+      "topic": "dotnet-messaging",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How should `ServiceBusClient` be registered in an ASP.NET Core app?",
+      "options": [
+        "As a singleton, because it owns the AMQP connection",
+        "As scoped, one per HTTP request",
+        "As transient, created for every message",
+        "It must not be registered; create it inside each controller action"
+      ],
+      "answer": [0],
+      "explanation": "The client manages the connection, and senders, receivers and processors created from it share it. Creating clients per request or message opens connections repeatedly and hurts performance.",
+      "optionNotes": [
+        null,
+        "A connection per request is wasteful.",
+        "A connection per message is worse still.",
+        "Same problem as transient, plus no disposal management."
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-002",
+      "topic": "dotnet-messaging",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which NuGet package is the current Azure Service Bus SDK for .NET?",
+      "options": [
+        "Microsoft.Azure.ServiceBus",
+        "WindowsAzure.ServiceBus",
+        "Azure.Messaging.ServiceBus",
+        "Microsoft.ServiceBus.Messaging"
+      ],
+      "answer": [2],
+      "explanation": "`Azure.Messaging.ServiceBus` is the current SDK (ServiceBusClient, ServiceBusProcessor, ServiceBusSessionProcessor). The older packages are deprecated.",
+      "optionNotes": [
+        "Deprecated predecessor of the current SDK.",
+        "Legacy .NET Framework package.",
+        null,
+        "Namespace of the legacy package, not the current SDK."
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-003",
+      "topic": "dotnet-messaging",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A `ServiceBusSessionProcessor` is configured with `MaxConcurrentSessions = 8` and `MaxConcurrentCallsPerSession = 1`. What does this achieve?",
+      "options": [
+        "Up to 8 messages from the same session are processed concurrently",
+        "Only 1 session is processed at a time, with 8 messages in parallel",
+        "Messages are processed in batches of 8",
+        "Up to 8 sessions are processed in parallel, each strictly one message at a time"
+      ],
+      "answer": [3],
+      "explanation": "Sessions (for example orders) run in parallel up to the session limit, while one call per session keeps processing in order within each session.",
+      "optionNotes": [
+        "Reversed: 8 is the number of sessions.",
+        "Reversed: 1 is the per-session limit.",
+        "These settings are not batch sizes.",
+        null
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-004",
+      "topic": "dotnet-messaging",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A MassTransit 8 consumer runs with `UseEntityFrameworkOutbox<BillingDbContext>` on its endpoint. It adds an invoice to the `DbContext` and calls `context.Publish(new InvoiceCreated(...))`. When is the event actually sent to the broker?",
+      "options": [
+        "Immediately when `Publish` is awaited, before the database commit",
+        "After the outbox filter saves changes and commits the transaction, by the outbox delivery",
+        "Only when the consumer calls `SaveChangesAsync` explicitly",
+        "Never; publishing is not allowed inside consumers using the outbox"
+      ],
+      "answer": [1],
+      "explanation": "The outbox filter opens a transaction, records inbox state, runs the consumer, then saves changes (including the outbox rows created by `Publish`) and commits. The messages are delivered after commit, so the event is never sent for a rolled-back change.",
+      "optionNotes": [
+        "That would be the dual-write problem the outbox prevents.",
+        null,
+        "The filter saves changes after Consume returns.",
+        "Publishing via the consume context is exactly how it is meant to be used."
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-005",
+      "topic": "dotnet-messaging",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What delivery semantics does this Kafka consumer loop provide?",
+      "code": "var config = new ConsumerConfig { GroupId = \"billing\", EnableAutoCommit = false, BootstrapServers = \"...\" };\nusing var consumer = new ConsumerBuilder<string, string>(config).Build();\nconsumer.Subscribe(\"orders\");\nwhile (!ct.IsCancellationRequested)\n{\n    var cr = consumer.Consume(ct);\n    await handler.HandleAsync(cr.Message.Value, ct);\n    consumer.Commit(cr);\n}",
+      "codeLang": "csharp",
+      "options": [
+        "At-most-once",
+        "Exactly-once end to end",
+        "At-least-once",
+        "No guarantee; records can be skipped on every rebalance"
+      ],
+      "answer": [2],
+      "explanation": "The offset is committed only after the handler finishes. A crash between handling and committing replays the record, so duplicates are possible but nothing is lost.",
+      "optionNotes": [
+        "At-most-once would commit before handling.",
+        "Side effects outside Kafka are not covered by Kafka transactions; duplicates remain possible.",
+        null,
+        "Uncommitted records are redelivered after a rebalance, not skipped."
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-006",
+      "topic": "dotnet-messaging",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A singleton `BackgroundService` consumer injects `OrdersDbContext` through its constructor and uses it for every message. What is wrong?",
+      "options": [
+        "Nothing; DbContext is designed to live for the app lifetime",
+        "BackgroundService cannot use EF Core at all",
+        "It fails only when the database is SQL Server",
+        "A scoped DbContext is captured by a singleton: it grows its change tracker and is not thread-safe; create a scope per message"
+      ],
+      "answer": [3],
+      "explanation": "This is a captive dependency (scope validation rejects it in Development). Create an `AsyncServiceScope` per message via `IServiceScopeFactory` and resolve the handler and DbContext from it.",
+      "optionNotes": [
+        "DbContext is a short-lived unit of work.",
+        "It can, through a scope per unit of work.",
+        "The issue is lifetime, not the database provider.",
+        null
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-007",
+      "topic": "dotnet-messaging",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Committing Kafka offsets synchronously after every record is too slow. Which Confluent.Kafka configuration keeps at-least-once semantics with better throughput?",
+      "options": [
+        "Keep `EnableAutoCommit = true`, set `EnableAutoOffsetStore = false` and call `StoreOffset` after processing each record",
+        "Keep `EnableAutoCommit = true` with the default offset store and commit nothing manually",
+        "Set `AutoOffsetReset = Latest` so the group always starts from the newest records",
+        "Call `Commit` before processing each record so commits overlap with the handler work"
+      ],
+      "answer": [0],
+      "explanation": "With the automatic offset store disabled, the background auto-commit only commits offsets you explicitly stored after processing, giving at-least-once without a synchronous commit per record.",
+      "optionNotes": [
+        null,
+        "Default auto-commit can commit offsets of unprocessed records.",
+        "That only affects where a new group starts.",
+        "Committing before processing is at-most-once."
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-008",
+      "topic": "dotnet-messaging",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which capabilities does MassTransit 8 provide out of the box? (Select all that apply)",
+      "options": [
+        "A transactional outbox and inbox with EF Core",
+        "State machine sagas with persisted state",
+        "Switching between RabbitMQ and Azure Service Bus without changing consumer code",
+        "Replaying Service Bus messages that were already completed"
+      ],
+      "answer": [0, 1, 2],
+      "explanation": "MassTransit abstracts the transport and adds outbox/inbox, sagas, retries and redelivery. It cannot replay completed Service Bus messages, because the broker deletes them on completion.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "Completed Service Bus messages are gone; replay needs a log such as Kafka or your own event store."
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+    {
+      "id": "microservices-dotnet-messaging-009",
+      "topic": "dotnet-messaging",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "With Dapr pub/sub, how is the actual message broker (Service Bus, Kafka, RabbitMQ) chosen?",
+      "options": [
+        "By referencing the broker's NuGet package in the service",
+        "By a pub/sub component definition (YAML) loaded by the Dapr sidecar",
+        "By an attribute on the controller action",
+        "It is always Redis Streams"
+      ],
+      "answer": [1],
+      "explanation": "The app talks to the local Dapr sidecar through a generic API; the component file selects and configures the broker, so it can be swapped without code changes.",
+      "optionNotes": [
+        "The app does not reference broker SDKs when using Dapr pub/sub.",
+        null,
+        "`WithTopic` / `[Topic]` name the component and topic; they don't define the broker.",
+        "Redis Streams is one option among many."
+      ],
+      "readMore": "/microservices/dotnet-messaging/"
+    },
+
+    {
+      "id": "microservices-observability-cross-cutting-001",
+      "topic": "observability-cross-cutting",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which HTTP header carries the trace id and parent span id in W3C Trace Context?",
+      "options": ["x-correlation-id", "traceparent", "request-id", "x-b3-traceid"],
+      "answer": [1],
+      "explanation": "`traceparent` holds version, trace id, parent span id and flags. `tracestate` carries vendor data. ASP.NET Core and HttpClient propagate it by default.",
+      "optionNotes": [
+        "A common custom header, not part of the W3C standard.",
+        null,
+        "Legacy Application Insights header format.",
+        "Zipkin B3 propagation, not W3C."
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+    {
+      "id": "microservices-observability-cross-cutting-002",
+      "topic": "observability-cross-cutting",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What should a Kubernetes liveness probe check?",
+      "options": [
+        "That the database and message broker are reachable",
+        "That all downstream services return 200",
+        "That disk space on the database server is sufficient",
+        "Only that the process itself is responsive and not deadlocked"
+      ],
+      "answer": [3],
+      "explanation": "A failing liveness probe restarts the container. If it checks dependencies, a database blip restarts every pod at once. Dependency checks belong in the readiness probe.",
+      "optionNotes": [
+        "Dependency checks belong in readiness.",
+        "A downstream outage would trigger restart storms.",
+        "Not the app container's concern.",
+        null
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+    {
+      "id": "microservices-observability-cross-cutting-003",
+      "topic": "observability-cross-cutting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In your tracing tool, the HTTP request that places an order and the worker that processes the resulting message appear as two unrelated traces. What is the most likely cause?",
+      "options": [
+        "Trace context is not being propagated in the message headers or properties",
+        "The worker uses a different logging level",
+        "The services run in different Kubernetes namespaces",
+        "Sampling is set to 100%"
+      ],
+      "answer": [0],
+      "explanation": "HTTP propagation is automatic, but messaging needs the context injected into message headers and extracted by the consumer. Libraries like MassTransit and the Azure SDK do this; raw Kafka or RabbitMQ clients need the OTel propagator.",
+      "optionNotes": [
+        null,
+        "Log levels do not affect trace linkage.",
+        "Namespaces do not affect context propagation.",
+        "Full sampling keeps more traces; it doesn't disconnect them."
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+    {
+      "id": "microservices-observability-cross-cutting-004",
+      "topic": "observability-cross-cutting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does the RED method recommend measuring for every service?",
+      "options": [
+        "Replicas, Endpoints, Deployments",
+        "Retries, Exceptions, Dead letters",
+        "Rate, Errors, Duration",
+        "Requests, Exports, Disk"
+      ],
+      "answer": [2],
+      "explanation": "Request rate, error rate and duration (as percentiles) describe the user-facing health of a service. USE (utilisation, saturation, errors) is the resource-level counterpart.",
+      "optionNotes": [
+        "Kubernetes objects, not a metrics method.",
+        "Useful messaging metrics, but not RED.",
+        null,
+        "Not a recognised method."
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+    {
+      "id": "microservices-observability-cross-cutting-005",
+      "topic": "observability-cross-cutting",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which metric tells you that a Kafka consumer group is falling behind?",
+      "options": [
+        "Producer request rate",
+        "Consumer lag per partition",
+        "Number of topics in the cluster",
+        "Broker disk usage"
+      ],
+      "answer": [1],
+      "explanation": "Lag is the difference between the latest offset and the group's committed offset. Growing lag means consumers process slower than producers write; per-partition lag also reveals hot partitions.",
+      "optionNotes": [
+        "Shows input volume, not whether consumers keep up.",
+        null,
+        "Unrelated to consumer progress.",
+        "Relevant for capacity, not consumer progress."
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+    {
+      "id": "microservices-observability-cross-cutting-006",
+      "topic": "observability-cross-cutting",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Service A calls B, which calls C. Comparing the `traceparent` header on A→B and on B→C, which part changes?",
+      "options": [
+        "The trace id",
+        "The version field",
+        "Nothing; the header is forwarded unchanged",
+        "The parent span id"
+      ],
+      "answer": [3],
+      "explanation": "The trace id stays the same for the whole trace. Each outgoing call carries the id of the span that made it, so B→C has B's client span id as the parent.",
+      "optionNotes": [
+        "The trace id is constant across the trace.",
+        "The version stays `00`.",
+        "Forwarding unchanged would make C a sibling of B instead of its child.",
+        null
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+    {
+      "id": "microservices-observability-cross-cutting-007",
+      "topic": "observability-cross-cutting",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You can only afford to store 5% of traces, but you must keep every failed or very slow request. Which approach fits?",
+      "options": [
+        "Tail-based sampling in an OpenTelemetry Collector that decides after seeing the whole trace",
+        "Head-based sampling at 5% in each service",
+        "Disable tracing and rely on logs",
+        "Sample 5% of log lines instead"
+      ],
+      "answer": [0],
+      "explanation": "Head-based sampling decides at the start, before knowing whether a request will fail or be slow. Tail-based sampling buffers spans and keeps traces matching rules (errors, high latency) plus a percentage of the rest.",
+      "optionNotes": [
+        null,
+        "Would drop 95% of failing traces too.",
+        "Loses the cross-service timing view.",
+        "Logs don't replace traces for latency analysis."
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+    {
+      "id": "microservices-observability-cross-cutting-008",
+      "topic": "observability-cross-cutting",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "What does a .NET Aspire ServiceDefaults project typically configure for each service? (Select all that apply)",
+      "options": [
+        "Applying EF Core migrations automatically at startup",
+        "OpenTelemetry logging, tracing and metrics",
+        "Health check endpoints",
+        "Service discovery and standard HTTP resilience"
+      ],
+      "answer": [1, 2, 3],
+      "explanation": "ServiceDefaults wires up OpenTelemetry, health endpoints (`MapDefaultEndpoints`), service discovery and the standard resilience handler for HttpClient. Database migrations are your own concern.",
+      "optionNotes": [
+        "Not part of ServiceDefaults; you run migrations yourself.",
+        null,
+        null,
+        null
+      ],
+      "readMore": "/microservices/observability-cross-cutting/"
+    },
+
+    {
+      "id": "microservices-data-management-001",
+      "topic": "data-management",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does the database-per-service pattern require?",
+      "options": [
+        "Each service runs its own physical SQL Server instance",
+        "Every service uses a different database technology",
+        "Only the owning service accesses its data directly; others use its API or events",
+        "All services replicate the same database"
+      ],
+      "answer": [2],
+      "explanation": "The essence is private ownership of data. Separate schemas or databases on a shared server are fine as long as no other service reads or writes them directly.",
+      "optionNotes": [
+        "Physical separation is optional.",
+        "Polyglot persistence is allowed, not required.",
+        null,
+        "That is a shared database in disguise."
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+    {
+      "id": "microservices-data-management-002",
+      "topic": "data-management",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main problem when several services read and write the same tables?",
+      "options": [
+        "SQL Server cannot handle connections from more than one application",
+        "Schema changes by one team can break other services, forcing coordinated releases",
+        "Shared tables cannot have indexes",
+        "It makes backups impossible"
+      ],
+      "answer": [1],
+      "explanation": "Shared tables couple services at the schema level and blur ownership, which is the classic path to a distributed monolith.",
+      "optionNotes": [
+        "SQL Server handles many applications fine.",
+        null,
+        "Indexing is unaffected.",
+        "Backups work the same way."
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+    {
+      "id": "microservices-data-management-003",
+      "topic": "data-management",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An order details page needs the order, the customer's name and the shipment status, owned by three services. Which approach is simplest for this single-entity view?",
+      "options": [
+        "API composition: a BFF calls the three services in parallel and merges the results",
+        "A cross-database join from the Orders service",
+        "A distributed transaction reading all three databases",
+        "Copy all three databases nightly into the Orders database"
+      ],
+      "answer": [0],
+      "explanation": "For one entity, parallel calls with timeouts and partial results are simple and fresh. For large filtered lists across services, a read model is better.",
+      "optionNotes": [
+        null,
+        "Reading other services' databases breaks ownership.",
+        "Unnecessary for a read and couples availability.",
+        "Stale and heavy for a single-entity read."
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+    {
+      "id": "microservices-data-management-004",
+      "topic": "data-management",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Finance needs monthly reports joining data from all twelve services. What is the recommended approach?",
+      "options": [
+        "Give the BI tool read access to every service database",
+        "Add a `/report` endpoint to each service and call all of them from Excel",
+        "Move all services back into one shared database",
+        "Feed a reporting store from integration events or change data capture and report from there"
+      ],
+      "answer": [3],
+      "explanation": "A warehouse or lakehouse fed by events or CDC (Fabric, Synapse; AWS Redshift) supports heavy joins without coupling to service schemas or loading service databases.",
+      "optionNotes": [
+        "Recreates the shared database through the back door.",
+        "Does not scale for joins across large datasets.",
+        "Throws away service autonomy for a reporting need.",
+        null
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+    {
+      "id": "microservices-data-management-005",
+      "topic": "data-management",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The Orders database stores each line's unit price instead of referencing the Catalog service's current price. Why is this correct?",
+      "options": [
+        "Catalog prices are confidential",
+        "The order must keep the price at the time of purchase, which is a business fact owned by Orders",
+        "Foreign keys to Catalog would be faster",
+        "EF Core cannot query other databases"
+      ],
+      "answer": [1],
+      "explanation": "Snapshotting data at the moment of a business event is required behaviour, not harmful duplication: later price changes must not alter existing orders.",
+      "optionNotes": [
+        "Confidentiality is not the reason.",
+        null,
+        "Cross-service foreign keys are not possible anyway.",
+        "Tooling is not the reason."
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+    {
+      "id": "microservices-data-management-006",
+      "topic": "data-management",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Stock must never go negative. Orders currently calls `GET /stock/{sku}` and, if enough is available, sends `DecrementStock`. What is the flaw and the fix?",
+      "options": [
+        "No flaw; the GET call guarantees the stock is still available when the decrement arrives",
+        "The flaw is latency; cache the stock level inside Orders and decrement it locally first",
+        "Check-then-act across services is a race; Inventory should reserve atomically with a conditional update and reply success or failure",
+        "The flaw is timeouts; use a longer HTTP timeout and retry the GET call before decrementing"
+      ],
+      "answer": [2],
+      "explanation": "Two orders can both see enough stock and both decrement. The invariant must be enforced inside the owning service's transaction (for example `UPDATE ... WHERE OnHand - Reserved >= @qty`), and the saga reacts to `StockReserved` or `StockReservationFailed`.",
+      "optionNotes": [
+        "Stock can change between the GET and the decrement.",
+        "A cache makes the race worse.",
+        null,
+        "Timeouts do not fix a race condition."
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+    {
+      "id": "microservices-data-management-007",
+      "topic": "data-management",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A popular product key expires from the cache and 500 concurrent requests miss at once. What does `HybridCache.GetOrCreateAsync` do differently from a naive `IDistributedCache` get-then-set?",
+      "options": [
+        "It returns null to all but the first request",
+        "It runs the factory once for that key while concurrent callers wait for the same result",
+        "It disables caching for that key permanently",
+        "It always bypasses the L2 distributed cache"
+      ],
+      "answer": [1],
+      "explanation": "HybridCache provides stampede protection: concurrent callers for the same key share a single factory execution, so the owning service gets one call instead of 500.",
+      "optionNotes": [
+        "Callers receive the shared result, not null.",
+        null,
+        "No such behaviour.",
+        "It uses the in-memory L1 and the distributed L2 when configured."
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+    {
+      "id": "microservices-data-management-008",
+      "topic": "data-management",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Orders keeps a local copy of customer names, updated from `CustomerRenamed` events. Which statements about this design are true? (Select all that apply)",
+      "options": [
+        "Orders can still show names when the Customers service is down",
+        "The copy is strongly consistent with the Customers database",
+        "The copy is eventually consistent and may briefly show an old name",
+        "You need a way to rebuild the copy if events were missed"
+      ],
+      "answer": [0, 2, 3],
+      "explanation": "Replicated read data improves autonomy and resilience at the cost of eventual consistency, idempotent and order-tolerant updates, and a re-sync path.",
+      "optionNotes": [
+        null,
+        "Updates arrive asynchronously, so it lags.",
+        null,
+        null
+      ],
+      "readMore": "/microservices/data-management/"
+    },
+
+    {
+      "id": "microservices-microservices-scenarios-001",
+      "topic": "microservices-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In an order saga, the call to the payment gateway times out and you don't know whether the card was charged. What should the saga do?",
+      "options": [
+        "Immediately compensate by cancelling the order",
+        "Charge again with a new idempotency key",
+        "Mark the order as paid and continue",
+        "Retry with the same idempotency key or query payment status before deciding to compensate"
+      ],
+      "answer": [3],
+      "explanation": "An unknown outcome must be resolved, not guessed. Reusing the idempotency key makes the retry safe; querying status tells you whether to continue or compensate.",
+      "optionNotes": [
+        "The card might have been charged, leaving money taken for a cancelled order.",
+        "A new key risks a double charge.",
+        "The charge may have failed.",
+        null
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    },
+    {
+      "id": "microservices-microservices-scenarios-002",
+      "topic": "microservices-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "To stop duplicate order-confirmation emails, which deduplication key is most robust?",
+      "options": [
+        "The broker's delivery count",
+        "A new GUID generated in the email consumer",
+        "A business key such as (OrderId, TemplateType) with a unique constraint",
+        "The timestamp when the message was received"
+      ],
+      "answer": [2],
+      "explanation": "Different messages (an outbox republish, a replay from the DLQ) can describe the same fact. A natural business key catches all of them, and the unique constraint makes concurrent duplicates fail safely.",
+      "optionNotes": [
+        "Delivery count changes per attempt and is per message.",
+        "A fresh GUID is different every time and catches nothing.",
+        null,
+        "Timestamps differ between redeliveries."
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    },
+    {
+      "id": "microservices-microservices-scenarios-003",
+      "topic": "microservices-scenarios",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A clickstream produces about 200,000 events per second. Recommendations, analytics and fraud teams each need all events and sometimes want to reprocess the last 7 days. Which option fits best on Azure?",
+      "options": [
+        "Azure Event Hubs (or Kafka) with a consumer group per team and 7-day retention",
+        "An Azure Service Bus queue with competing consumers",
+        "Azure Storage Queues with one queue per team",
+        "Direct HTTP calls from the website to each team's API"
+      ],
+      "answer": [0],
+      "explanation": "A partitioned log handles very high throughput, lets each team read independently through its own consumer group and supports replay within retention. Queues delete messages once processed.",
+      "optionNotes": [
+        null,
+        "Each message would go to only one consumer, and completed messages cannot be replayed.",
+        "Duplicating into queues still gives no replay and adds cost.",
+        "Couples the website to every team and offers no buffering."
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    },
+    {
+      "id": "microservices-microservices-scenarios-004",
+      "topic": "microservices-scenarios",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Service Bus queue backlog keeps growing, and its dead-letter queue is also growing quickly. Consumer CPU is low. What should you investigate first?",
+      "options": [
+        "Add more consumer instances to drain the backlog",
+        "Increase the queue's maximum size",
+        "Failing messages: poison messages or a failing dependency causing retries and dead-lettering",
+        "Switch the queue to receive-and-delete mode"
+      ],
+      "answer": [2],
+      "explanation": "A growing DLQ with idle consumers points to processing failures, not lack of capacity. Scaling out would just fail faster and possibly overload a struggling dependency.",
+      "optionNotes": [
+        "Scaling doesn't help if messages are failing.",
+        "Hides the symptom only.",
+        null,
+        "Would lose messages instead of fixing the failure."
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    },
+    {
+      "id": "microservices-microservices-scenarios-005",
+      "topic": "microservices-scenarios",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You are asked to split a large .NET monolith. What is a sensible first step?",
+      "options": [
+        "Create one microservice per database table",
+        "Identify bounded contexts and enforce module boundaries inside the monolith",
+        "Rewrite the entire application in a new repository",
+        "Move every module into its own container on day one"
+      ],
+      "answer": [1],
+      "explanation": "Modularising first reveals real boundaries and dependencies cheaply. Extraction via strangler fig follows for the modules that benefit from it.",
+      "optionNotes": [
+        "Table-based services create chatty, coupled services.",
+        null,
+        "A big-bang rewrite is high risk.",
+        "Distribution without boundaries produces a distributed monolith."
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    },
+    {
+      "id": "microservices-microservices-scenarios-006",
+      "topic": "microservices-scenarios",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A user reports that one request is slow, and it touches six services. What is the most effective first tool?",
+      "options": [
+        "Reading each service's log files on its server one by one",
+        "Restarting all services",
+        "Checking CPU usage of the database",
+        "A distributed trace for that request, showing time spent per span"
+      ],
+      "answer": [3],
+      "explanation": "A trace's waterfall shows which service or dependency took the time and where gaps (queueing, retries) occur. Then drill into that service's logs and metrics using the same trace id.",
+      "optionNotes": [
+        "Slow and hard to correlate without a trace id.",
+        "Destroys evidence and fixes nothing.",
+        "A guess; the trace tells you whether the DB is involved.",
+        null
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    },
+    {
+      "id": "microservices-microservices-scenarios-007",
+      "topic": "microservices-scenarios",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A Kafka consumer group shows high lag on partition 3 only; the other partitions are near zero. Adding more consumers did not help. What is the likely cause?",
+      "options": [
+        "A hot key: too many records share keys that hash to partition 3",
+        "The broker's disk is full",
+        "Auto-commit is disabled",
+        "The topic has too many partitions"
+      ],
+      "answer": [0],
+      "explanation": "Only one consumer in a group can own a partition, so extra consumers can't share partition 3's load. Fix the key distribution (better key, key salting where ordering allows) or speed up processing.",
+      "optionNotes": [
+        null,
+        "That would affect producers and all partitions on that broker.",
+        "Manual commit doesn't create per-partition skew.",
+        "More partitions would not cause skew on one."
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    },
+    {
+      "id": "microservices-microservices-scenarios-008",
+      "topic": "microservices-scenarios",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "During a flash sale the Payments service becomes very slow. Which measures stop this from taking down checkout? (Select all that apply)",
+      "options": [
+        "Short timeouts on calls to Payments",
+        "A circuit breaker around the Payments client",
+        "Raising the HttpClient timeout to 5 minutes",
+        "Accepting orders as PendingPayment and charging asynchronously via a queue"
+      ],
+      "answer": [0, 1, 3],
+      "explanation": "Timeouts and a circuit breaker keep threads from piling up and fail fast; moving the charge to a queue decouples checkout from Payments' availability. A longer timeout makes resource exhaustion worse.",
+      "optionNotes": [
+        null,
+        null,
+        "Longer waits hold more threads and connections, accelerating the cascade.",
+        null
+      ],
+      "readMore": "/microservices/microservices-scenarios/"
+    }
+  ]
+}

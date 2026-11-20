@@ -1,0 +1,1491 @@
+{
+  "section": "data",
+  "version": 1,
+  "questions": [
+    {
+      "id": "data-efcore-architecture-001",
+      "topic": "efcore-architecture",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the state of `order` right after `db.Orders.Add(order)` and before `SaveChanges`?",
+      "options": [
+        "Unchanged",
+        "Added",
+        "Modified",
+        "Detached"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Add` starts tracking the entity in the `Added` state. `SaveChanges` sends an INSERT and then moves it to `Unchanged`.",
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-002",
+      "topic": "efcore-architecture",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which DI lifetime does `AddDbContext<T>` use by default?",
+      "options": [
+        "Singleton",
+        "Transient",
+        "Scoped",
+        "One instance per thread"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The context is registered as scoped, so each HTTP request gets its own instance: one unit of work and one short-lived identity map per request.",
+      "optionNotes": [
+        "A singleton context would be shared by concurrent requests and is not thread-safe.",
+        "Transient would give different services in the same request different contexts.",
+        null,
+        "There is no per-thread lifetime in Microsoft.Extensions.DependencyInjection."
+      ],
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-003",
+      "topic": "efcore-architecture",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this code send to the database?",
+      "code": "var c = new Customer { Name = \"Asha\" };\ndb.Customers.Add(c);\ndb.Customers.Remove(c);\nawait db.SaveChangesAsync();",
+      "codeLang": "csharp",
+      "options": [
+        "An INSERT followed by a DELETE",
+        "Only a DELETE",
+        "Nothing: the entity goes back to Detached",
+        "It throws because the entity has no key yet"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Removing an `Added` entity just stops tracking it. It was never inserted, so `SaveChanges` has nothing to do for it.",
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-004",
+      "topic": "efcore-architecture",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You load an order with a tracking query, change only `order.Status`, and call `SaveChangesAsync`. What does the UPDATE contain?",
+      "options": [
+        "Only the Status column",
+        "Every column of the Orders table",
+        "Every column except the primary key",
+        "Nothing, until you also call `db.Update(order)`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Snapshot change tracking compares current values with the original snapshot and marks only changed properties as modified, so the UPDATE sets just `Status`.",
+      "optionNotes": [
+        null,
+        "That is what `Update()` on an entity causes, because it marks every property modified.",
+        "Same as above; tracking queries do not mark unchanged columns.",
+        "Tracked entities are detected automatically by `DetectChanges` inside `SaveChanges`."
+      ],
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-005",
+      "topic": "efcore-architecture",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A `BackgroundService` takes `ShopDb` (registered with `AddDbContext`) in its constructor. What is the problem?",
+      "options": [
+        "None, EF Core creates a new context for each query",
+        "Captive dependency: one context lives for the app's lifetime, and scope validation rejects it in Development",
+        "EF Core cannot be used from background threads at all",
+        "The context is disposed after the first `SaveChanges`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Hosted services are singletons. Injecting a scoped context captures one instance forever: the change tracker grows, data goes stale and concurrent use breaks. Inject `IDbContextFactory<T>` or `IServiceScopeFactory` and create a short-lived context per unit of work.",
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-006",
+      "topic": "efcore-architecture",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `AddDbContextPool` are true? (Select all that apply)",
+      "options": [
+        "You cannot inject scoped services through the context's constructor",
+        "The change tracker is reset when an instance returns to the pool",
+        "It makes slow SQL queries execute faster",
+        "One pooled instance is used by several requests at the same time"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Pooling reuses context instances, resetting their state on return, to save setup cost per request. Because instances outlive a request they cannot depend on scoped services. It does nothing for query execution time, and each instance is leased to one scope at a time.",
+      "optionNotes": [
+        null,
+        null,
+        "Pooling saves context construction cost, not database time.",
+        "An instance is leased exclusively until the scope ends."
+      ],
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-007",
+      "topic": "efcore-architecture",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What happens when this runs against a single `DbContext`?",
+      "code": "var ordersTask = db.Orders.CountAsync();\nvar customersTask = db.Customers.CountAsync();\nawait Task.WhenAll(ordersTask, customersTask);",
+      "codeLang": "csharp",
+      "options": [
+        "Both queries run in parallel on one connection",
+        "EF queues the second query and runs them one after another",
+        "It deadlocks waiting for the connection",
+        "It throws: a second operation started before the previous one completed"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`DbContext` is not thread-safe and supports only one active operation. EF detects the overlap and throws `InvalidOperationException`. Await sequentially, or use one context per parallel branch from `IDbContextFactory<T>`.",
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-008",
+      "topic": "efcore-architecture",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A property has `[MaxLength(50)]` and you save a 60-character value. What does EF Core do?",
+      "options": [
+        "Throws a `ValidationException` before sending SQL",
+        "Sends the INSERT; the database rejects it and EF throws `DbUpdateException`",
+        "Silently truncates the value to 50 characters",
+        "Validates only if `ValidateOnSaveEnabled` is true, which is the default"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "EF Core uses annotations to build the schema (`nvarchar(50)`) but does not validate entities on save, unlike EF6. The database raises a truncation error, surfaced as `DbUpdateException`. Validate input in the API layer.",
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-architecture-009",
+      "topic": "efcore-architecture",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A detached customer with `Id = 5` has a new order with `Id = 0` (identity key) in its `Orders` collection. You call `db.Attach(customer)`. What are the states?",
+      "options": [
+        "Customer Unchanged, order Unchanged",
+        "Customer Unchanged, order Added",
+        "Customer Added, order Added",
+        "Customer Modified, order Added"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Attach` walks the graph: entities with a set key become `Unchanged`, entities whose store-generated key is unset become `Added`. `SaveChanges` will insert the order and leave the customer alone.",
+      "readMore": "/data/efcore-architecture/"
+    },
+    {
+      "id": "data-efcore-modelling-001",
+      "topic": "efcore-modelling",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A property is configured with `[MaxLength(100)]` and also with `.HasMaxLength(200)` in `OnModelCreating`. Which wins?",
+      "options": [
+        "The data annotation",
+        "Whichever was declared last in source order",
+        "The Fluent API configuration",
+        "EF throws a model validation error"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Configuration is layered: conventions, then data annotations, then Fluent API. Fluent API has the highest precedence, so the column is `nvarchar(200)`.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-002",
+      "topic": "efcore-modelling",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is EF Core's default mapping for an inheritance hierarchy?",
+      "options": [
+        "TPH: one table with a discriminator column",
+        "TPT: one table per type joined by key",
+        "TPC: one table per concrete type",
+        "No mapping: base classes are ignored"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Table-per-hierarchy is the default. TPT (`UseTptMappingStrategy`) and TPC (`UseTpcMappingStrategy`, EF Core 7+) must be opted into.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-003",
+      "topic": "efcore-modelling",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Students and courses are many-to-many, and each enrolment must store `EnrolledOn`. How do you model it?",
+      "options": [
+        "Two collection navigations only; EF adds the column automatically",
+        "An explicit join entity `Enrollment`, configured with `UsingEntity` or two one-to-many relationships",
+        "Make `Course` an owned type of `Student`",
+        "A shadow property `EnrolledOn` on `Student`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Skip navigations alone create a hidden join table with only the two FKs. When the link carries data, model the join entity explicitly with a composite key and the extra columns.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-004",
+      "topic": "efcore-modelling",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Orders have a global query filter `!o.IsDeleted`. An admin screen must also show deleted orders. What do you use?",
+      "options": [
+        "`AsNoTracking()`",
+        "Set the filter to null in the service constructor",
+        "Rewrite the query with `FromSql`, which bypasses all filters",
+        "`IgnoreQueryFilters()` on that query"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`IgnoreQueryFilters()` disables global filters for one query. EF Core 10 also supports named filters so you can disable only one, for example `IgnoreQueryFilters([\"SoftDelete\"])`.",
+      "optionNotes": [
+        "Tracking has nothing to do with filters.",
+        "The model is built once and cached; it cannot be changed per request like this.",
+        "Filters are still applied when you compose LINQ over `FromSql` on a filtered entity.",
+        null
+      ],
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-005",
+      "topic": "efcore-modelling",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`LastUpdated` is a shadow property on `Order` (not on the class). How do you filter by it in LINQ?",
+      "options": [
+        "`o.LastUpdated > since` after casting to `dynamic`",
+        "It cannot be queried, only written",
+        "`EF.Property<DateTime>(o, \"LastUpdated\") > since`",
+        "`db.Entry(o).Property(\"LastUpdated\").CurrentValue > since`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`EF.Property<T>` references a property by name inside a query and is translated to the column in SQL. `Entry(...)` works for a single tracked entity in memory, not inside a LINQ-to-SQL predicate.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-006",
+      "topic": "efcore-modelling",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why does EF Core use a shared sequence instead of `IDENTITY` columns for keys under TPC mapping?",
+      "options": [
+        "SQL Server does not allow IDENTITY on more than one table",
+        "Keys must be unique across all concrete tables, since a base-type query unions them",
+        "Sequences are always faster than IDENTITY",
+        "TPC tables have no primary key"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "With TPC, a query for the base type returns rows from several tables via `UNION ALL`. Two rows with the same key from different tables would break identity resolution, so keys come from one sequence shared by all tables.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-007",
+      "topic": "efcore-modelling",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about complex types (`ComplexProperty`, EF Core 8+) are true? (Select all that apply)",
+      "options": [
+        "They have no key and use value semantics",
+        "They can be mapped to columns in the owner's table, such as `ShipTo_City`",
+        "They always require a separate table",
+        "They need their own `DbSet` to be queried"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Complex types model value objects: no identity, stored inside the owning entity's table (or as JSON in EF Core 10). They are not entity types, so they have no table or `DbSet` of their own.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-008",
+      "topic": "efcore-modelling",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You map a `decimal Price` without configuring precision. What happens on SQL Server?",
+      "options": [
+        "EF logs a warning and uses `decimal(18,2)`",
+        "It maps to `float`",
+        "It maps to `decimal(38,10)`",
+        "The migration fails until precision is configured"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "EF warns that values may be silently truncated and defaults to `decimal(18,2)`. Configure `HasPrecision(p, s)` or `[Precision]` explicitly for money, rates and quantities.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-modelling-009",
+      "topic": "efcore-modelling",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A multi-tenant filter is defined as `HasQueryFilter(o => o.TenantId == _tenantId)` where `_tenantId` is a field on the `DbContext`. How does EF treat `_tenantId`?",
+      "options": [
+        "Its value is baked in when the model is first built, so all tenants see tenant 1",
+        "The filter runs in memory after loading all rows",
+        "EF recompiles the model for every tenant",
+        "It becomes a SQL parameter read from the current context instance"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "EF recognises references to context fields in filters and parameterizes them per query from the executing context instance. A hard-coded constant, by contrast, would be fixed in the cached model.",
+      "readMore": "/data/efcore-modelling/"
+    },
+    {
+      "id": "data-efcore-querying-001",
+      "topic": "efcore-querying",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `AsNoTracking()` change about a query?",
+      "options": [
+        "It runs the query without a transaction",
+        "Results are not added to the change tracker, so no snapshots and no identity map",
+        "It reads uncommitted data, like `NOLOCK`",
+        "It caches the results for later calls"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "No-tracking queries skip snapshotting and identity resolution, which saves memory and CPU for read-only data. It has nothing to do with isolation levels or caching.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-002",
+      "topic": "efcore-querying",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "There are 50 customers. How many SQL queries does this run?",
+      "code": "var customers = await db.Customers.ToListAsync();\nforeach (var c in customers)\n{\n    c.OrderCount = await db.Orders.CountAsync(o => o.CustomerId == c.Id);\n}",
+      "codeLang": "csharp",
+      "options": [
+        "1",
+        "2",
+        "51",
+        "50"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "One query for the customers, then one COUNT per customer: the N+1 pattern. A single projection such as `Select(c => new { c.Name, Count = c.Orders.Count })` does it in one query.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-003",
+      "topic": "efcore-querying",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A read-only API needs each customer's name and order total. Which approach is best?",
+      "options": [
+        "`Select` into a DTO with `c.Orders.Sum(o => o.Total)`",
+        "`Include(c => c.Orders)` and sum in C#",
+        "Enable lazy loading and sum `c.Orders` in a loop",
+        "Load customers, then load each customer's orders explicitly"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The projection becomes one SQL statement returning two columns per customer with a correlated SUM. `Include` fetches every order row and column; lazy and explicit loading cause N+1.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-004",
+      "topic": "efcore-querying",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`IsVip(Customer c)` is a normal C# method. What does EF Core 10 do with this query?",
+      "code": "var vips = db.Customers.Where(c => IsVip(c)).ToList();",
+      "codeLang": "csharp",
+      "options": [
+        "Loads all customers and filters in memory",
+        "Throws `InvalidOperationException`: the expression could not be translated",
+        "Translates `IsVip` into a SQL function call",
+        "Returns an empty list and logs a warning"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Since EF Core 3.0, untranslatable expressions outside the final projection throw instead of silently evaluating on the client. Filter what SQL can, then switch explicitly with `AsEnumerable()`.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-005",
+      "topic": "efcore-querying",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "One customer has 50 orders and 10 addresses. With the default single-query mode, roughly how many rows does `db.Customers.Include(c => c.Orders).Include(c => c.Addresses).Where(c => c.Id == id)` return?",
+      "options": [
+        "61",
+        "60",
+        "1",
+        "500"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Two sibling collections joined in one statement multiply: 50 x 10 = 500 rows, each repeating the customer columns. This is the cartesian explosion that `AsSplitQuery()` avoids (1 + 50 + 10 rows over 3 statements).",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-006",
+      "topic": "efcore-querying",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which are real costs of `AsSplitQuery()`? (Select all that apply)",
+      "options": [
+        "More database round-trips",
+        "Statements can see different data if rows change between them, unless a suitable transaction is used",
+        "More duplicated parent columns in the results",
+        "It cannot be combined with `Include`"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Split queries issue one statement per included collection, so there are extra round-trips and no single consistent snapshot by default. They remove duplication, and they exist precisely for `Include`.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-007",
+      "topic": "efcore-querying",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What SQL runs here?",
+      "code": "public IEnumerable<Order> GetOrders() => db.Orders;\n\nvar top = repo.GetOrders()\n    .Where(o => o.Total > 1000)\n    .Take(10)\n    .ToList();",
+      "codeLang": "csharp",
+      "options": [
+        "SELECT of all orders with no WHERE; filtering and Take happen in memory",
+        "SELECT TOP(10) ... WHERE Total > 1000",
+        "Two queries: a COUNT and a SELECT",
+        "None: it does not compile"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Typed as `IEnumerable<Order>`, the subsequent `Where`/`Take` bind to LINQ to Objects. EF only sees `db.Orders`, so it streams every order and C# filters them.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-008",
+      "topic": "efcore-querying",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "100 orders all belong to the same customer. How many `Customer` objects does `db.Orders.AsNoTracking().Include(o => o.Customer).ToList()` create?",
+      "options": [
+        "1",
+        "2",
+        "100",
+        "0, because Include is ignored with AsNoTracking"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Without tracking there is no identity map, so each row materializes its own customer instance. `AsNoTrackingWithIdentityResolution()` would return a single shared instance without tracking.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-efcore-querying-009",
+      "topic": "efcore-querying",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "How can you see the SQL for an `IQueryable` without executing it?",
+      "options": [
+        "`query.ToString()`",
+        "`query.ToQueryString()`",
+        "`query.ToSql()`",
+        "`query.Expression.Print()`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`ToQueryString()` (EF Core 5+) returns the SQL with parameter declarations. It is handy in tests and debugging; for real traffic use logging.",
+      "readMore": "/data/efcore-querying/"
+    },
+    {
+      "id": "data-loading-strategies-001",
+      "topic": "loading-strategies",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which loading strategy requires `virtual` navigation properties when using the proxies package?",
+      "options": [
+        "Eager loading",
+        "Explicit loading",
+        "Lazy loading",
+        "Projection"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Lazy-loading proxies are runtime subclasses that override navigation getters, so navigations must be `virtual` and classes must not be sealed.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-loading-strategies-002",
+      "topic": "loading-strategies",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which call explicitly loads a customer's orders after the customer was loaded?",
+      "options": [
+        "`await db.Entry(customer).Collection(c => c.Orders).LoadAsync()`",
+        "`await db.Customers.Include(c => c.Orders).LoadAsync()`",
+        "`customer.Orders.Load()`",
+        "`await db.Orders.AttachAsync(customer)`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Explicit loading goes through the entry API: `Collection(...)` for collections, `Reference(...)` for single navigations, then `Load`/`LoadAsync`.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-loading-strategies-003",
+      "topic": "loading-strategies",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Lazy-loading proxies are enabled and there are 20 customers. How many queries run?",
+      "code": "var customers = db.Customers.ToList();\nvar total = customers.Sum(c => c.Orders.Count);",
+      "codeLang": "csharp",
+      "options": [
+        "1",
+        "21",
+        "2",
+        "20"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "One query for customers, then the first access to each `c.Orders` triggers a separate query: 1 + 20. It is N+1 without any query visible in the code.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-loading-strategies-004",
+      "topic": "loading-strategies",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You have a tracked customer and need only the number of their orders above 1000, without loading the orders. What do you write?",
+      "options": [
+        "`customer.Orders.Count(o => o.Total > 1000)`",
+        "`await db.Entry(customer).Collection(c => c.Orders).LoadAsync()` then count",
+        "`db.Customers.Include(c => c.Orders.Where(o => o.Total > 1000))`",
+        "`await db.Entry(customer).Collection(c => c.Orders).Query().CountAsync(o => o.Total > 1000)`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`Query()` returns an `IQueryable` over the navigation, so the filter and count run in SQL. The other options either count unloaded data or load all orders first.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-loading-strategies-005",
+      "topic": "loading-strategies",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens to the `Include` in `db.Customers.Include(c => c.Orders).Select(c => new { c.Name }).ToList()`?",
+      "options": [
+        "Orders are loaded and then discarded",
+        "EF throws because Include cannot be combined with Select",
+        "It is ignored, because the query no longer returns Customer entities",
+        "A JOIN is generated but no order columns are selected"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Include only applies when the query returns entity instances of the type it started with. With a projection, EF loads exactly what the `Select` references and ignores the Include.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-loading-strategies-006",
+      "topic": "loading-strategies",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A lazy-loading proxy entity escapes its request, and after the `DbContext` is disposed code accesses an unloaded navigation. What happens by default?",
+      "options": [
+        "The navigation returns null silently",
+        "EF throws `InvalidOperationException` (the lazy-load-on-disposed-context warning is configured to throw)",
+        "EF opens a new context and loads the data",
+        "The collection is returned empty and a warning is logged"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Lazy loading needs the context that tracked the entity. EF raises `LazyLoadOnDisposedContextWarning`, which throws by default. This often appears when entities are serialized or cached outside the request scope.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-loading-strategies-007",
+      "topic": "loading-strategies",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In single-query mode, what SQL shape does `db.Customers.Include(c => c.Orders)` generate?",
+      "options": [
+        "An INNER JOIN, so customers without orders are skipped",
+        "Two SELECT statements",
+        "A correlated subquery per customer",
+        "A LEFT JOIN to Orders, ordered by the customer key"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A LEFT JOIN keeps customers without orders, and ordering by key lets EF group child rows under each parent while streaming. Required reference navigations (order to customer) use INNER JOIN instead.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-loading-strategies-008",
+      "topic": "loading-strategies",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Why is lazy loading usually disabled in ASP.NET Core Web APIs? (Select all that apply)",
+      "options": [
+        "It hides N+1 queries behind property access",
+        "Lazy loads are synchronous and block a thread during the round-trip",
+        "It cannot load reference navigations, only collections",
+        "Serializing entities can trigger loading of large graphs or cycles"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Lazy loading works for references and collections, but it turns innocent property access into synchronous queries, multiplies round-trips in loops, and lets serializers walk the database. APIs should load explicitly or project.",
+      "readMore": "/data/loading-strategies/"
+    },
+    {
+      "id": "data-migrations-001",
+      "topic": "migrations",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Where does EF Core record which migrations have been applied to a database?",
+      "options": [
+        "In the model snapshot file",
+        "In the `__EFMigrationsHistory` table",
+        "In `appsettings.json`",
+        "In the migration's Designer.cs file"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each applied migration id is inserted into `__EFMigrationsHistory`. The snapshot file describes the latest model and is used only to generate the next migration.",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-002",
+      "topic": "migrations",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which command generates a SQL script that can safely run against databases at different migration versions?",
+      "options": [
+        "`dotnet ef database update --force`",
+        "`dotnet ef migrations list`",
+        "`dotnet ef migrations script --idempotent`",
+        "`dotnet ef dbcontext script`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The idempotent script wraps each migration in a check against `__EFMigrationsHistory`, so it applies only what is missing on that database.",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-003",
+      "topic": "migrations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A migration already applied in production turns out to be wrong. What should you do?",
+      "options": [
+        "Add a new migration that corrects the schema",
+        "Run `dotnet ef migrations remove` and redeploy",
+        "Edit the migration's `Up()` method and redeploy",
+        "Delete its row from `__EFMigrationsHistory` and re-run"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Applied migrations are history shared by every environment. Editing or removing them desynchronizes code, snapshot and databases. Fix forward with a new migration.",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-004",
+      "topic": "migrations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You and a teammate each added a migration on separate branches, and git reports a conflict in the model snapshot. Your migration is not applied anywhere shared. What is the cleanest fix?",
+      "options": [
+        "Keep both versions of the snapshot side by side",
+        "Delete both migrations and create one combined migration on main",
+        "Rename your migration so its timestamp is older",
+        "Merge their branch, remove your migration, then add it again"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Re-adding your migration after merging regenerates it against the merged model and produces a correct snapshot. The teammate's migration, possibly already applied, stays untouched.",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-005",
+      "topic": "migrations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why do teams avoid `Database.MigrateAsync()` at startup for a production API running on several instances?",
+      "options": [
+        "`MigrateAsync` only works with SQLite",
+        "It ignores the migrations history table",
+        "The app needs DDL rights, instances start together, and a failed migration becomes a crash loop",
+        "It cannot apply more than one migration per run"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Migrating as a separate pipeline step (bundle or idempotent script) keeps DDL permissions out of the app, runs once, and fails the deployment cleanly. EF Core 9 added a migration lock, but the operational arguments remain.",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-006",
+      "topic": "migrations",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "You must rename `Customers.Name` to `FullName` with rolling deployments and no downtime. Which plan works?",
+      "options": [
+        "One migration with `RenameColumn`, deployed with the new code",
+        "Add `FullName`, write both and backfill, switch reads to `FullName`, drop `Name` in a later release",
+        "Drop `Name` and add `FullName` in one migration",
+        "Create a view called `Name` that points to `FullName`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "During a rolling deploy old and new code share the database. Expand/contract keeps both versions working: add, dual-write and backfill, move readers, then remove the old column.",
+      "optionNotes": [
+        "Old instances still query `Name` and fail until they are replaced.",
+        null,
+        "Loses data and breaks old instances.",
+        "A view cannot stand in for a column inside the same table."
+      ],
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-007",
+      "topic": "migrations",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `HasData` seeding are true? (Select all that apply)",
+      "options": [
+        "Primary key values must be specified explicitly",
+        "Changing seeded values produces insert/update/delete operations in the next migration",
+        "Related data can be seeded by assigning navigation properties",
+        "It runs custom code on every application start"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "`HasData` is part of the model, so EF diffs it like schema and needs stable keys. Relationships are seeded through FK values, not navigations. For runtime seeding logic use `UseSeeding`/`UseAsyncSeeding` (EF Core 9+).",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-008",
+      "topic": "migrations",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is an EF Core migration bundle?",
+      "options": [
+        "A self-contained executable that applies pending migrations to a target database",
+        "A zip of all migration .cs files for code review",
+        "A NuGet package containing the DbContext",
+        "A SQL Server .bacpac export"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`dotnet ef migrations bundle` builds an `efbundle` executable. The pipeline runs it with a connection string, so the deploy agent needs neither the SDK nor the source code.",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-migrations-009",
+      "topic": "migrations",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which command can fail a CI build when someone changed the model but forgot to add a migration?",
+      "options": [
+        "`dotnet ef migrations list`",
+        "`dotnet ef database drop`",
+        "`dotnet ef dbcontext info`",
+        "`dotnet ef migrations has-pending-model-changes`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Added in EF Core 8, it compares the current model with the latest snapshot and returns a non-zero exit code when they differ.",
+      "readMore": "/data/migrations/"
+    },
+    {
+      "id": "data-transactions-raw-sql-001",
+      "topic": "transactions-raw-sql",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "One `SaveChangesAsync` call inserts an order and five order lines. One line violates a constraint. What is saved?",
+      "options": [
+        "Nothing: all statements run in one transaction and are rolled back",
+        "The order and the four valid lines",
+        "Only the order",
+        "It depends on whether you called `BeginTransaction`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each `SaveChanges` call is atomic. You need an explicit transaction only when a unit of work spans several calls or mixes in raw SQL or `ExecuteUpdate`.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-002",
+      "topic": "transactions-raw-sql",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "`name` comes from a query-string parameter. What is wrong with this line?",
+      "code": "var rows = db.Customers\n    .FromSqlRaw($\"SELECT * FROM Customers WHERE Name = '{name}'\")\n    .ToList();",
+      "codeLang": "csharp",
+      "options": [
+        "Nothing, EF parameterizes interpolated strings",
+        "`FromSqlRaw` cannot return entities",
+        "It is open to SQL injection: the value is concatenated into the SQL text",
+        "The query cannot be composed with LINQ"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`FromSqlRaw` takes a plain `string`, so interpolation happens before EF sees it. Use `FromSql($\"... {name}\")`, which takes a `FormattableString` and sends `name` as a parameter.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-003",
+      "topic": "transactions-raw-sql",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does this print?",
+      "code": "var order = await db.Orders.FindAsync(1);   // Total is 100\nawait db.Orders.Where(o => o.Id == 1)\n    .ExecuteUpdateAsync(s => s.SetProperty(o => o.Total, 200m));\nConsole.WriteLine(order!.Total);",
+      "codeLang": "csharp",
+      "options": [
+        "200",
+        "100",
+        "0",
+        "It throws because the entity is tracked"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`ExecuteUpdate` updates the database directly and bypasses the change tracker, so the tracked instance keeps its stale value. Reload it or avoid mixing both styles in one context.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-004",
+      "topic": "transactions-raw-sql",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which scenario needs an explicit `BeginTransactionAsync`?",
+      "options": [
+        "Adding an order and its lines in one `SaveChanges`",
+        "Running a single `ExecuteDeleteAsync`",
+        "Reading data with `AsNoTracking`",
+        "A `SaveChanges` followed by an `ExecuteDeleteAsync` that must succeed or fail together"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`ExecuteDelete` runs immediately in its own statement, separate from `SaveChanges`. To make both atomic, wrap them in one explicit transaction.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-005",
+      "topic": "transactions-raw-sql",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "The context uses `EnableRetryOnFailure()`. A developer calls `BeginTransactionAsync` directly in a service. What happens and what is the fix?",
+      "options": [
+        "Retries are silently disabled; no change needed",
+        "EF retries only the failed statement inside the transaction",
+        "EF throws; run the whole unit inside `CreateExecutionStrategy().ExecuteAsync(...)`",
+        "SQL Server escalates to a distributed transaction"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A retrying strategy cannot replay part of a user transaction, so EF refuses it. Wrapping begin, work and commit in the execution strategy lets a transient failure retry the whole unit.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-006",
+      "topic": "transactions-raw-sql",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "You need results of a reporting query as `record CityTotal(string City, decimal Total)`, which is not in the model. Which API fits (EF Core 8+)?",
+      "options": [
+        "`db.Set<CityTotal>().FromSql($\"...\")`",
+        "`db.Database.SqlQuery<CityTotal>($\"...\")`",
+        "`db.Database.ExecuteSql($\"...\")`",
+        "`db.CityTotals.ToListAsync()` after adding a DbSet with a key"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Database.SqlQuery<T>` maps result columns to any type by name without registering it in the model. `FromSql` needs a mapped entity type and `ExecuteSql` returns only a row count.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-007",
+      "topic": "transactions-raw-sql",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why does this fail?",
+      "code": "var big = await db.Orders\n    .FromSql($\"EXEC dbo.GetOrders @CustomerId = {id}\")\n    .Where(o => o.Total > 1000)\n    .ToListAsync();",
+      "codeLang": "csharp",
+      "options": [
+        "Stored procedures must be called with `ExecuteSql`",
+        "`FromSql` does not support parameters",
+        "Orders must be keyless to use `FromSql`",
+        "EF composes by wrapping the SQL in a subquery, and `EXEC` cannot be a subquery"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Composing LINQ over raw SQL produces `SELECT ... FROM (your SQL) AS o WHERE ...`. That works for a SELECT but not for `EXEC`. Materialize right after the call, or use a table-valued function or view.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-008",
+      "topic": "transactions-raw-sql",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about `ExecuteDeleteAsync` are true? (Select all that apply)",
+      "options": [
+        "It executes immediately, not when `SaveChanges` is called",
+        "`SaveChangesInterceptor` logic such as soft-delete conversion does not run",
+        "It removes matching entities from the change tracker",
+        "Cascade deletes defined in the database still apply"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "It sends one DELETE statement straight to the database. The change tracker is not consulted or updated, so interceptors do not run and tracked instances stay as they were. Database-level cascades are enforced by SQL Server as usual.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-transactions-raw-sql-009",
+      "topic": "transactions-raw-sql",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What must you pass to `TransactionScope` when the code inside it uses `await`?",
+      "options": [
+        "`TransactionScopeOption.Suppress`",
+        "`IsolationLevel.Snapshot`",
+        "`TransactionScopeAsyncFlowOption.Enabled`",
+        "`TransactionManager.ImplicitDistributedTransactions = true`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Without async flow, the ambient transaction does not follow the code across `await` continuations, so later commands run outside it.",
+      "readMore": "/data/transactions-raw-sql/"
+    },
+    {
+      "id": "data-concurrency-001",
+      "topic": "concurrency",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is a lost update?",
+      "options": [
+        "A transaction that is rolled back by a deadlock",
+        "Two users read the same row, both save, and the second save silently overwrites the first",
+        "An UPDATE that affects zero rows",
+        "A write lost because the server crashed before commit"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Without concurrency control, the second writer's stale data replaces the first writer's change and nobody is told. Optimistic concurrency turns this into a detectable conflict.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-002",
+      "topic": "concurrency",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which attribute maps a `byte[]` property to a SQL Server `rowversion` concurrency token?",
+      "options": [
+        "`[ConcurrencyCheck]`",
+        "`[DatabaseGenerated]`",
+        "`[Key]`",
+        "`[Timestamp]`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`[Timestamp]` (or `IsRowVersion()`) maps a `rowversion` column that SQL Server updates automatically and EF uses as a concurrency token.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-003",
+      "topic": "concurrency",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Product has a `rowversion` property. Which WHERE clause does EF generate when updating it?",
+      "options": [
+        "`WHERE [Id] = @p1 AND [RowVersion] = @p2`",
+        "`WHERE [Id] = @p1`",
+        "`WHERE [RowVersion] = @p2`",
+        "`WHERE [Id] = @p1 AND [RowVersion] > @p2`"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "EF adds the original rowversion value to the key condition and reads the new value back with `OUTPUT INSERTED.[RowVersion]`. Zero affected rows means someone else changed the row.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-004",
+      "topic": "concurrency",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does EF Core do when an UPDATE with a concurrency token affects zero rows?",
+      "options": [
+        "Retries the update with fresh values",
+        "Logs a warning and continues",
+        "Throws `DbUpdateConcurrencyException` and nothing from that SaveChanges is committed",
+        "Inserts the row instead"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The affected-row check fails, so EF rolls back the SaveChanges transaction and throws. Your code decides how to resolve: tell the user, reload, client wins or merge.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-005",
+      "topic": "concurrency",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A PUT handler loads the product, then runs the code below and saves. Another user changed the product after the client's GET. Is the conflict detected?",
+      "code": "var product = await db.Products.FindAsync(id);\nproduct!.RowVersion = dto.RowVersion;   // version the client saw\nproduct.Price = dto.Price;\nawait db.SaveChangesAsync();",
+      "codeLang": "csharp",
+      "options": [
+        "Yes, EF compares the assigned version with the database",
+        "No: EF checks the original value, so set `OriginalValue` instead",
+        "Yes, but only if the product was loaded with `AsNoTracking`",
+        "No, because rowversion columns can never be assigned in code"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "EF builds the concurrency check from the original value, which here is the fresh database version. Assigning the property changes only the current value. Setting `OriginalValue` to the client's version makes the check meaningful.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-006",
+      "topic": "concurrency",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Two requests try to buy the last unit of a product at the same moment. Which approach prevents overselling most simply?",
+      "options": [
+        "Read the stock, check it in C#, then `SaveChanges`",
+        "Cache the stock in `IMemoryCache` and decrement it there",
+        "Use `NOLOCK` hints to read the latest value",
+        "A conditional UPDATE: `SET Qty = Qty - 1 WHERE Sku = @sku AND Qty >= 1`, treating 0 rows as sold out"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "A single conditional UPDATE is atomic in the database, so only one request can succeed. In EF Core use `ExecuteUpdateAsync` with the condition in `Where` and check the returned count.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-007",
+      "topic": "concurrency",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Inside a transaction you run `SELECT * FROM Stock WITH (UPDLOCK, ROWLOCK) WHERE Sku = @sku`. Which statements are true? (Select all that apply)",
+      "options": [
+        "The lock is held until the transaction commits or rolls back",
+        "Another transaction running the same UPDLOCK select on that row waits",
+        "A plain SELECT under READ COMMITTED on that row is blocked",
+        "It is safe to keep this transaction open while the user confirms in the UI"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Update locks are compatible with shared locks, so ordinary readers proceed, but they conflict with other update and exclusive locks. They last until the transaction ends, which is why the transaction must stay short.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-008",
+      "topic": "concurrency",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "On a database without `rowversion`, you mark `Guid Version` with `IsConcurrencyToken()`. Who changes its value on each update?",
+      "options": [
+        "EF Core generates a new Guid automatically",
+        "The database, via a default constraint",
+        "Your code must assign a new value before every save",
+        "Nobody; it only needs to exist"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A concurrency token is just included in the WHERE with its original value. Unless something changes it on every write, concurrent updates would not be detected, so set a new Guid in code or in a SaveChanges interceptor.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-concurrency-009",
+      "topic": "concurrency",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Does `ExecuteUpdateAsync` check the entity's `[Timestamp]` concurrency token?",
+      "options": [
+        "No; add the version to the `Where` yourself and check the affected row count",
+        "Yes, it always adds the original rowversion to the WHERE",
+        "Yes, but only for tracked entities",
+        "It throws if the entity has a concurrency token"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`ExecuteUpdate` is a set-based statement that bypasses the change tracker, so there is no original value to compare. Include `p.RowVersion == version` in the filter and treat 0 rows as a conflict.",
+      "readMore": "/data/concurrency/"
+    },
+    {
+      "id": "data-efcore-performance-001",
+      "topic": "efcore-performance",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the quickest way to print the SQL EF Core executes during local debugging?",
+      "options": [
+        "Enable SQL Server Profiler in `appsettings.json`",
+        "`optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information)`",
+        "Call `db.Database.GetSql()` after each query",
+        "Set `EF_DEBUG=1` in the environment"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`LogTo` is EF Core's simple logging: command text and duration are logged at Information level. In apps, the `Microsoft.EntityFrameworkCore.Database.Command` logger category does the same through `ILogger`.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-002",
+      "topic": "efcore-performance",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why should `EnableSensitiveDataLogging()` stay off in production?",
+      "options": [
+        "It disables query caching",
+        "It forces client-side evaluation",
+        "It doubles the number of SQL round-trips",
+        "It writes parameter values, which can include personal data and secrets, to logs"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Sensitive data logging includes parameter values and entity key values in logs and exceptions. Great locally, a privacy and compliance risk in production.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-003",
+      "topic": "efcore-performance",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `EF.CompileAsyncQuery` save on each call?",
+      "options": [
+        "Expression-tree processing and the query-cache lookup",
+        "The SQL Server execution plan compilation",
+        "The network round-trip",
+        "Materializing rows into objects"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "EF already caches SQL translations, but still builds and hashes the expression tree per call. A compiled query skips that. The database work is unchanged, so gains are modest and matter only on hot paths.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-004",
+      "topic": "efcore-performance",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An infinite-scroll list uses `Skip(page * 50).Take(50)` and gets slower on deep pages. What is the usual fix?",
+      "options": [
+        "Add `AsSplitQuery()`",
+        "Increase the page size to 500",
+        "Keyset paging: `Where(o => o.Id > lastId).OrderBy(o => o.Id).Take(50)`",
+        "Use a compiled query"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`OFFSET` still produces and discards every skipped row. Keyset paging seeks directly to the last seen key through an index, so each page costs about the same.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-005",
+      "topic": "efcore-performance",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `.TagWith(\"OrderReads.NextPage\")` do?",
+      "options": [
+        "Caches the query result under that key",
+        "Adds a SQL comment so the query can be traced back to code in Query Store or traces",
+        "Names the compiled query",
+        "Adds a log scope to the ILogger output only"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The tag is emitted as a `-- OrderReads.NextPage` comment at the top of the SQL, which is visible wherever the statement text is captured.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-006",
+      "topic": "efcore-performance",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "On SQL Server, how many commands does one `SaveChangesAsync` send for three new rows added to the same table?",
+      "options": [
+        "3",
+        "1",
+        "4",
+        "6"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "EF batches the inserts into one `MERGE ... OUTPUT` statement that inserts all three rows and returns their generated keys, so it is one round-trip.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-007",
+      "topic": "efcore-performance",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which changes actually remove an N+1 problem? (Select all that apply)",
+      "options": [
+        "Converting the query to a compiled query",
+        "Projecting the needed child data in the same query with `Select`",
+        "Switching to DbContext pooling",
+        "Eager loading the children with `Include`"
+      ],
+      "answer": [
+        1,
+        3
+      ],
+      "explanation": "N+1 is a round-trip problem. Projection and `Include` fetch related data with the main query. Compiled queries and pooling reduce per-call overhead but still execute one query per item.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-008",
+      "topic": "efcore-performance",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which is the most defensible EF Core vs Dapper position for a typical line-of-business API?",
+      "options": [
+        "Always Dapper, because EF Core is too slow",
+        "Always EF Core, raw SQL is never needed",
+        "EF Core for writes and most reads; Dapper or `SqlQuery<T>` for a few complex hot reports",
+        "Use both for every query and compare results"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "EF Core brings change tracking, migrations and safe LINQ, and projected no-tracking reads are close to Dapper. Hand-written SQL earns its place on specific complex or hot queries.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-efcore-performance-009",
+      "topic": "efcore-performance",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which statement about keyless entity types (`HasNoKey()`) is true?",
+      "options": [
+        "They are tracked by key-less identity resolution",
+        "They can be inserted but not updated",
+        "They require a stored procedure to query",
+        "They are never tracked and cannot be saved with `SaveChanges`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Without a key there is no identity, so EF cannot track or write them. They suit views, reporting queries and table-valued functions.",
+      "readMore": "/data/efcore-performance/"
+    },
+    {
+      "id": "data-repository-uow-ef-001",
+      "topic": "repository-uow-ef",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "In EF Core, which built-in types already play the roles of unit of work and repository?",
+      "options": [
+        "`DbContext` is the unit of work, `DbSet<T>` is the repository",
+        "`DbSet<T>` is the unit of work, `DbContext` is the repository",
+        "`ChangeTracker` is the repository, `Database` is the unit of work",
+        "Neither exists; you must implement both"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`DbContext` tracks changes across sets and commits them atomically with `SaveChanges`; each `DbSet<T>` offers collection-like querying and adding. That is why generic wrappers often add little.",
+      "readMore": "/data/repository-uow-ef/"
+    },
+    {
+      "id": "data-repository-uow-ef-002",
+      "topic": "repository-uow-ef",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is the main problem with `IRepository<T>.Query()` returning `IQueryable<T>` to services?",
+      "options": [
+        "`IQueryable` results cannot be awaited by callers",
+        "It always loads the whole table into memory first",
+        "It leaks EF: callers write EF queries and mocks skip SQL translation",
+        "It silently disables change tracking for all callers"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Callers still depend on EF translation rules and extension methods like `Include`, so EF is not really hidden, and unit tests with mocked `IQueryable` do not exercise real SQL translation.",
+      "readMore": "/data/repository-uow-ef/"
+    },
+    {
+      "id": "data-repository-uow-ef-003",
+      "topic": "repository-uow-ef",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does Microsoft discourage the EF Core InMemory provider for testing?",
+      "options": [
+        "It is far too slow for running unit tests",
+        "It is not relational, so SQL, transactions and constraints behave differently",
+        "It requires Docker on every developer machine",
+        "It cannot store more than 1,000 rows per table"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Tests can pass in memory and fail on SQL Server because translation, constraints, transactions and case sensitivity differ. Prefer SQLite in-memory for simple cases or real SQL Server (for example via Testcontainers).",
+      "readMore": "/data/repository-uow-ef/"
+    },
+    {
+      "id": "data-repository-uow-ef-004",
+      "topic": "repository-uow-ef",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Each repository in a project creates its own `new ShopDb()`. A service updates an order and stock through two repositories. What breaks?",
+      "options": [
+        "Nothing; EF shares change trackers between contexts",
+        "Queries become slower because of connection pooling",
+        "Lazy loading stops working",
+        "The two changes cannot be committed atomically in one `SaveChanges`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Each context has its own change tracker and transaction. One unit of work needs one shared scoped context (or an explicit shared transaction), otherwise a failure can leave half the work saved.",
+      "readMore": "/data/repository-uow-ef/"
+    },
+    {
+      "id": "data-repository-uow-ef-005",
+      "topic": "repository-uow-ef",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What problem does the specification pattern solve in an EF-based repository design?",
+      "options": [
+        "It replaces migrations with code-first specification files",
+        "It enforces optimistic concurrency on every update",
+        "It turns criteria and includes into named, reusable query objects",
+        "It generates SQL directly without going through LINQ"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A specification is evaluated into an `IQueryable` inside the data layer, so repositories stay small and queries become reusable and testable without exposing `IQueryable` everywhere.",
+      "readMore": "/data/repository-uow-ef/"
+    },
+    {
+      "id": "data-repository-uow-ef-006",
+      "topic": "repository-uow-ef",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which setup gives the highest-fidelity integration tests for EF Core queries against SQL Server?",
+      "options": [
+        "Mocked `DbSet<T>` with Moq",
+        "A real SQL Server instance, for example in Testcontainers",
+        "The EF Core InMemory provider",
+        "A JSON file loaded into lists"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Only the real engine runs the exact SQL, constraints and transactions your app uses. Reset data between tests with Respawn or rolled-back transactions.",
+      "readMore": "/data/repository-uow-ef/"
+    },
+    {
+      "id": "data-repository-uow-ef-007",
+      "topic": "repository-uow-ef",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "When does adding a repository layer over EF Core genuinely add value? (Select all that apply)",
+      "options": [
+        "To make queries run faster than plain `DbContext` access",
+        "As an aggregate-specific repository in DDD that always loads the whole aggregate",
+        "To keep EF Core out of the domain and application layers in Clean Architecture",
+        "Because `DbContext` does not support transactions"
+      ],
+      "answer": [
+        1,
+        2
+      ],
+      "explanation": "Repositories pay off when they express domain intent or enforce layering. They do not speed up queries, and `DbContext` already provides transactions and a unit of work.",
+      "readMore": "/data/repository-uow-ef/"
+    },
+    {
+      "id": "data-repository-uow-ef-008",
+      "topic": "repository-uow-ef",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A generic repository's `Add` calls `db.SaveChanges()` internally. A service adds an order, then a payment; the payment insert fails. What is the state of the database?",
+      "code": "public void Add(T entity)\n{\n    db.Set<T>().Add(entity);\n    db.SaveChanges();\n}",
+      "codeLang": "csharp",
+      "options": [
+        "The order is saved without its payment",
+        "Nothing is saved, because both calls share one transaction",
+        "Both are saved; the error is ignored",
+        "The order is rolled back automatically by the change tracker"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each `SaveChanges` commits its own transaction, so the first insert is already committed. Saving inside repository methods breaks the unit of work; commit once through `IUnitOfWork.SaveChangesAsync` at the end.",
+      "readMore": "/data/repository-uow-ef/"
+    }
+  ]
+}

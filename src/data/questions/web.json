@@ -1,0 +1,1937 @@
+{
+  "section": "web",
+  "version": 1,
+  "questions": [
+    {
+      "id": "web-typescript-types-001",
+      "topic": "typescript-types",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A function receives `data: unknown`. Which statement is true?",
+      "options": [
+        "You can call `data.toString()` directly because every value has it",
+        "You must narrow `data` (e.g. with `typeof` or a type guard) before using its members",
+        "`unknown` is just an alias for `any`",
+        "`unknown` values cannot be assigned to a variable of type `unknown`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`unknown` accepts any value but lets you do nothing with it until you narrow it. `any` would allow everything with no checks. That is why `unknown` is the safe choice for JSON, `catch` variables and other untrusted input.",
+      "optionNotes": [
+        "Member access on `unknown` is a compile error, even for `toString`.",
+        null,
+        "`any` disables checking; `unknown` enforces it.",
+        "Any value, including another `unknown`, is assignable to `unknown`."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-002",
+      "topic": "typescript-types",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why does the last line fail to compile?",
+      "code": "type HttpMethod = 'GET' | 'POST';\nfunction send(method: HttpMethod) {}\n\nconst req = { method: 'GET' };\nsend(req.method);",
+      "codeLang": "ts",
+      "options": [
+        "`send` cannot accept a property access expression",
+        "Object literal types are always readonly",
+        "`req.method` is widened to `string`, which is not assignable to `HttpMethod`",
+        "String literal unions only accept enum members"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Properties of a mutable object literal are widened, so `req.method` has type `string`. Fix it with `as const`, an annotation (`const req: { method: HttpMethod }`) or `satisfies`.",
+      "optionNotes": [
+        "Property accesses are fine arguments.",
+        "Object literal properties are mutable unless you use `as const`.",
+        null,
+        "Any matching string literal is accepted."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-003",
+      "topic": "typescript-types",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Inside the `default` branch, what is the type of `s` if every status is handled above it?",
+      "code": "type State =\n  | { status: 'loading' }\n  | { status: 'success'; data: string[] }\n  | { status: 'error'; error: string };\n\nfunction render(s: State) {\n  switch (s.status) {\n    case 'loading': return '...';\n    case 'success': return s.data.join();\n    case 'error': return s.error;\n    default: return assertNever(s); // s: ?\n  }\n}",
+      "codeLang": "ts",
+      "options": [
+        "`State`",
+        "`unknown`",
+        "`{ status: string }`",
+        "`never`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Each `case` narrows the discriminated union and removes that member. After all members are handled nothing is left, so `s` is `never`. Passing it to a function that accepts `never` makes the compiler flag any status you forget to handle later.",
+      "optionNotes": [
+        "The union has been narrowed by the cases above.",
+        "Narrowing never widens to unknown.",
+        "TypeScript keeps the union members, it does not merge them.",
+        null
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-004",
+      "topic": "typescript-types",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which capability does an `interface` have that a `type` alias does not?",
+      "options": [
+        "Describing the shape of an object",
+        "Being used with `implements` in a class",
+        "Declaration merging: two declarations with the same name combine",
+        "Having optional properties"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Two `interface Window { ... }` declarations merge into one, which is how you augment library or global types. A duplicate `type` name is an error. Type aliases, in turn, can express unions, tuples and mapped/conditional types.",
+      "optionNotes": [
+        "Both can describe object shapes.",
+        "A class can implement an object type alias too.",
+        null,
+        "Both support optional properties."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-005",
+      "topic": "typescript-types",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is the type of `x.id`?",
+      "code": "type A = { id: string };\ntype B = { id: number };\ndeclare const x: A & B;\n\nconst id = x.id;",
+      "codeLang": "ts",
+      "options": [
+        "`string | number`",
+        "`never`",
+        "`string`",
+        "Compile error on the `A & B` line"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "An intersection requires the value to satisfy both types, so `id` must be `string & number` at the same time, which is `never`. Interfaces using `extends` would report the conflict as an error instead, one reason to prefer `extends` for composing object types.",
+      "optionNotes": [
+        "That would be a union (`A | B`).",
+        null,
+        "The second type is not ignored.",
+        "Intersections with conflicting members compile; the member becomes `never`."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-006",
+      "topic": "typescript-types",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these narrow `value: string | Date | { kind: \"range\" }` inside an `if` block? (Select all that apply)",
+      "options": [
+        "`typeof value === 'string'`",
+        "`value instanceof Date`",
+        "`'kind' in value` (after ruling out the string)",
+        "`const v = value as Date`"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "`typeof`, `instanceof` and `in` are runtime checks the compiler follows through control flow. A type assertion (`as`) only tells the compiler to trust you; it performs no check and does not narrow the original variable.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "An assertion is unchecked; it does not narrow `value`."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-007",
+      "topic": "typescript-types",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Which line produces a compile error?",
+      "code": "interface Point { x: number; y: number }\n\nconst a: Point = { x: 1, y: 2, z: 3 };      // line A\nconst tmp = { x: 1, y: 2, z: 3 };\nconst b: Point = tmp;                       // line B\nfunction draw(p: Point) {}\ndraw(tmp);                                  // line C",
+      "codeLang": "ts",
+      "options": [
+        "Only line A",
+        "Only line B",
+        "Lines A, B and C",
+        "None of them; extra properties are always allowed"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Excess property checks apply only to fresh object literals assigned directly to a typed target. `tmp` is not fresh, so structural typing accepts it wherever `Point` is expected because it has at least `x` and `y`.",
+      "optionNotes": [
+        null,
+        "`tmp` is a variable, not a fresh literal, so no excess check.",
+        "Lines B and C pass structural checks.",
+        "Line A is checked because it is a fresh literal."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-008",
+      "topic": "typescript-types",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Given `enum Status { Active, Suspended }`, what is `Status[0]` at runtime?",
+      "options": [
+        "`0`",
+        "`undefined`",
+        "`'Active'`",
+        "A compile error"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Numeric enums compile to an object with a reverse mapping: `Status.Active === 0` and `Status[0] === 'Active'`. String enums do not get a reverse mapping.",
+      "optionNotes": [
+        "`Status.Active` is 0; indexing by the number gives the name.",
+        "The reverse mapping exists for numeric enums.",
+        null,
+        "Indexing a numeric enum by a number is allowed."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-types-009",
+      "topic": "typescript-types",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular service calls `http.get<User>(url)` and the API actually returns `{ \"userId\": 5 }`. What happens?",
+      "options": [
+        "Angular throws a validation error because the shape does not match `User`",
+        "The object is passed through as-is; the code is typed as `User` but `id` is `undefined` at runtime",
+        "TypeScript converts `userId` to `id` automatically",
+        "The request fails with a 400 response"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "TypeScript types are erased at compile time, so the generic argument is only a cast. Nothing validates the payload at runtime. Validate untrusted data with type guards or a schema library at the boundary.",
+      "optionNotes": [
+        "Neither Angular nor TypeScript validates responses.",
+        null,
+        "Types do no runtime mapping.",
+        "The server response is unrelated to the client-side type."
+      ],
+      "readMore": "/web/typescript-types/"
+    },
+    {
+      "id": "web-typescript-advanced-001",
+      "topic": "typescript-advanced",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What does `Partial<User>` produce?",
+      "code": "interface User { id: number; name: string; email: string }",
+      "codeLang": "ts",
+      "options": [
+        "A type with only the first property of `User`",
+        "A type where every property of `User` is optional",
+        "A type where every property is `readonly`",
+        "A type where every property can also be `null`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Partial<T>` is the mapped type `{ [P in keyof T]?: T[P] }`. It is useful for PATCH payloads and form drafts. It is shallow: nested objects keep their required properties.",
+      "optionNotes": [
+        "That is not a built-in utility.",
+        null,
+        "That is `Readonly<T>`.",
+        "Optional means `undefined` is allowed, not `null`."
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-002",
+      "topic": "typescript-advanced",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You need a \"create product\" payload type that is `Product` without the server-generated `id` and `createdAt`. Which is best?",
+      "options": [
+        "`Pick<Product, 'id' | 'createdAt'>`",
+        "`Partial<Product>`",
+        "`Record<keyof Product, unknown>`",
+        "`Omit<Product, 'id' | 'createdAt'>`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`Omit` keeps every property except the listed keys, so the payload type follows `Product` automatically when fields are added. `Pick` would do the opposite.",
+      "optionNotes": [
+        "`Pick` keeps only those two keys.",
+        "That makes every field optional, including required ones.",
+        "That loses all property types.",
+        null
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-003",
+      "topic": "typescript-advanced",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is `T`?",
+      "code": "async function loadUser(id: number) {\n  const res = await fetch(`/api/users/${id}`);\n  return (await res.json()) as { id: number; name: string };\n}\n\ntype T = Awaited<ReturnType<typeof loadUser>>;",
+      "codeLang": "ts",
+      "options": [
+        "`Promise<{ id: number; name: string }>`",
+        "`{ id: number; name: string }`",
+        "`typeof loadUser`",
+        "`(id: number) => Promise<unknown>`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`typeof loadUser` gets the function type, `ReturnType` extracts `Promise<{ id; name }>`, and `Awaited` unwraps the promise. This pattern types a value derived from a function you do not own.",
+      "optionNotes": [
+        "That is `ReturnType` without `Awaited`.",
+        null,
+        "`ReturnType` extracts the return type, not the function type.",
+        "The return type is inferred from the assertion, not `unknown`."
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-004",
+      "topic": "typescript-advanced",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why use `satisfies` here instead of annotating `routes` as `Record<string, Route>`?",
+      "code": "type Route = { path: string; title: string };\n\nconst routes = {\n  home: { path: '/', title: 'Home' },\n  orders: { path: '/orders', title: 'Orders' },\n} satisfies Record<string, Route>;",
+      "codeLang": "ts",
+      "options": [
+        "It validates the object against the type but keeps the inferred keys, so `routes.ordrs` is a compile error",
+        "It converts the object into a `Map` at runtime",
+        "It makes the object deeply readonly",
+        "It skips type checking to improve compile speed"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "An annotation sets the type to `Record<string, Route>`, so any key is accepted and the literal keys are lost. `satisfies` checks compatibility but keeps the precise inferred type, giving both validation and key autocomplete.",
+      "optionNotes": [
+        null,
+        "`satisfies` has no runtime effect.",
+        "That is `as const`.",
+        "It adds a check, it does not skip one."
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-005",
+      "topic": "typescript-advanced",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "This function does not compile. Which signature fixes it while staying generic?",
+      "code": "function getId<T>(item: T) {\n  return item.id; // error: Property 'id' does not exist on type 'T'\n}",
+      "codeLang": "ts",
+      "options": [
+        "function getId<T>(item: any)",
+        "function getId<T extends { id: unknown }>(item: T)",
+        "function getId<T = { id: number }>(item: T)",
+        "function getId<T>(item: T): T"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "A constraint (`extends`) tells the compiler every `T` has an `id`, so the body can use it and callers must pass a matching object. A default type parameter does not constrain what callers pass.",
+      "optionNotes": [
+        "That throws away type safety.",
+        null,
+        "A default is only used when T is not inferred; it is not a constraint.",
+        "The return annotation does not add an `id` member."
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-006",
+      "topic": "typescript-advanced",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is `C`?",
+      "code": "type ToArray<T> = T extends unknown ? T[] : never;\ntype C = ToArray<string | number>;",
+      "codeLang": "ts",
+      "options": [
+        "`(string | number)[]`",
+        "`never`",
+        "`string[] | number[]`",
+        "`unknown[]`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "A conditional type on a naked type parameter is distributive: it runs once per union member and unions the results. Wrap both sides in a tuple (`[T] extends [unknown]`) to get `(string | number)[]` instead.",
+      "optionNotes": [
+        "That is the non-distributive result.",
+        "Both members extend `unknown`.",
+        null,
+        "Each member keeps its own type."
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-007",
+      "topic": "typescript-advanced",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is `A`?",
+      "code": "type ElementOf<T> = T extends readonly (infer E)[] ? E : never;\ntype A = ElementOf<Promise<string>[]>;",
+      "codeLang": "ts",
+      "options": [
+        "`string`",
+        "`Promise<string>`",
+        "`never`",
+        "`Promise<string>[]`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`infer E` captures the element type of the array, which is `Promise<string>`. It does not unwrap promises; you would need `Awaited<ElementOf<...>>` for that.",
+      "optionNotes": [
+        "`infer` does not unwrap the promise.",
+        null,
+        "An array type does match the pattern.",
+        "That is the input, not the element type."
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-008",
+      "topic": "typescript-advanced",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which flags are turned on by `\"strict\": true` in tsconfig? (Select all that apply)",
+      "options": [
+        "`strictNullChecks`",
+        "`noImplicitAny`",
+        "`noUncheckedIndexedAccess`",
+        "`strictPropertyInitialization`"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "`strict` enables a family of flags including `strictNullChecks`, `noImplicitAny`, `strictPropertyInitialization`, `strictFunctionTypes` and `useUnknownInCatchVariables`. `noUncheckedIndexedAccess` (index access returns `T | undefined`) must be enabled separately.",
+      "optionNotes": [
+        null,
+        null,
+        "It is opt-in, not part of `strict`.",
+        null
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-typescript-advanced-009",
+      "topic": "typescript-advanced",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is `Role`?",
+      "code": "const ROLES = ['admin', 'editor', 'viewer'] as const;\ntype Role = (typeof ROLES)[number];",
+      "codeLang": "ts",
+      "options": [
+        "`string`",
+        "`number`",
+        "`readonly ['admin', 'editor', 'viewer']`",
+        "`'admin' | 'editor' | 'viewer'`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`as const` makes the array a readonly tuple of literal types. `typeof ROLES` gets that type and indexing it with `number` gives the union of its element types. One runtime list now drives the type.",
+      "optionNotes": [
+        "Without `as const` it would be `string`.",
+        "`[number]` indexes by number; it does not return number.",
+        "That is `typeof ROLES` itself.",
+        null
+      ],
+      "readMore": "/web/typescript-advanced/"
+    },
+    {
+      "id": "web-js-event-loop-001",
+      "topic": "js-event-loop",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is logged, in order?",
+      "code": "console.log('A');\nsetTimeout(() => console.log('B'), 0);\nPromise.resolve().then(() => console.log('C'));\nconsole.log('D');",
+      "codeLang": "js",
+      "options": [
+        "A B C D",
+        "A D B C",
+        "A D C B",
+        "A C D B"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Synchronous code runs first (A, D). Then the microtask queue drains (C). Only then does the event loop take the next task, the timer callback (B).",
+      "optionNotes": [
+        "Callbacks never interrupt synchronous code.",
+        "Microtasks run before the next task, even a 0 ms timer.",
+        null,
+        "The `then` callback cannot run before the script finishes."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-002",
+      "topic": "js-event-loop",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged, in order?",
+      "code": "async function load() {\n  console.log('1');\n  await null;\n  console.log('2');\n}\nconsole.log('3');\nload();\nconsole.log('4');",
+      "codeLang": "js",
+      "options": [
+        "3 1 2 4",
+        "3 4 1 2",
+        "1 3 4 2",
+        "3 1 4 2"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "An async function runs synchronously until its first `await`, so `1` logs right after `3`. Awaiting any value (even `null`) suspends the function and schedules the rest as a microtask, which runs after the script logs `4`.",
+      "optionNotes": [
+        "`await` always yields, even for a non-promise.",
+        "The body before `await` runs immediately when called.",
+        "`3` is logged before `load()` is called.",
+        null
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-003",
+      "topic": "js-event-loop",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is logged, in order?",
+      "code": "setTimeout(() => console.log('t1'), 0);\nPromise.resolve().then(() => {\n  console.log('p1');\n  setTimeout(() => console.log('t2'), 0);\n  Promise.resolve().then(() => console.log('p2'));\n});\nqueueMicrotask(() => console.log('m1'));\nconsole.log('s');",
+      "codeLang": "js",
+      "options": [
+        "s p1 p2 m1 t1 t2",
+        "s p1 m1 p2 t1 t2",
+        "s p1 m1 t1 p2 t2",
+        "s m1 p1 p2 t1 t2"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "After `s`, the microtask queue holds p1 then m1 (in registration order). Running p1 adds p2 to the end of the queue, after m1. All microtasks drain before any timer, and t1 was queued before t2.",
+      "optionNotes": [
+        "p2 is queued while p1 runs, so it goes after m1, which was already waiting.",
+        null,
+        "A newly added microtask still runs before the next task.",
+        "The `then` callback was registered before `queueMicrotask`."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-004",
+      "topic": "js-event-loop",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged, in order?",
+      "code": "const p = new Promise((resolve) => {\n  console.log('a');\n  resolve('b');\n  console.log('c');\n});\np.then((v) => console.log(v));\nconsole.log('d');",
+      "codeLang": "js",
+      "options": [
+        "a b c d",
+        "a c d b",
+        "a c b d",
+        "d a c b"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The executor passed to `new Promise` runs synchronously, and `resolve` does not stop it, so `a` and `c` log first. `then` callbacks always run asynchronously as microtasks, after the remaining synchronous code (`d`).",
+      "optionNotes": [
+        "`then` callbacks never run synchronously.",
+        null,
+        "The `then` callback waits for the script to finish.",
+        "The executor runs immediately on construction."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-005",
+      "topic": "js-event-loop",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is logged, in order?",
+      "code": "async function a1() {\n  console.log('a1 start');\n  await a2();\n  console.log('a1 end');\n}\nasync function a2() { console.log('a2'); }\n\nconsole.log('script start');\nsetTimeout(() => console.log('timeout'), 0);\na1();\nnew Promise((r) => { console.log('p executor'); r(); })\n  .then(() => console.log('then 1'))\n  .then(() => console.log('then 2'));\nconsole.log('script end');",
+      "codeLang": "js",
+      "options": [
+        "script start, a1 start, a2, p executor, script end, a1 end, then 1, then 2, timeout",
+        "script start, a1 start, a2, a1 end, p executor, script end, then 1, then 2, timeout",
+        "script start, a1 start, a2, p executor, script end, then 1, a1 end, then 2, timeout",
+        "script start, a1 start, a2, p executor, script end, timeout, a1 end, then 1, then 2"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`a2` runs synchronously and returns a resolved promise; the continuation of `a1` is queued first. The promise executor is synchronous, and its `then 1` is queued second. `then 2` is only queued once `then 1` finishes. The timeout waits for all microtasks.",
+      "optionNotes": [
+        null,
+        "Code after `await` never runs synchronously.",
+        "The `a1` continuation was queued before `then 1`.",
+        "Timers run after the microtask queue is empty."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-006",
+      "topic": "js-event-loop",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A dashboard loads three independent widgets and should show whatever succeeded even if one request fails. Which combinator fits?",
+      "options": [
+        "`Promise.all`",
+        "`Promise.race`",
+        "`Promise.allSettled`",
+        "`Promise.any`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`Promise.allSettled` waits for every promise and returns `{ status, value }` or `{ status, reason }` for each, never rejecting. `Promise.all` would reject as soon as one widget fails.",
+      "optionNotes": [
+        "It fails fast on the first rejection.",
+        "It settles with only the first result.",
+        null,
+        "It resolves with only the first success."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-007",
+      "topic": "js-event-loop",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens when every promise passed to `Promise.any` rejects?",
+      "options": [
+        "It resolves with `undefined` as the value",
+        "It rejects with an `AggregateError` of all reasons",
+        "It rejects with the first rejection reason only",
+        "It never settles and stays pending forever"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`Promise.any` resolves with the first fulfilled value. Only if all inputs reject does it reject, with an `AggregateError` containing all the reasons in `errors`.",
+      "optionNotes": [
+        "It never resolves without a success.",
+        null,
+        "That describes `Promise.race` when the first to settle rejects.",
+        "It settles once all inputs have rejected."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-008",
+      "topic": "js-event-loop",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged, in order?",
+      "code": "Promise.resolve(1)\n  .then((x) => { throw new Error('e' + x); })\n  .then(() => console.log('skipped'))\n  .catch((e) => { console.log(e.message); return 2; })\n  .then((x) => console.log(x))\n  .finally(() => console.log('fin'));",
+      "codeLang": "js",
+      "options": [
+        "e1, 2, fin",
+        "skipped, e1, 2, fin",
+        "e1, fin",
+        "e1, undefined, fin"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The throw rejects the next promise, so the following `then` is skipped. `catch` handles it and returns 2, which fulfils the chain again, so the next `then` logs 2. `finally` runs last.",
+      "optionNotes": [
+        null,
+        "A rejected promise skips fulfilment handlers.",
+        "Returning from `catch` recovers the chain.",
+        "`catch` returned 2, which is passed on."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-009",
+      "topic": "js-event-loop",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these schedule a microtask? (Select all that apply)",
+      "options": [
+        "A `.then` callback on a resolved promise",
+        "`queueMicrotask(fn)`",
+        "`setTimeout(fn, 0)`",
+        "A `MutationObserver` callback"
+      ],
+      "answer": [
+        0,
+        1,
+        3
+      ],
+      "explanation": "Promise reactions, `queueMicrotask`, `await` continuations and `MutationObserver` callbacks are microtasks. `setTimeout` schedules a task (macrotask), which runs only after the microtask queue is empty.",
+      "optionNotes": [
+        null,
+        null,
+        "Timers are tasks, not microtasks.",
+        null
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-event-loop-010",
+      "topic": "js-event-loop",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "async function f() {\n  try {\n    return Promise.reject(new Error('x'));\n  } catch { console.log('caught f'); }\n}\nasync function g() {\n  try {\n    return await Promise.reject(new Error('x'));\n  } catch { console.log('caught g'); return 'g'; }\n}\nf().catch(() => console.log('f rejected'));\ng().then((v) => console.log(v));",
+      "codeLang": "js",
+      "options": [
+        "caught f, caught g, g",
+        "f rejected, g rejected",
+        "caught g, g, f rejected",
+        "caught f, f rejected, caught g, g"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`return promise` without `await` hands the rejected promise to the caller, so the `catch` block in `f` never runs and `f()` rejects. `return await` rethrows inside the `try`, so `g` catches it. Inside a `try` block, use `return await`.",
+      "optionNotes": [
+        "`f` returns the promise without awaiting it, so its catch is skipped.",
+        "`g` catches the error and fulfils with `g`.",
+        null,
+        "`f` never enters its catch block."
+      ],
+      "readMore": "/web/js-event-loop/"
+    },
+    {
+      "id": "web-js-core-001",
+      "topic": "js-core",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0);\n}",
+      "codeLang": "js",
+      "options": [
+        "0 1 2",
+        "3 3 3",
+        "2 2 2",
+        "undefined undefined undefined"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`var` is function-scoped, so all three callbacks close over the same `i`. They run after the loop finishes, when `i` is 3. With `let`, each iteration gets a fresh binding and it prints 0 1 2.",
+      "optionNotes": [
+        "That is the `let` behaviour.",
+        null,
+        "The loop increments to 3 before exiting.",
+        "`i` exists and holds 3."
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-002",
+      "topic": "js-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "console.log(typeof a, typeof b, typeof c);\nvar a = 1;\nfunction b() {}\nvar c = function () {};",
+      "codeLang": "js",
+      "options": [
+        "number function function",
+        "undefined undefined undefined",
+        "undefined function undefined",
+        "ReferenceError"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Function declarations are hoisted with their body, so `b` is already a function. `var` declarations are hoisted but initialised to `undefined`, including `c`, whose function expression is assigned only when that line runs.",
+      "optionNotes": [
+        "Assignments are not hoisted.",
+        "Function declarations are fully hoisted.",
+        null,
+        "`var` and function declarations do not have a TDZ."
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-003",
+      "topic": "js-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What happens?",
+      "code": "let x = 1;\n{\n  console.log(x);\n  let x = 2;\n}",
+      "codeLang": "js",
+      "options": [
+        "Logs 1",
+        "Logs 2",
+        "Logs undefined",
+        "Throws ReferenceError"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The inner `let x` is hoisted to the top of the block and shadows the outer `x`, but it is in the temporal dead zone until its declaration line runs. Accessing it throws `ReferenceError`.",
+      "optionNotes": [
+        "The inner `x` shadows the outer one for the whole block.",
+        "The assignment has not run yet.",
+        "That is how `var` behaves, not `let`.",
+        null
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-004",
+      "topic": "js-core",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "function makeCounter() {\n  let count = 0;\n  return { inc: () => ++count, get: () => count };\n}\nconst c1 = makeCounter();\nconst c2 = makeCounter();\nc1.inc(); c1.inc(); c2.inc();\nconsole.log(c1.get(), c2.get());",
+      "codeLang": "js",
+      "options": [
+        "2 1",
+        "3 3",
+        "1 1",
+        "0 0"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Each call to `makeCounter` creates a new scope with its own `count`. The returned functions close over that variable, so `c1` and `c2` keep independent private state.",
+      "optionNotes": [
+        null,
+        "The counters do not share a variable.",
+        "`c1.inc` was called twice.",
+        "Closures capture the live variable, not a copy of 0."
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-005",
+      "topic": "js-core",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "function show() { return this.name; }\nconst bound = show.bind({ name: 'B1' });\nconsole.log(bound.call({ name: 'B2' }));",
+      "codeLang": "js",
+      "options": [
+        "'B2'",
+        "'B1'",
+        "undefined",
+        "TypeError"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`bind` returns a function whose `this` is permanently fixed. A later `call`, `apply` or `bind` cannot change it; only `new` can override a bound `this`.",
+      "optionNotes": [
+        "`call` cannot override a bound function.",
+        null,
+        "`this` is the bound object, which has a name.",
+        "`this` is defined, so no error."
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-006",
+      "topic": "js-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "class Greeter {\n  name = 'Asha';\n  greet() { return `Hi ${this.name}`; }\n  greetArrow = () => `Hi ${this.name}`;\n}\nconst { greet, greetArrow } = new Greeter();\nconsole.log(greetArrow());\ntry { console.log(greet()); } catch (e) { console.log(e.name); }",
+      "codeLang": "js",
+      "options": [
+        "Hi Asha, then Hi Asha",
+        "Hi undefined, then TypeError",
+        "TypeError, then Hi Asha",
+        "Hi Asha, then TypeError"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The arrow field captures `this` of the instance when it is created, so it works after destructuring. `greet` is a prototype method called without an object; class bodies are strict, so `this` is `undefined` and reading `this.name` throws a TypeError.",
+      "optionNotes": [
+        "The extracted method loses its `this`.",
+        "The arrow function keeps the instance.",
+        "The order is reversed.",
+        null
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-007",
+      "topic": "js-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which is logged by the last line?",
+      "code": "class Animal { speak() { return 'generic'; } }\nclass Dog extends Animal { speak() { return 'woof'; } }\nconst d = new Dog();\nconsole.log(\n  Object.getPrototypeOf(Dog.prototype) === Animal.prototype,\n  d.hasOwnProperty('speak'),\n);",
+      "codeLang": "js",
+      "options": [
+        "true true",
+        "false false",
+        "true false",
+        "false true"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`extends` links `Dog.prototype` to `Animal.prototype`. Methods live on the prototype, not on each instance, so `d` has no own `speak` property; it finds it by walking the chain.",
+      "optionNotes": [
+        "Methods are not copied onto instances.",
+        "`extends` sets up the prototype link.",
+        null,
+        "Both parts are the other way round."
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-008",
+      "topic": "js-core",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "function Person(name) { this.name = name; }\nPerson.prototype.hi = function () { return 'hi ' + this.name; };\nconst p = new Person('Asha');\nPerson.prototype.hi = function () { return 'hello ' + this.name; };\nconsole.log(p.hi());\np.hi = () => 'own';\nconsole.log(p.hi(), delete p.hi, p.hi());",
+      "codeLang": "js",
+      "options": [
+        "hi Asha, then own true hi Asha",
+        "hello Asha, then own true own",
+        "hi Asha, then own false own",
+        "hello Asha, then own true hello Asha"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Property lookup on the prototype is live, so the replaced method is used by the existing instance. Assigning `p.hi` creates an own property that shadows the prototype; deleting it (returns `true`) makes lookup fall back to the prototype method again.",
+      "optionNotes": [
+        "Existing instances see prototype changes immediately.",
+        "After `delete`, the prototype method is found again.",
+        "Deleting an own configurable property returns true.",
+        null
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-009",
+      "topic": "js-core",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which statements about arrow functions are true? (Select all that apply)",
+      "options": [
+        "They take `this` from the enclosing scope",
+        "They cannot be called with `new`",
+        "They have no own `arguments` object",
+        "`call` and `apply` can change their `this`"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "Arrow functions have no own `this`, `arguments`, `super` or `prototype`, so they cannot be constructors. Their `this` is lexical and fixed; `call`/`apply`/`bind` only pass arguments.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "The `thisArg` is ignored for arrow functions."
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-core-010",
+      "topic": "js-core",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "console.log(foo());\nfunction foo() { return 'hoisted'; }\ntry { bar(); } catch (e) { console.log(e.name); }\nvar bar = function () {};",
+      "codeLang": "js",
+      "options": [
+        "'hoisted', then TypeError",
+        "'hoisted', then ReferenceError",
+        "ReferenceError, then TypeError",
+        "'hoisted', and nothing else"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "The declaration `foo` is hoisted with its body. `bar` is a `var`, hoisted as `undefined`, so calling it throws `TypeError: bar is not a function`. It would be a ReferenceError only for `let`/`const` in the TDZ.",
+      "optionNotes": [
+        null,
+        "`bar` exists (as undefined), so it is not a ReferenceError.",
+        "Function declarations are callable before their line.",
+        "Calling `undefined` throws."
+      ],
+      "readMore": "/web/js-core/"
+    },
+    {
+      "id": "web-js-practical-001",
+      "topic": "js-practical",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "const qty = 0;\nconsole.log(qty || 10, qty ?? 10);",
+      "codeLang": "js",
+      "options": [
+        "10 10",
+        "0 0",
+        "10 0",
+        "0 10"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`||` falls back for any falsy value, including 0. `??` falls back only for `null` or `undefined`, so it keeps 0. Use `??` when 0, empty string or `false` are valid values.",
+      "optionNotes": [
+        "`??` keeps 0.",
+        "`||` replaces falsy 0.",
+        null,
+        "The operators are the other way round."
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-002",
+      "topic": "js-practical",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A search box should call the API only after the user stops typing for 300 ms. What do you use?",
+      "options": [
+        "Throttle",
+        "Debounce",
+        "`setInterval`",
+        "`requestAnimationFrame`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Debounce restarts a timer on every event and runs once the events stop. Throttle runs at most once per interval while events keep coming, which suits scroll or resize. In Angular: `debounceTime(300)` on `valueChanges`.",
+      "optionNotes": [
+        "Throttle would still call the API while the user is typing.",
+        null,
+        "An interval polls regardless of input.",
+        "That syncs with frames, not with typing pauses."
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-003",
+      "topic": "js-practical",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Which of these expressions is `false`?",
+      "options": [
+        "`0 == ''`",
+        "`null == undefined`",
+        "`[] == false`",
+        "`null == 0`"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "With `==`, `null` and `undefined` equal each other and nothing else, so `null == 0` is false. The others coerce: `0 == \"\"` (both become 0) and `[] == false` (`[]` becomes `\"\"` then 0) are true.",
+      "optionNotes": [
+        "The empty string converts to 0.",
+        "These two are loosely equal by definition.",
+        "Both sides convert to 0.",
+        null
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-004",
+      "topic": "js-practical",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "const original = { id: 1, tags: ['a'] };\nconst copy = { ...original };\ncopy.id = 2;\ncopy.tags.push('b');\nconsole.log(original.id, original.tags);",
+      "codeLang": "js",
+      "options": [
+        "1 ['a']",
+        "2 ['a', 'b']",
+        "1 ['a', 'b']",
+        "2 ['a']"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Spread makes a shallow copy: `id` is copied by value, but `tags` still points to the same array, so pushing to it changes the original. Use `structuredClone` or copy the nested array (`tags: [...original.tags]`).",
+      "optionNotes": [
+        "The nested array is shared.",
+        "`id` was copied, so the original keeps 1.",
+        null,
+        "Both parts are wrong."
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-005",
+      "topic": "js-practical",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "After `const clone = JSON.parse(JSON.stringify({ created: new Date(0) }))`, what is `typeof clone.created`?",
+      "options": [
+        "'object'",
+        "'string'",
+        "'number'",
+        "'undefined'"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`JSON.stringify` serialises a Date as an ISO string and `JSON.parse` does not convert it back. `structuredClone` keeps it as a Date. JSON cloning also drops functions and `undefined`, turns Map/Set into `{}` and throws on circular references.",
+      "optionNotes": [
+        "It is no longer a Date object.",
+        null,
+        "Dates serialise to ISO strings, not timestamps.",
+        "The property is kept, as a string."
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-006",
+      "topic": "js-practical",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What is logged (in a non-strict script)?",
+      "code": "const frozen = Object.freeze({ a: 1, nested: { b: 1 } });\nfrozen.a = 2;\nfrozen.nested.b = 2;\nconsole.log(frozen.a, frozen.nested.b);",
+      "codeLang": "js",
+      "options": [
+        "2 2",
+        "1 1",
+        "TypeError",
+        "1 2"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "`Object.freeze` is shallow. The write to `a` is silently ignored (it would throw in strict mode), but `nested` is a separate, unfrozen object, so its property changes.",
+      "optionNotes": [
+        "Top-level properties are frozen.",
+        "Nested objects are not frozen.",
+        "Non-strict code ignores the failed write silently.",
+        null
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-007",
+      "topic": "js-practical",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What does `[1, 2, 3].map(parseInt)` return?",
+      "options": [
+        "`[1, 2, 3]`",
+        "`[1, NaN, NaN]`",
+        "`[NaN, NaN, NaN]`",
+        "`[1, NaN, 3]`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`map` passes `(value, index, array)`, so the calls are `parseInt(1, 0)` (radix 0 means default, gives 1), `parseInt(2, 1)` (invalid radix, NaN) and `parseInt(3, 2)` (3 is not a binary digit, NaN). Use `map(Number)`.",
+      "optionNotes": [
+        "The index is passed as the radix.",
+        null,
+        "Radix 0 is treated as the default 10.",
+        "`3` is not a valid base-2 digit."
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-008",
+      "topic": "js-practical",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "What is logged?",
+      "code": "const arr = [3, 1, 10, 2];\nconst sorted = arr.toSorted();\nconsole.log(sorted, arr);",
+      "codeLang": "js",
+      "options": [
+        "[1, 2, 3, 10] [3, 1, 10, 2]",
+        "[1, 2, 3, 10] [1, 2, 3, 10]",
+        "[1, 10, 2, 3] [1, 10, 2, 3]",
+        "[1, 10, 2, 3] [3, 1, 10, 2]"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Without a comparator, sorting compares elements as strings, so \"10\" comes before \"2\". `toSorted` (ES2023) returns a new array and leaves the original untouched, unlike `sort`. Use `toSorted((a, b) => a - b)` for numbers.",
+      "optionNotes": [
+        "There is no numeric comparator.",
+        "`toSorted` does not mutate, and the order is lexicographic.",
+        "`toSorted` does not mutate the original.",
+        null
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-009",
+      "topic": "js-practical",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which statements about ES modules compared to CommonJS are true? (Select all that apply)",
+      "options": [
+        "ESM imports are live bindings: importers see later changes to an exported `let`",
+        "ESM `import` declarations are static, which enables tree-shaking",
+        "Top-level `await` is available in ES modules",
+        "CommonJS `require` loads modules asynchronously"
+      ],
+      "answer": [
+        0,
+        1,
+        2
+      ],
+      "explanation": "ESM is statically analysable (bundlers can drop unused exports), exports live bindings and supports top-level `await`. CommonJS `require` is synchronous and returns the `module.exports` object.",
+      "optionNotes": [
+        null,
+        null,
+        null,
+        "`require` is synchronous."
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-js-practical-010",
+      "topic": "js-practical",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An OnPush child receives `[items]=\"items\"`. The parent runs `this.items.push(newItem)`. Why doesn't the child update?",
+      "options": [
+        "The array reference did not change, so OnPush sees no input change",
+        "OnPush components only update on HTTP responses",
+        "`push` is asynchronous",
+        "Arrays cannot be passed as inputs"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "OnPush (and signal equality) compare input references. `push` mutates the same array. Create a new one (`this.items = [...this.items, newItem]` or `items.update(list => [...list, newItem])`).",
+      "optionNotes": [
+        null,
+        "OnPush also reacts to input reference changes, events and signals.",
+        "`push` is synchronous.",
+        "Arrays are valid inputs."
+      ],
+      "readMore": "/web/js-practical/"
+    },
+    {
+      "id": "web-browser-dom-001",
+      "topic": "browser-dom",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The button is inside `div#outer`. What is logged when the button is clicked?",
+      "code": "outer.addEventListener('click', () => console.log('outer bubble'));\nouter.addEventListener('click', () => console.log('outer capture'), { capture: true });\nbtn.addEventListener('click', () => console.log('btn'));\ndocument.addEventListener('click', () => console.log('document bubble'));",
+      "codeLang": "js",
+      "options": [
+        "btn, outer bubble, outer capture, document bubble",
+        "outer capture, btn, outer bubble, document bubble",
+        "document bubble, outer capture, btn, outer bubble",
+        "btn, outer capture, outer bubble, document bubble"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The event first travels down from `window` (capture phase), so the capturing listener on `outer` runs first. Then the target listener runs, then the event bubbles up through `outer` and `document`.",
+      "optionNotes": [
+        "Capture listeners run before the target.",
+        null,
+        "The document listener is a bubble listener, so it runs last.",
+        "Capture happens before the target phase."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-002",
+      "topic": "browser-dom",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "In the previous setup, the button gets an extra listener: `btn.addEventListener('click', e => e.stopPropagation())`. What is logged on click?",
+      "options": [
+        "btn only",
+        "outer capture only",
+        "outer capture, btn",
+        "outer capture, btn, outer bubble"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The capture listener on `outer` already ran on the way down. At the target, both button listeners run (`stopPropagation` does not stop other listeners on the same element), but the event no longer bubbles to `outer` or `document`.",
+      "optionNotes": [
+        "The capture phase happened before the target.",
+        "Other listeners on the target still run.",
+        null,
+        "Bubbling is stopped at the button."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-003",
+      "topic": "browser-dom",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "What is the main benefit of event delegation (one listener on a list instead of one per row)?",
+      "options": [
+        "It makes events fire in the capture phase",
+        "It prevents the default browser action",
+        "It lets events bypass the event loop",
+        "Fewer listeners, and rows added later are handled automatically"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Because events bubble, a single listener on the container can identify the row with `event.target.closest(...)`. It saves memory on large lists and covers dynamically added elements.",
+      "optionNotes": [
+        "Delegation normally uses bubbling.",
+        "That is `preventDefault`.",
+        "Listeners always run through the event loop.",
+        null
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-004",
+      "topic": "browser-dom",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A user clicks a `<span>` inside a `<li>`; the listener is on the parent `<ul>`. What are `event.target` and `event.currentTarget`?",
+      "options": [
+        "target is the span, currentTarget is the ul",
+        "target is the ul, currentTarget is the span",
+        "Both are the li",
+        "target is the li, currentTarget is the ul"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`target` is the element where the event originated (the deepest clicked element). `currentTarget` is the element whose listener is running. Use `target.closest(\"li\")` to find the row.",
+      "optionNotes": [
+        null,
+        "They are the other way round.",
+        "Neither refers to the li by default.",
+        "The click originated on the span, not the li."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-005",
+      "topic": "browser-dom",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Which storage is cleared when the browser tab is closed but survives a page reload?",
+      "options": [
+        "`localStorage`",
+        "A cookie with `Max-Age=3600`",
+        "`sessionStorage`",
+        "IndexedDB"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "`sessionStorage` is scoped to the origin and the tab; it survives reloads but is cleared when the tab closes. `localStorage` and IndexedDB persist until cleared; a cookie with Max-Age lives for that duration.",
+      "optionNotes": [
+        "It persists across tabs and restarts.",
+        "It lives for an hour regardless of the tab.",
+        null,
+        "It persists until cleared."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-006",
+      "topic": "browser-dom",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does the `HttpOnly` flag on a cookie do?",
+      "options": [
+        "Sends the cookie only over HTTP, not HTTPS",
+        "Prevents JavaScript from reading the cookie via `document.cookie`",
+        "Prevents the cookie from being sent on cross-site requests",
+        "Makes the cookie expire when the tab closes"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`HttpOnly` hides the cookie from scripts, so an XSS bug cannot steal it. It is still sent automatically, so you also need `Secure`, `SameSite` and CSRF protection.",
+      "optionNotes": [
+        "`Secure` controls HTTPS-only sending; HttpOnly is about script access.",
+        null,
+        "That is `SameSite`.",
+        "That is a session cookie (no Expires/Max-Age)."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-007",
+      "topic": "browser-dom",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "An Angular app on `https://app.contoso.com` calls `https://api.contoso.com`. Which request does NOT trigger a CORS preflight?",
+      "options": [
+        "`PUT /orders/1` with a JSON body",
+        "`POST /orders` with `Content-Type: application/json`",
+        "`GET /orders` with an `Authorization: Bearer ...` header",
+        "`GET /orders` with no custom headers"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Only \"simple\" requests skip the preflight: GET, HEAD or POST with safelisted headers and a form or text content type. PUT, a JSON content type or an `Authorization` header all require an OPTIONS preflight.",
+      "optionNotes": [
+        "PUT is not a simple method.",
+        "JSON is not a safelisted content type.",
+        "`Authorization` is not a safelisted header.",
+        null
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-008",
+      "topic": "browser-dom",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "An API call works in Postman but fails in the Angular app with a CORS error. What is the most accurate explanation?",
+      "options": [
+        "Postman uses HTTP/1.1 while browsers use HTTP/2",
+        "The server rejects requests that have an `Origin` header",
+        "CORS is enforced by the browser; the API response lacks the `Access-Control-Allow-*` headers for that origin",
+        "Angular's `HttpClient` blocks cross-origin requests by default"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "The same-origin policy is a browser rule. Postman and server-side clients ignore it. The browser blocks the response (or the preflight fails) unless the server returns the right CORS headers, so the fix is in the API configuration.",
+      "optionNotes": [
+        "The protocol version is unrelated to CORS.",
+        "Servers normally accept the Origin header; CORS headers in the response are what matter.",
+        null,
+        "HttpClient does not enforce CORS; the browser does."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-009",
+      "topic": "browser-dom",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Why is this loop slow on a page with many cards?",
+      "code": "for (const card of cards) {\n  card.style.height = card.offsetHeight + 10 + 'px';\n}",
+      "codeLang": "js",
+      "options": [
+        "Setting `style.height` triggers a network request",
+        "Each iteration reads layout after a write, forcing a synchronous reflow every time (layout thrashing)",
+        "`offsetHeight` is an asynchronous API",
+        "The browser repaints the whole page after every statement"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Writing a style invalidates layout; reading `offsetHeight` then forces the browser to recalculate it immediately. Alternating reads and writes repeats this per card. Batch all reads first, then all writes, or use `requestAnimationFrame`.",
+      "optionNotes": [
+        "Styles do not cause network calls.",
+        null,
+        "`offsetHeight` is synchronous; that is the problem.",
+        "Painting happens at most once per frame, not per statement."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-browser-dom-010",
+      "topic": "browser-dom",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which of these trigger layout (reflow) work? (Select all that apply)",
+      "options": [
+        "Changing an element's `width`",
+        "Reading `offsetHeight` right after changing a class that affects size",
+        "Changing `color`",
+        "Animating `transform` on an element on its own compositor layer"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Geometry changes (width, height, font size, adding nodes) need layout, and reading layout properties after a change forces it synchronously. `color` only needs repaint; `transform` on a composited layer only needs compositing.",
+      "optionNotes": [
+        null,
+        null,
+        "Colour changes repaint without changing geometry.",
+        "Transforms are handled by the compositor."
+      ],
+      "readMore": "/web/browser-dom/"
+    },
+    {
+      "id": "web-html-accessibility-001",
+      "topic": "html-accessibility",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "Why prefer `<button>` over `<div (click)=\"save()\">`?",
+      "options": [
+        "A `div` cannot have a click handler in Angular templates",
+        "A `button` renders faster than a `div` in all browsers",
+        "A `button` gets focus, keyboard support and a role for free",
+        "A `div` cannot be styled to look like a real button"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Native buttons give focus, Enter/Space activation and the button role in the accessibility tree for free. A clickable `div` needs `role`, `tabindex` and key handlers to match, and is usually incomplete.",
+      "optionNotes": [
+        "Any element can have a click handler.",
+        "Rendering speed is not the reason.",
+        null,
+        "A div can be styled any way."
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-002",
+      "topic": "html-accessibility",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "A purely decorative divider image adds no information. What should its markup be?",
+      "options": [
+        "`<img src=\"divider.png\">`",
+        "`<img src=\"divider.png\" alt=\"\">`",
+        "`<img src=\"divider.png\" alt=\"image\">`",
+        "`<img src=\"divider.png\" alt=\"divider.png\">`"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "An empty `alt` tells assistive technology to skip the image. Omitting `alt` entirely often makes screen readers read the file name; \"image\" adds noise.",
+      "optionNotes": [
+        "Without alt, the file name may be announced.",
+        null,
+        "Announcing \"image\" adds no value.",
+        "File names are not useful descriptions."
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-003",
+      "topic": "html-accessibility",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does the \"first rule of ARIA\" say?",
+      "options": [
+        "Every element should have an ARIA role",
+        "Use `aria-label` instead of visible labels",
+        "ARIA attributes also add keyboard behaviour",
+        "If a native HTML element provides the semantics and behaviour you need, use it instead of adding ARIA"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "ARIA changes only the accessibility tree; it adds no focus or keyboard behaviour. Native elements are more robust, so ARIA is for gaps HTML cannot fill (tabs, comboboxes) and for state like `aria-expanded`.",
+      "optionNotes": [
+        "Redundant roles add noise or conflicts.",
+        "Visible labels help everyone.",
+        "ARIA adds no behaviour at all.",
+        null
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-004",
+      "topic": "html-accessibility",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "What does `tabindex=\"-1\"` do on a heading?",
+      "options": [
+        "Makes it focusable from script (e.g. `el.focus()`) but not reachable with Tab",
+        "Removes it from the accessibility tree",
+        "Puts it first in the tab order",
+        "Disables the element"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "`-1` makes an element programmatically focusable without adding it to the tab sequence, which is how SPAs move focus to the new page heading after navigation. `0` adds it to the natural order; positive values reorder and should be avoided.",
+      "optionNotes": [
+        null,
+        "It stays in the accessibility tree.",
+        "Positive values do that, and they are discouraged.",
+        "Headings are not disabled by tabindex."
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-005",
+      "topic": "html-accessibility",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A form uses `<input placeholder=\"Email\">` with no other label. What is the best fix?",
+      "options": [
+        "Add `title=\"Email\"` to the input",
+        "Make the placeholder text darker",
+        "Add a visible `<label for=\"email\">` and give the input `id=\"email\"`",
+        "Add `role=\"textbox\"`"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Placeholders disappear on typing, often fail contrast and are not a reliable accessible name. A visible label linked with `for`/`id` (or wrapping the input) is announced by screen readers and enlarges the click target.",
+      "optionNotes": [
+        "`title` is not reliably announced and not visible on touch devices.",
+        "The text still disappears while typing.",
+        null,
+        "An input already has the textbox role."
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-006",
+      "topic": "html-accessibility",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "After a search, a \"12 results found\" message appears without moving focus. How do you make screen readers announce it?",
+      "options": [
+        "Add `aria-hidden=\"false\"` to the message element",
+        "Put it in an `aria-live=\"polite\"` region that exists before the update",
+        "Give the message `tabindex=\"0\"` so it gets focus",
+        "Render the message as an `<h1>` heading instead"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Live regions announce content changes without moving focus. The region should be in the DOM before the update so the change is detected. Angular CDK `LiveAnnouncer` manages such a region for you.",
+      "optionNotes": [
+        "That is the default and announces nothing on change.",
+        null,
+        "Focusable text is only read when the user tabs to it.",
+        "Headings are not announced when they change."
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-007",
+      "topic": "html-accessibility",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A modal sets `aria-hidden=\"true\"` on the page behind it, but keyboard users can still tab into hidden links. What is the problem and the better fix?",
+      "options": [
+        "`aria-hidden` does not block focus; use `inert` or `dialog.showModal()`",
+        "`aria-hidden` only works on `div` elements; wrap the page in a div",
+        "Links ignore `aria-hidden`; convert all of them to buttons",
+        "Set `tabindex=\"0\"` on the modal container to trap focus inside"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Hidden-but-focusable elements create invisible tab stops. The `inert` attribute (applied automatically to the rest of the page by `dialog.showModal()`) removes the background from both focus and the accessibility tree.",
+      "optionNotes": [
+        null,
+        "It works on any element; focusability is the issue.",
+        "Buttons are focusable too.",
+        "A tabindex does not trap focus."
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-008",
+      "topic": "html-accessibility",
+      "difficulty": "medium",
+      "type": "multi",
+      "question": "Which elements create a landmark by default, without any extra attributes? (Select all that apply)",
+      "options": [
+        "`<nav>`",
+        "`<main>`",
+        "`<div>`",
+        "`<span>`"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "`nav` (navigation) and `main` (main) are landmarks. Generic containers like `div` and `span` have no landmark role. Screen-reader users jump between landmarks, so use them for page structure.",
+      "optionNotes": [
+        null,
+        null,
+        "A div is a generic container.",
+        "A span is a generic inline container."
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-html-accessibility-009",
+      "topic": "html-accessibility",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Why can a purely client-rendered Angular app have SEO problems?",
+      "options": [
+        "Search engines block sites that use TypeScript",
+        "Angular strips meta tags at build time",
+        "Client-side routing produces invalid URLs",
+        "The initial HTML is nearly empty, so crawlers and link-preview bots that do not run JavaScript see little content"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "The served `index.html` contains just the root component tag until JavaScript runs. SSR or prerendering sends real HTML, and per-route `title` and `Meta` tags give each page a proper description.",
+      "optionNotes": [
+        "Crawlers see only the compiled JavaScript output.",
+        "Angular keeps meta tags and can set them per route.",
+        "Path-based routes are normal URLs.",
+        null
+      ],
+      "readMore": "/web/html-accessibility/"
+    },
+    {
+      "id": "web-css-layout-001",
+      "topic": "css-layout",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "With the default `box-sizing`, how wide is this element on screen (excluding margin)?",
+      "code": ".box { width: 200px; padding: 20px; border: 5px solid; margin: 10px; }",
+      "codeLang": "css",
+      "options": [
+        "200px",
+        "250px",
+        "270px",
+        "240px"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The default is `content-box`, so `width` sets the content only: 200 + 2 x 20 padding + 2 x 5 border = 250px. With `border-box` it would be 200px.",
+      "optionNotes": [
+        "That is the `border-box` result.",
+        null,
+        "Margin is outside the border and not included.",
+        "The border was left out."
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-002",
+      "topic": "css-layout",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "Both rules target the same link. Which `color` wins?",
+      "code": "#nav .item a { color: red; }          /* rule 1 */\n.menu .item a:hover { color: blue; } /* rule 2, later in the file */",
+      "codeLang": "css",
+      "options": [
+        "Blue, because rule 2 comes later",
+        "Blue, because it has more selectors",
+        "Red, because rule 1 has an ID: (1,1,1) beats (0,3,1)",
+        "It depends on the browser"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "Specificity is compared column by column. One ID outweighs any number of classes and pseudo-classes, so (1,1,1) beats (0,3,1). Source order only matters when specificity is equal.",
+      "optionNotes": [
+        "Order only breaks ties.",
+        "Count of parts matters only within a column.",
+        null,
+        "The cascade is standardised."
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-003",
+      "topic": "css-layout",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "You need a page shell with a header, sidebar, main area and footer aligned in rows and columns. What fits best?",
+      "options": [
+        "Flexbox",
+        "Floats",
+        "Absolute positioning",
+        "CSS Grid"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Grid is two-dimensional and lets the container define rows and columns (`grid-template-areas`). Flexbox is one-dimensional and best for toolbars, centring and items inside a card.",
+      "optionNotes": [
+        "Flexbox handles one axis at a time.",
+        "Floats are a legacy layout technique.",
+        "It removes elements from flow and breaks responsiveness.",
+        null
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-004",
+      "topic": "css-layout",
+      "difficulty": "easy",
+      "type": "single",
+      "question": "An element has `position: absolute; top: 0; right: 0`. What is it positioned relative to?",
+      "options": [
+        "The nearest ancestor with non-static `position` (else the initial containing block)",
+        "Its direct parent element, in every case",
+        "The browser viewport, in every case",
+        "Its own normal position in the document flow"
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Absolute positioning uses the nearest positioned ancestor as its containing block. That is why you often add `position: relative` to a card to anchor a badge inside it.",
+      "optionNotes": [
+        null,
+        "Only if the parent is positioned.",
+        "That is `position: fixed`.",
+        "That is `position: relative`."
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-005",
+      "topic": "css-layout",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "A library stylesheet is imported inside `@layer vendor`. Your own stylesheet is not in any layer and uses a less specific selector for the same property. Which wins (no `!important`)?",
+      "options": [
+        "The library, because its selector is more specific",
+        "The library, because layers always win over unlayered styles",
+        "Whichever is loaded last",
+        "Your unlayered style, because unlayered normal declarations beat layered ones"
+      ],
+      "answer": [
+        3
+      ],
+      "explanation": "Cascade layers are compared before specificity. For normal declarations, unlayered styles beat any layer, so specificity never gets compared. (For `!important` declarations the layer order is reversed.)",
+      "optionNotes": [
+        "Layers are resolved before specificity.",
+        "It is the opposite for normal declarations.",
+        "Order of appearance is only the final tie-breaker.",
+        null
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-006",
+      "topic": "css-layout",
+      "difficulty": "hard",
+      "type": "multi",
+      "question": "Which of these create a new stacking context? (Select all that apply)",
+      "options": [
+        "`opacity: 0.9`",
+        "`position: relative` with `z-index: auto`",
+        "`transform: translateX(0)`",
+        "`display: flex` on its own"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Opacity below 1, any non-`none` transform, filters, `isolation: isolate` and positioned elements with a non-auto `z-index` create stacking contexts. Children can never be layered above content outside their parent context, which explains many \"z-index not working\" bugs.",
+      "optionNotes": [
+        null,
+        "A positioned element needs a z-index other than auto.",
+        null,
+        "A flex container alone does not; its children with a z-index do."
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-007",
+      "topic": "css-layout",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "The root font size is 16px. A `.card` has `font-size: 20px` and `padding: 1em 1rem`. What is the computed padding?",
+      "options": [
+        "16px top/bottom, 20px left/right",
+        "20px top/bottom, 16px left/right",
+        "16px on all sides",
+        "20px on all sides"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "`em` on properties other than `font-size` is relative to the element's own font size (20px). `rem` is always relative to the root font size (16px).",
+      "optionNotes": [
+        "The units are the other way round.",
+        null,
+        "`em` uses the card's 20px font size.",
+        "`rem` uses the root size."
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-008",
+      "topic": "css-layout",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "How does Angular's default `Emulated` view encapsulation keep component styles scoped?",
+      "options": [
+        "It renders each component inside its own iframe",
+        "It adds generated attributes like `_ngcontent-xyz` plus matching attribute selectors",
+        "It renames every CSS class with a content hash",
+        "It attaches a native Shadow DOM root to each host"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The compiler stamps elements with generated attributes (`_nghost-*` on the host, `_ngcontent-*` inside) and rewrites selectors such as `.title` to `.title[_ngcontent-xyz]`. Global styles still apply. `ShadowDom` mode is the one that uses native shadow roots.",
+      "optionNotes": [
+        "No iframes are involved.",
+        null,
+        "Class names are left unchanged.",
+        "That is `ViewEncapsulation.ShadowDom`."
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-009",
+      "topic": "css-layout",
+      "difficulty": "medium",
+      "type": "single",
+      "question": "A reusable product card appears in a narrow sidebar and in a wide main area. You want its layout to change based on the space it gets. What fits best?",
+      "options": [
+        "Media queries on viewport width",
+        "Container queries with `container-type: inline-size` on the wrapper",
+        "`position: sticky`",
+        "Viewport units (`vw`)"
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Container queries respond to the size of a containing element, so the same component adapts wherever it is placed. Media queries only know the viewport, which is the same in both places.",
+      "optionNotes": [
+        "The viewport is the same for both placements.",
+        null,
+        "Sticky affects scrolling, not sizing.",
+        "Viewport units also ignore the container."
+      ],
+      "readMore": "/web/css-layout/"
+    },
+    {
+      "id": "web-css-layout-010",
+      "topic": "css-layout",
+      "difficulty": "hard",
+      "type": "single",
+      "question": "Two stacked block `div`s: the first has `margin-bottom: 20px`, the second `margin-top: 30px`. What is the gap between them in normal flow, and inside a `display: flex; flex-direction: column` parent?",
+      "options": [
+        "50px in normal flow, 30px in flex",
+        "30px in both",
+        "30px in normal flow, 50px in flex",
+        "50px in both"
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "In normal block flow, adjacent vertical margins collapse to the larger value (30px). Margins of flex items (and grid items) never collapse, so they add up to 50px.",
+      "optionNotes": [
+        "It is the other way round.",
+        "Flex items do not collapse margins.",
+        null,
+        "Block margins collapse."
+      ],
+      "readMore": "/web/css-layout/"
+    }
+  ]
+}
